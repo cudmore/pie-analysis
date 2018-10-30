@@ -2,8 +2,9 @@ import os
 import numpy as np
 import cv2
 
-videoPath = '/Volumes/pi3/video/20180415/20180415_153113.mp4'
-notesPath = '/Volumes/pi3/video/20180415/20180415_153113.txt'
+videoPath = '/Users/cudmore/Dropbox/PiE/homecage-movie.mp4'
+
+notesPath = '/Users/cudmore/Dropbox/PiE/20180415_153113.txt'
 
 cv2.namedWindow('videowindow')
 
