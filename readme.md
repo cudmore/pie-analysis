@@ -1,4 +1,4 @@
-This is a collection of tool to perform analysis on videos and text files saved by a PiE server.
+This is a collection of tools to perform analysis on videos and text files saved by a PiE server.
 
 ## Video player
 

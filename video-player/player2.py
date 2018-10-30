@@ -2,9 +2,13 @@ import os
 import numpy as np
 import cv2
 
+import tkinter
+
+print('cv2.__version__ is', cv2.__version__)
+
 videoPath = '/Users/cudmore/Dropbox/PiE/homecage-movie.mp4'
 
-notesPath = '/Users/cudmore/Dropbox/PiE/20180415_153113.txt'
+notesPath = '/Users/cudmore/Dropbox/PiE/homecage-movie.txt'
 
 cv2.namedWindow('videowindow')
 
@@ -16,7 +20,7 @@ fps = cap.get(cv2.CAP_PROP_FPS)
 nFrames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
 nFrames = int(nFrames)
 
-print(width,height,fps,nFrames)
+print('width:', width, 'height:', height, 'fps:', fps, 'nFrame:', nFrames)
 
 # frame slider
 def nothing(x):
@@ -37,6 +41,7 @@ def adjustBrightness():
 	if currentBrightness > 0:
 		global frame
 		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+		print('adjustBrightness hsv.shape:', hsv.shape)
 		hsv[:,:,2] += currentBrightness
 		frame = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
 	
@@ -87,7 +92,8 @@ while(cap.isOpened()):
 
 	cv2.setTrackbarPos('Frames','videowindow',currentFrame)
 
-	key = cv2.waitKey(2) & 0xff
+	key = cv2.waitKey(1) & 0xff
+	
 	if key == ord('q'):
 		break
 	if key == ord('p') or key == ord(' '):
@@ -105,8 +111,10 @@ while(cap.isOpened()):
 			currentFrame = nFrames-2
 		#print('right currentFrame:', currentFrame)
 		onTrackbar(currentFrame)
+	#
 	# annotations
-	if key == ord('1'):
+	if chr(key) in annotationKeys:
+		print('adding annotation', chr(key), 'at milliseconds:', milliseconds)
 		#print('behavior 1 at frame', currentFrame, 'milliseconds', milliseconds)
 		headerLine = 'file,frame,milliseconds,event' + '\n'
 		# make file
@@ -114,14 +122,14 @@ while(cap.isOpened()):
 			with open(notesPath,'a') as notesFile:
 				notesFile.write(headerLine)
 		# append
-		noteLine = videoPath + ',' + str(currentFrame) + "," + str(milliseconds) + ',' + '1' + '\n'
+		noteLine = videoPath + ',' + str(currentFrame) + "," + str(milliseconds) + ',' + chr(key) + '\n'
 		with open(notesPath,'a') as notesFile:
 			notesFile.write(noteLine)
+		"""
 		print('file:', notesPath)
 		print('   ', headerLine)
 		print('   ',noteLine)
-	if chr(key) in annotationKeys:
-		print('add annotation:', chr(key))
+		"""
 		
 	#print(key)
 	
