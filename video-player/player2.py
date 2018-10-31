@@ -140,9 +140,9 @@ while(cap.isOpened()):
 		currentFrame += 1
 		if currentFrame>nFrames-1:
 			currentFrame = nFrames-2
-		cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame)
+		#cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame)
 		ret, frame = cap.read()
-		adjustBrightness()
+		#adjustBrightness()
 		milliseconds = round(cap.get(cv2.CAP_PROP_POS_MSEC),2)
 		
 cap.release()
