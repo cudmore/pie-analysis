@@ -19,4 +19,6 @@ pba = VideoApp(fvs)
 pba.root.after(500, pba.myUpdate)
 
 pba.root.mainloop()
-# 2)
+
+print('videoplayer after root.mainloop()')
+

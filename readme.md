@@ -1,5 +1,20 @@
 This is a collection of tools to perform analysis on videos and text files saved by a PiE server.
 
+## Temperature
+
+To install ipython (jupyter) widgets, see [The Jupyter Widget Documentation](https://ipywidgets.readthedocs.io/en/stable/user_guide.html)
+
+```
+pip install ipywidgets
+jupyter nbextension enable --py widgetsnbextension
+``
+
+Upgrade plotly
+
+'''
+pip install plotly --upgrade
+'''
+
 ## Video player
 
 Work in progress

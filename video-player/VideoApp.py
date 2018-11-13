@@ -23,6 +23,30 @@ from tkinter import ttk
 import bEventList
 
 ##################################################################################
+class myNoteDialog:
+	def __init__(self, parentApp):
+		self.parentApp = parentApp
+		top = self.top = tkinter.Toplevel(parentApp.parent)
+		tkinter.Label(top, text="Note").pack()
+
+		self.e = tkinter.Entry(top)
+		self.e.bind('<Key-Return>', self.ok0)
+		self.e.focus_set()
+		self.e.pack(padx=5)
+
+		b = tkinter.Button(top, text="OK", command=self.ok)
+		b.pack(pady=5)
+
+	def ok0(self, event):
+		print("value is:", self.e.get())
+		self.top.destroy()
+	def ok(self):
+		print("value is:", self.e.get())
+		self.top.destroy()
+	def _setNote(txt):
+		item = self.parentApp.eventTree.focus()
+
+##################################################################################
 class VideoApp:
 	def __init__(self, vs):
 		"""
@@ -37,7 +61,7 @@ class VideoApp:
 		fps = vs.streamParams['fps']
 		numFrames = vs.streamParams['numFrames']
 
-		self.events = bEventList.bEventList(path)
+		self.eventList = bEventList.bEventList(path)
 		
 		self.vs = vs
 		self.frame = None
@@ -49,9 +73,12 @@ class VideoApp:
 		# initialize the root window and image panel
 		self.root = tkinter.Tk()
 
+		topframe = tkinter.Frame(self.root)
+		topframe.pack( side = tkinter.TOP )
+
 		#
 		# video file tree
-		self.videoFileTree = ttk.Treeview(self.root)
+		self.videoFileTree = ttk.Treeview(topframe)
 		self.videoFileTree["columns"]=("one","two","three","four")
 		self.videoFileTree.column("one", width=100 )
 		self.videoFileTree.column("two", width=100)
@@ -62,37 +89,31 @@ class VideoApp:
 		self.videoFileTree.heading("three", text="column C")
 		self.videoFileTree.heading("four", text="column D")
 
-		"""
-		self.videoFileTree.insert("" , 0,    text="Line 1", values=("1A","1b"))
-
-		id2 = self.videoFileTree.insert("", 1, "dir2", text="Dir 2")
-		self.videoFileTree.insert(id2, "end", "dir 2", text="sub dir 2", values=("2A","2B"))
-
-		##alternatively:
-		self.videoFileTree.insert("", 3, "dir3", text="Dir 3")
-		self.videoFileTree.insert("dir3", 3, text=" sub dir 3",values=("3A"," 3B"))
-		"""
-		
-		self.videoFileTree.insert("" , "end",    text=fileName, values=(width,height,fps,numFrames))
+		self.videoFileTree.insert("" , "end", text=fileName, values=(width,height,fps,numFrames))
 
 		self.videoFileTree.bind("<Double-1>", self.tree_double_click)
 		self.videoFileTree.bind("<ButtonRelease-1>", self.video_tree_single_click)
 		
-		self.videoFileTree.pack()
+		self.videoFileTree.pack(side=tkinter.TOP)
 
-		self.videoFileTree.pack(padx=5, pady=10, side=tkinter.TOP)
-		#self.videoFileTree.pack()
-		# end videoFileTree
+		# event tree scroll bar
+		self.videoFileTree_scrollBar = ttk.Scrollbar(topframe, orient="vertical")
+		self.videoFileTree_scrollBar.config(command = self.videoFileTree.yview)
+		self.videoFileTree_scrollBar.pack(side=tkinter.TOP)
+		self.videoFileTree.configure(yscrollcommand=self.videoFileTree_scrollBar.set)
 
 		#
 		# event tree
-		self.eventTree = ttk.Treeview(self.root)
+		self.eventTree = ttk.Treeview(topframe)
 		self.eventTree["columns"]=("one","two","three","four")
 		self.eventTree.heading("one", text="Type")
 		self.eventTree.heading("two", text="Frame")
 		self.eventTree.heading("three", text="ms")
 		self.eventTree.heading("four", text="Note")
 
+		# populate from bEventList
+		self.populateEvents()
+		
 		#self.eventTree.bind("<Double-1>", self.event_tree_double_click)
 		self.eventTree.bind("<ButtonRelease-1>", self.event_tree_single_click)
 		self.eventTree.bind('<<TreeviewSelect>>', self.event_tree_single_selected)
@@ -100,38 +121,47 @@ class VideoApp:
 		self.eventTree.pack(side=tkinter.TOP)
 
 		# event tree scroll bar
-		self.eventTree_scrollBar = ttk.Scrollbar(self.root, orient="vertical")
+		self.eventTree_scrollBar = ttk.Scrollbar(topframe, orient="vertical")
 		self.eventTree_scrollBar.config(command = self.eventTree.yview)
 		self.eventTree_scrollBar.pack(side=tkinter.TOP)
 		self.eventTree.configure(yscrollcommand=self.eventTree_scrollBar.set)
+		
+		"""
+		# edit event note
+		tkinter.Label(self.root, text="Note").pack(side=tkinter.TOP)
+		self.noteEntry = tkinter.Entry(self.root)
+		self.noteEntry.pack(side=tkinter.TOP, fill=tkinter.BOTH, expand=tkinter.YES)
+		self.noteEntry.bind('<Key-Return>', self.noteEntry_callback)
+		"""
 		
 		# video 
 		height = 480
 		width = 640
 		image = np.zeros((height,width,3), np.uint8)
 		image = Image.fromarray(image)
-		#self.frame = image # sloppy
 		image = ImageTk.PhotoImage(image)
-		#self.videoPanel_isinit = False
 		self.videoPanel = tkinter.Label(image=image)
 		self.videoPanel.image = image
-		self.videoPanel.pack(side=tkinter.TOP, padx=10, pady=10, fill=tkinter.BOTH, expand=tkinter.YES)
+		self.videoPanel.pack(side=tkinter.TOP, padx=10, pady=10) #, fill=tkinter.BOTH, expand=tkinter.YES)
 		#self.videoPanel.bind('<Configure>', self._resize_image)
 
+		bottomframe = tkinter.Frame(self.root)
+		bottomframe.pack( side = tkinter.BOTTOM )
+
 		# play/pause button (keyboard 'space' does the same)
-		btn = tkinter.Button(self.root, text="Play/Pause",
+		btn = tkinter.Button(bottomframe, text="Play/Pause",
 			command=self.playPause)
-		btn.pack(side=tkinter.TOP, fill="both", expand="yes", padx=10, pady=10)
+		btn.pack(side=tkinter.TOP) #, fill="both", expand="yes", padx=10, pady=10)
 
 		# frame slider
 		self.frameSlider_update = None # used by self.myUpdate()
 		self.frameSliderFrame = tkinter.IntVar()
 		self.frameSliderFrame.set(100)
 		# if 'variable=self.frameSliderFrame' is used -->> slow
-		self.frameSlider = tkinter.Scale(self.root, from_=0, to=numFrames, orient=tkinter.HORIZONTAL,
+		self.frameSlider = tkinter.Scale(bottomframe, from_=0, to=numFrames, orient=tkinter.HORIZONTAL,
 			showvalue=True,
 			command=self.frameSlider_callback) #, variable=self.frameSliderFrame)
-		self.frameSlider.pack(side=tkinter.TOP, fill="both", expand="yes", padx=10, pady=10)
+		self.frameSlider.pack(side=tkinter.TOP) #, fill="both", expand="yes", padx=10, pady=10)
 		
 		#
 		# callback for key presses (main window and all children)
@@ -141,12 +171,19 @@ class VideoApp:
 		#self.stopEvent = threading.Event()
 		self.isRunning = True
 		self.thread = threading.Thread(target=self.videoLoop, args=())
+		self.thread.daemon = True
 		self.thread.start()
 
 		# set a callback to handle when the window is closed
 		self.root.wm_title("PiE Video Analysis")
 		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
 
+	"""
+	def noteEntry_callback(self, event):
+		print('noteEntry_callback():', self.noteEntry.get())
+		d = myNoteDialog(self.root)
+	"""
+		
 	"""
 	def _resize_image(self, event):
 		new_width = event.width
@@ -207,8 +244,14 @@ class VideoApp:
 		print('   event:', event)
 		
 		# use coordinates of event to get item
-		item = self.eventTree.identify('item',event.x,event.y)
+		#item = self.eventTree.identify('item',event.x,event.y)
 		
+		# get selection
+		item = self.eventTree.focus()
+		
+		if item == '':
+			return 0
+			
 		# get a tuple (list) of item names
 		#children = self.eventTree.get_children()
 		#print('   children:', children)
@@ -263,7 +306,10 @@ class VideoApp:
 	# key
 	def keyPress(self, event):
 		frame = self.vs.stream.get(cv2.CAP_PROP_POS_FRAMES)
+		frame = int(float(frame))
 		ms = self.vs.stream.get(cv2.CAP_PROP_POS_MSEC)
+		ms = int(float(ms))
+		
 		print('VideoApp.keyPress() pressed:', repr(event.char), 'frame:', frame, 'ms:', ms)
 		
 		theKey = event.char
@@ -279,19 +325,29 @@ class VideoApp:
 			print('keyPress() adding event')
 			self.addEvent(theKey, frame, ms)
 		
-		# set not of selected event
+		# set note of selected event
 		if theKey == 'n':
-			print('keyPress() n will set note of selected event -->> not implemented')
+			self.setNote()
 			
 		# delete vent
 		if theKey == 'd':
 			print('keyPress() d will delete -->> not implemented')
 			
+	def setNote(self):
+		# get selection from event list
+		print('setNote()')
+		item = self.eventTree.focus()
+		print(self.eventTree.item(item))
+		d = myNoteDialog(self)
+		
 	def addEvent(self, theKey, frame, ms):
-		# events have 
+		frame = float(frame)
+		frame = int(frame)
+		ms = float(ms)
+		ms = int(ms)
 
 		# todo: switch this to internal data structure, DO NOT query actual list
-		self.events.AppendEvent(theKey, frame, ms)
+		self.eventList.AppendEvent(theKey, frame, ms, autoSave=True)
 		
 		# get a tuple (list) of item names
 		children = self.eventTree.get_children()
@@ -302,6 +358,18 @@ class VideoApp:
 		text = str(numInList)
 		self.eventTree.insert("" , position, text=text, values=(theKey, frame, ms))
 		
+	def populateEvents(self):
+		# todo: make bEventList iterable
+		for idx, event in enumerate(self.eventList.eventList):
+			path = event.path
+			type = event.type
+			frameNumber = event.frameNumber
+			ms = event.ms
+			note = event.note
+			
+			position = "end"
+			self.eventTree.insert("" , position, text=str(idx+1), values=(type, frameNumber, ms, note))
+			
 	# thread
 	def videoLoop(self):
 		try:
@@ -408,9 +476,7 @@ class VideoApp:
 		print("onClose()")
 		self.isRunning = False
 		#self.stopEvent.set()
-		time.sleep(0.2)
-		print('1')
+		#time.sleep(0.2)
 		self.vs.stop()
-		print('2')
-		time.sleep(0.2)
+		#time.sleep(0.2)
 		self.root.quit()
