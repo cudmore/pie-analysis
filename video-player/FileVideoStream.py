@@ -10,12 +10,11 @@ from queue import Queue
 import threading
 
 import cv2
+from PIL import Image
 
 ##################################################################################
 class FileVideoStream:
 	def __init__(self, path, queueSize=128):
-		# initialize the file video stream along with the boolean
-		# used to indicate if the thread should be stopped or not
 		self.stream = cv2.VideoCapture(path)
 		self.stopped = False
 
@@ -80,6 +79,10 @@ class FileVideoStream:
 				if not self.Q.full():
 					# read the next frame from the file
 					(grabbed, frame) = self.stream.read()
+
+					#frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+					#frame = Image.fromarray(frame)
+
 					self.currentFrame = self.stream.get(cv2.CAP_PROP_POS_FRAMES)
 					self.milliseconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC),2)
 					
@@ -111,7 +114,10 @@ class FileVideoStream:
 		return not self.stopped
 		
 	def stop(self):
-		# indicate that the thread should be stopped
+		"""
+		indicate that the thread should be stopped
+		actual stopping is in main thread/loop in self.update()
+		"""
 		self.stopped = True
 
 	def setFrame(self, newFrame):

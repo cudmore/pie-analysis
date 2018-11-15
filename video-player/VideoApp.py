@@ -24,6 +24,7 @@ import bEventList
 
 ##################################################################################
 class myNoteDialog:
+	"""Opens a modal dialog to set the note of an event"""
 	def __init__(self, parentApp):
 		self.parentApp = parentApp
 		top = self.top = tkinter.Toplevel(parentApp.parent)
@@ -50,6 +51,8 @@ class myNoteDialog:
 class VideoApp:
 	def __init__(self, vs):
 		"""
+		TKInter application to create interface for loading, viewing, and annotating video
+		
 		vs: FileVideoStream
 		"""
 
@@ -73,12 +76,12 @@ class VideoApp:
 		# initialize the root window and image panel
 		self.root = tkinter.Tk()
 
-		topframe = tkinter.Frame(self.root)
-		topframe.pack( side = tkinter.TOP )
+		topFrame = tkinter.Frame(self.root)
+		topFrame.pack( side = tkinter.TOP )
 
 		#
 		# video file tree
-		self.videoFileTree = ttk.Treeview(topframe)
+		self.videoFileTree = ttk.Treeview(topFrame, padding=(5,5,5,5))
 		self.videoFileTree["columns"]=("one","two","three","four")
 		self.videoFileTree.column("one", width=100 )
 		self.videoFileTree.column("two", width=100)
@@ -94,17 +97,17 @@ class VideoApp:
 		self.videoFileTree.bind("<Double-1>", self.tree_double_click)
 		self.videoFileTree.bind("<ButtonRelease-1>", self.video_tree_single_click)
 		
-		self.videoFileTree.pack(side=tkinter.TOP)
+		self.videoFileTree.pack(side=tkinter.LEFT)
 
-		# event tree scroll bar
-		self.videoFileTree_scrollBar = ttk.Scrollbar(topframe, orient="vertical")
+		# video file tree scroll bar
+		self.videoFileTree_scrollBar = ttk.Scrollbar(topFrame, orient="vertical")
 		self.videoFileTree_scrollBar.config(command = self.videoFileTree.yview)
-		self.videoFileTree_scrollBar.pack(side=tkinter.TOP)
+		#self.videoFileTree_scrollBar.pack(side=tkinter.TOP)
 		self.videoFileTree.configure(yscrollcommand=self.videoFileTree_scrollBar.set)
-
+		
 		#
 		# event tree
-		self.eventTree = ttk.Treeview(topframe)
+		self.eventTree = ttk.Treeview(topFrame, padding=(5,5,5,5))
 		self.eventTree["columns"]=("one","two","three","four")
 		self.eventTree.heading("one", text="Type")
 		self.eventTree.heading("two", text="Frame")
@@ -118,15 +121,16 @@ class VideoApp:
 		self.eventTree.bind("<ButtonRelease-1>", self.event_tree_single_click)
 		self.eventTree.bind('<<TreeviewSelect>>', self.event_tree_single_selected)
 
-		self.eventTree.pack(side=tkinter.TOP)
+		self.eventTree.pack(side=tkinter.LEFT)
 
 		# event tree scroll bar
-		self.eventTree_scrollBar = ttk.Scrollbar(topframe, orient="vertical")
+		self.eventTree_scrollBar = ttk.Scrollbar(topFrame, orient="vertical")
 		self.eventTree_scrollBar.config(command = self.eventTree.yview)
-		self.eventTree_scrollBar.pack(side=tkinter.TOP)
+		#self.eventTree_scrollBar.pack(side=tkinter.TOP)
 		self.eventTree.configure(yscrollcommand=self.eventTree_scrollBar.set)
 		
 		"""
+		# depreciated
 		# edit event note
 		tkinter.Label(self.root, text="Note").pack(side=tkinter.TOP)
 		self.noteEntry = tkinter.Entry(self.root)
@@ -135,12 +139,15 @@ class VideoApp:
 		"""
 		
 		# video 
-		height = 480
-		width = 640
+		middleFrame = tkinter.Frame(self.root)
+		middleFrame.pack( side = tkinter.BOTTOM )
+
+		height = 120 #480
+		width = 160 #640
 		image = np.zeros((height,width,3), np.uint8)
 		image = Image.fromarray(image)
 		image = ImageTk.PhotoImage(image)
-		self.videoPanel = tkinter.Label(image=image)
+		self.videoPanel = tkinter.Label(middleFrame, image=image)
 		self.videoPanel.image = image
 		self.videoPanel.pack(side=tkinter.TOP, padx=10, pady=10) #, fill=tkinter.BOTH, expand=tkinter.YES)
 		#self.videoPanel.bind('<Configure>', self._resize_image)
