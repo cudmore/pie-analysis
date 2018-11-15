@@ -68,6 +68,11 @@ class VideoApp:
 		
 		self.vs = vs
 		self.frame = None
+		self.lastFrameTime = 0
+		self.lastFrameInterval = None
+		
+		self.myFrameInterval = 30
+		
 		self.thread = None
 		#self.stopEvent = None
  
@@ -174,13 +179,16 @@ class VideoApp:
 		# callback for key presses (main window and all children)
 		self.root.bind("<Key>", self.keyPress)
 
+		"""
 		# start a thread that constantly pools the video file for the most recently read frame
 		#self.stopEvent = threading.Event()
 		self.isRunning = True
 		self.thread = threading.Thread(target=self.videoLoop, args=())
 		self.thread.daemon = True
 		self.thread.start()
-
+		"""
+		self.videoLoop()
+		
 		# set a callback to handle when the window is closed
 		self.root.wm_title("PiE Video Analysis")
 		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
@@ -286,6 +294,7 @@ class VideoApp:
 		# this line seems to block no matter what
 		#self.frameSliderFrame.set(self.vs.currentFrame)
 		
+		#print('VideoApp.myUpdate()')
 		self.frameSlider_update = False
 		# set() triggers frameSlider_callback() in background! frameSlider_callback() needs to set self.frameSlider_update = True
 		self.frameSlider.set(self.vs.currentFrame)
@@ -340,6 +349,25 @@ class VideoApp:
 		if theKey == 'd':
 			print('keyPress() d will delete -->> not implemented')
 			
+		if theKey == 'z':
+			self.setFramesPerSecond(33)
+		if theKey == 'x':
+			self.setFramesPerSecond(100)
+		if theKey == 'c':
+			self.setFramesPerSecond(500)
+		if theKey == '\uf700':
+			# faster
+			if self.myFrameInterval == 1:
+				self.myFrameInterval = 0
+			newFrameInterval = self.myFrameInterval + 10
+			self.setFramesPerSecond(newFrameInterval)
+		if theKey == '\uf701':
+			# faster
+			newFrameInterval = self.myFrameInterval - 10
+			if newFrameInterval <= 0:
+				newFrameInterval = 0
+			self.setFramesPerSecond(newFrameInterval)
+			
 	def setNote(self):
 		# get selection from event list
 		print('setNote()')
@@ -379,11 +407,56 @@ class VideoApp:
 			
 	# thread
 	def videoLoop(self):
+	
+		if self.paused:
+			fontScale = 1.4
+			cv2.putText(self.frame, "Paused",
+				(10, 90),
+				cv2.FONT_HERSHEY_PLAIN,
+				fontScale,
+				(0, 0, 255),
+				lineType=2,
+				thickness = 2)	
+			pass
+		else:
+			self.frame = self.vs.read()
+
+		# watermark the frame using open cv
+		if self.frame is not None:
+			# color order is (blue, green, red)
+			# using cv2 to draw on image, limited by fonts BUT way nore simple than loading a font in PIL
+			fontScale = 1.2
+			cv2.putText(self.frame, "Queue Size: {}".format(self.vs.Q.qsize()),
+				(10, 30), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 0, 255), 2)	
+			cv2.putText(self.frame, "Frame Number: {currentFrame}/{numFrames}".format(currentFrame=self.vs.currentFrame, numFrames=self.vs.streamParams['numFrames']),
+				(10, 50), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 255, 0), 2)	
+			cv2.putText(self.frame, "ms: {ms}".format(ms=self.vs.milliseconds),
+				(10, 70), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 255, 0), 2)
+
+		image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+		image = Image.fromarray(image)
+		
+		image = ImageTk.PhotoImage(image)
+
+		self.videoPanel.configure(image=image)
+		self.videoPanel.image = image
+
+		self.videoLoopID = self.videoPanel.after(self.myFrameInterval, self.videoLoop)
+		
+	def setFramesPerSecond(self, frameInterval):
+		self.videoPanel.after_cancel(self.videoLoopID)
+		self.myFrameInterval = frameInterval
+		print('setFramesPerSecond() self.myFrameInterval:', self.myFrameInterval)
+		self.videoLoop()
+		
+	def videoLoop_old(self):
 		try:
 			# keep looping over frames until we are instructed to stop
 			#while not self.stopEvent.is_set():
 			while self.isRunning:
-				time.sleep(0.02)
+			
+				#time.sleep(0.01)
+				
 				if 0: # self.paused:
 					pass
 				else:
@@ -401,6 +474,7 @@ class VideoApp:
 						pass
 					else:
 						self.frame = self.vs.read()
+						
 						# update the visual display in frame slider
 						# 1) this slows down video
 						#self.frameSliderFrame.set(self.vs.currentFrame)
@@ -410,6 +484,7 @@ class VideoApp:
 					#self.frame = imutils.resize(self.frame, width=300)
 			
 					# watermark the frame using open cv
+					"""
 					if self.frame is not None:
 						# color order is (blue, green, red)
 						# using cv2 to draw on image, limited by fonts BUT way nore simple than loading a font in PIL
@@ -420,10 +495,12 @@ class VideoApp:
 							(10, 50), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 255, 0), 2)	
 						cv2.putText(self.frame, "ms: {ms}".format(ms=self.vs.milliseconds),
 							(10, 70), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 255, 0), 2)
-
+					"""
+					
 					# OpenCV represents images in BGR order; however PIL
 					# represents images in RGB order, so we need to swap
 					# the channels, then convert to PIL and ImageTk format
+					
 					image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
 					image = Image.fromarray(image)
 
@@ -438,25 +515,18 @@ class VideoApp:
 						image = image.resize((width, height), Image.ANTIALIAS)
 					"""
 					
-					# WTF: fonts are too complicated in PIL
-					# use PIL to draw text on image
-					"""
-					draw = ImageDraw.Draw(image)
-					print('a')
-					font = ImageFont.load_default()
-					#font = ImageFont.load("arial.pil")
-					#font = ImageFont.truetype("Roboto-Regular.ttf", 50)
-					print('b')
-					textLine1 = "Frame Number: {currentFrame}/{numFrames}".format(currentFrame=self.vs.currentFrame, numFrames=self.vs.streamParams['numFrames'])
-					draw.text((0, 0), textLine1, font=font)
-					"""
-					
 					image = ImageTk.PhotoImage(image)
 
-					# if the panel is not None, we need to initialize it
+					tmpNow = time.time()
+					self.lastFrameInterval = tmpNow - self.lastFrameTime
+					self.lastFrameTime = tmpNow
+					if self.lastFrameInterval > 0.2:
+						print('last interval:', self.lastFrameInterval, 'Q.qsize():', self.vs.Q.qsize(), 'currentFrame:', self.vs.currentFrame)
+
+					# update the panel so we see image
 					self.videoPanel.configure(image=image)
 					self.videoPanel.image = image
-					
+										
 					"""
 					if self.videoPanel_isinit:
 						self.videoPanel.configure(image=image)

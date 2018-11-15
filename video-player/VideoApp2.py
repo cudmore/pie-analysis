@@ -27,7 +27,7 @@ class myNoteDialog:
 	"""Opens a modal dialog to set the note of an event"""
 	def __init__(self, parentApp):
 		self.parentApp = parentApp
-		top = self.top = tkinter.Toplevel(parentApp.parent)
+		top = self.top = tkinter.Toplevel(parentApp.root)
 		tkinter.Label(top, text="Note").pack()
 
 		self.e = tkinter.Entry(top)
@@ -45,7 +45,7 @@ class myNoteDialog:
 		print("value is:", self.e.get())
 		self.top.destroy()
 	def _setNote(txt):
-		item = self.parentApp.eventTree.focus()
+		item = self.parentApp.right_tree.focus()
 
 ##################################################################################
 class VideoApp:
@@ -56,6 +56,8 @@ class VideoApp:
 		vs: FileVideoStream
 		"""
 
+		myBakgroundColor = '#666666'
+		
 		# parameters from FileVideoStream
 		path = vs.streamParams['path']
 		fileName = vs.streamParams['fileName']
@@ -72,7 +74,13 @@ class VideoApp:
 		#self.stopEvent = None
  
 		self.paused = False
+		self.pausedAtFrame = None
  		
+		self.myFrameInterval = 30
+		self.myApectRatio = 4.0/3.0
+		
+		myPadding = 10
+
 		###
 		# remember, there is still a ton of other code in VideoApp.py
 		###
@@ -82,80 +90,169 @@ class VideoApp:
 		###
 		self.root = tkinter.Tk()
 
-		pane = tkinter.PanedWindow(self.root, orient=tkinter.VERTICAL)
+		self.root.geometry("640x480")
+
+		pane = ttk.PanedWindow(self.root, orient="vertical")
 		pane.grid(row=0, column=0, sticky="nsew")
 		self.root.grid_rowconfigure(0, weight=1)
 		self.root.grid_columnconfigure(0, weight=1)
 
-		upper_frame = tkinter.Frame(pane)
+		upper_frame = ttk.Frame(pane)
 		upper_frame.grid(row=0, column=0, sticky="nsew")
 
-		left_buttons_frame = tkinter.Frame(upper_frame, background="bisque", width=100, height=100)
-		left_buttons_frame.grid(row=0, column=0)
+		left_buttons_frame = ttk.Frame(upper_frame)
+		left_buttons_frame.grid(row=0, column=0, padx=myPadding, pady=myPadding)
 
 		def myButtonCallback():
 			print('myButtonCallback')
 
-		loadButton = tkinter.Button(left_buttons_frame, anchor="n", text="Folder", command=myButtonCallback)
-		loadButton.pack()
+		loadButton = ttk.Button(left_buttons_frame, text="Folder", command=myButtonCallback)
+		loadButton.pack(side="top")
+		
+		#
+		# video file tree
+		left_tree = ttk.Treeview(upper_frame)
+		left_tree.grid(row=0,column=1, sticky="nsew", padx=myPadding, pady=myPadding)
 
-		left_tree = ttk.Treeview(upper_frame, padding=(25,25,25,25))
-		left_tree.grid(row=0,column=1, sticky="nsew")
-		for i in range(20):
-			left_tree.insert("", "end", text=str(i))
+		left_tree.insert("" , "end", text=fileName, values=(width,height,fps,numFrames))
 
-		right_tree = ttk.Treeview(upper_frame, padding=(25,25,25,25))
-		right_tree.grid(row=0,column=2, sticky="nsew")
-		for i in range(20):
-			right_tree.insert("", "end", text=str(i))
+		# video file tree scroll bar
+		videoFileTree_scrollBar = ttk.Scrollbar(upper_frame, orient="vertical", command = left_tree.yview)
+		videoFileTree_scrollBar.grid(row=0, column=1, sticky='nse', padx=myPadding, pady=myPadding)
+		left_tree.configure(yscrollcommand=videoFileTree_scrollBar.set)
+		
+		left_tree.bind("<Double-1>", self.tree_double_click)
+		left_tree.bind("<ButtonRelease-1>", self.video_tree_single_click)
 
+
+		#
+		# event tree
+		#todo: add function to bEvent to get columns (so we change bEvent and it is reflected here)
+		eventColumns = ('Index', 'Type', 'Frame', 'ms', 'Note')
+		self.right_tree = ttk.Treeview(upper_frame, columns=eventColumns, show='headings')
+		self.right_tree.grid(row=0,column=2, sticky="nsew", padx=myPadding, pady=myPadding)
+
+		for column in eventColumns:
+			print('column:', column)
+			self.right_tree.heading(column, text=column, command=lambda:self.treeview_sort_column(self.right_tree, 'Frame', False))
+		
+		#self.right_tree.bind("<Double-1>", self.event_tree_double_click)
+		#self.right_tree.bind("<ButtonRelease-1>", self.event_tree_single_click)
+		self.right_tree.bind('<<TreeviewSelect>>', self.event_tree_single_selected)
+
+		# populate from bEventList
+		self.populateEvents()
+
+		#for i in range(20):
+		#	self.right_tree.insert("", "end", text=str(i))
+
+		# event tree scroll bar
+		eventFileTree_scrollBar = ttk.Scrollbar(upper_frame, orient="vertical", command = self.right_tree.yview)
+		eventFileTree_scrollBar.grid(row=0, column=2, sticky='nse', padx=myPadding, pady=myPadding)
+		self.right_tree.configure(yscrollcommand=eventFileTree_scrollBar.set)
+
+		#
+		# feedback frame
+		feedback_frame = ttk.Frame(upper_frame)
+		feedback_frame.grid(row=1, column=0, columnspan=3, sticky="w", padx=myPadding, pady=myPadding)
+
+		# Label also has 'justify' but is used when more than one line of text
+		self.currentFrameLabel = ttk.Label(feedback_frame, width=11, anchor="w", text="Frame:")
+		self.currentFrameLabel.grid(row=0, column=0)
+		
+		self.numFrameLabel = ttk.Label(feedback_frame, width=8, anchor="w", text="of " + str(self.vs.streamParams['numFrames']))
+		self.numFrameLabel.grid(row=0, column=1)
+
+		self.currentSecondsLabel = ttk.Label(feedback_frame, width=8, anchor="w", text="Sec:")
+		self.currentSecondsLabel.grid(row=0, column=2, sticky="w")
+		
+		self.numSecondsLabel = ttk.Label(feedback_frame, width=8, anchor="w", text="of " + str(self.vs.streamParams['numSeconds']))
+		self.numSecondsLabel.grid(row=0, column=3, sticky="w")
+		
+		self.currentFrameIntervalLabel = ttk.Label(feedback_frame, width=20, anchor="w", text="Interval (ms):")
+		self.currentFrameIntervalLabel.grid(row=0, column=4, sticky="w")
+		
+		# configure sizing of upper_frame
 		upper_frame.grid_rowconfigure(0,weight=1) # 
-		upper_frame.grid_columnconfigure(2,weight=1) # 
+		#upper_frame.grid_rowconfigure(1,weight=0) # row 1 is feedback_frame
+		upper_frame.grid_columnconfigure(0,weight=0) #  column 0 is left_buttons_frame
+		upper_frame.grid_columnconfigure(1,weight=0) #  column 1 is left_tree
+		upper_frame.grid_columnconfigure(2,weight=1) # column 2 is self.right_tree
 
 		# video
-		lower_frame = tkinter.Frame(pane, borderwidth=5, width=640, height=480)
+		lower_frame = ttk.Frame(pane)
 		lower_frame.grid(row=1, column=0, columnspan=3, sticky="nsew")
 		lower_frame.grid_rowconfigure(0,weight=1) # 
 		lower_frame.grid_columnconfigure(0,weight=1) # 
 
 		pane.add(upper_frame)
-		pane.add(lower_frame, stretch="always")
+		pane.add(lower_frame)
 
 		#
 		# use self.set_aspect() with pad and content
-		pad_frame = tkinter.Frame(lower_frame, borderwidth=0, background="bisque", width=200, height=200)
-		pad_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=20)
-		self.content_frame=tkinter.Frame(lower_frame, borderwidth=5,relief=tkinter.GROOVE, background="blue")
-		self.set_aspect(self.content_frame, pad_frame, aspect_ratio=4.0/3.0) 
-
+		pad_frame = ttk.Frame(lower_frame, borderwidth=0, width=200, height=200)
+		pad_frame.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
+		# put back in so we can see frame
+		#self.content_frame = ttk.Frame(lower_frame, borderwidth=5,relief="groove")
+		self.content_frame = ttk.Frame(lower_frame)
+		self.set_aspect(self.content_frame, pad_frame, aspect_ratio=self.myApectRatio) 
+				
 		# insert image into content frame
 		height = 480 #480
 		width = 640 #640
 		image = np.zeros((height,width,3), np.uint8)
 		image = Image.fromarray(image)
 		image = ImageTk.PhotoImage(image)
-		self.videoPanel = tkinter.Label(self.content_frame, image=image)
+		self.videoPanel = ttk.Label(self.content_frame, image=image, text="", font=("Helvetica", 48), compound="center", foreground="green")
 		self.videoPanel.grid(row=0, column=0, sticky="nsew")
 		self.videoPanel.image = image
 
+		
+		#
+		# frame slider
+		self.frameSlider = ttk.Scale(lower_frame, from_=0, to=numFrames, orient="horizontal",
+			command=self.frameSlider_callback) #, variable=self.frameSliderFrame)
+		self.frameSlider.grid(row=1, column=0, columnspan=3, sticky="nsew", padx=myPadding, pady=myPadding)
+		
 		###
 		# end from test2.py
 		###
 		
+		self.root.bind("<Key>", self.keyPress)
+		#self.root.bind("<Key-Shift_L>", self.keyPress)
+
 		# start a thread that constantly pools the video file for the most recently read frame
 		#self.stopEvent = threading.Event()
+		"""
 		self.isRunning = True
 		self.thread = threading.Thread(target=self.videoLoop, args=())
 		self.thread.daemon = True
 		self.thread.start()
-
+		"""
+		self.videoLoop()
+		
 		# set a callback to handle when the window is closed
 		self.root.wm_title("PiE Video Analysis")
 		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
 
-		self.root.geometry("640x480")
 
-	# see: https://stackoverflow.com/questions/16523128/resizing-tkinter-frames-with-fixed-aspect-ratio
+		children = self.root.winfo_children()
+		for child in children:
+			print(child)
+			
+	def treeview_sort_column(self, tv, col, reverse):
+		print('treeview_sort_column()', 'tv:', tv, 'col:', col, 'reverse:', reverse)
+		l = [(tv.set(k, col), k) for k in tv.get_children('')]
+		l.sort(reverse=reverse)
+
+		# rearrange items in sorted positions
+		for index, (val, k) in enumerate(l):
+			tv.move(k, '', index)
+
+		# reverse sort next time
+		tv.heading(col, command=lambda:self.treeview_sort_column(tv, col, not reverse))
+           
+    # see: https://stackoverflow.com/questions/16523128/resizing-tkinter-frames-with-fixed-aspect-ratio
 	def set_aspect(self, content_frame, pad_frame, aspect_ratio):
 		# a function which places a frame within a containing frame, and
 		# then forces the inner frame to keep a specific aspect ratio
@@ -228,14 +325,15 @@ class VideoApp:
 	"""
 	def event_tree_double_click(self, event):
 		print('event_tree_double_click()')
-		item = self.eventTree.selection()[0]
-		print("   event_tree_double_click()", self.eventTree.item(item,"text"))
-		print("   event_tree_double_click()", self.eventTree.item(item,"values"))
+		item = self.right_tree.selection()[0]
+		print("   event_tree_double_click()", self.right_tree.item(item,"text"))
+		print("   event_tree_double_click()", self.right_tree.item(item,"values"))
 		print('   item:', item)
 	"""
 	
 	def event_tree_single_selected(self, event):
 		print('=== event_tree_single_selected:', event)
+		self.event_tree_single_click(event)
 		
 	def event_tree_single_click(self, event):
 		"""
@@ -247,68 +345,63 @@ class VideoApp:
 		print('   event:', event)
 		
 		# use coordinates of event to get item
-		#item = self.eventTree.identify('item',event.x,event.y)
+		#item = self.right_tree.identify('item',event.x,event.y)
 		
 		# get selection
-		item = self.eventTree.focus()
+		item = self.right_tree.focus()
 		
 		if item == '':
 			return 0
 			
 		# get a tuple (list) of item names
-		#children = self.eventTree.get_children()
+		#children = self.right_tree.get_children()
 		#print('   children:', children)
 		
-		#item = self.eventTree.selection()[0]
+		#item = self.right_tree.selection()[0]
 		print('   item:', item)
-		print("   item text:", self.eventTree.item(item,"text"))
-		print("   item values():", self.eventTree.item(item,"values"))
-		value = self.eventTree.item(item, "values")
+		print("   item text:", self.right_tree.item(item,"text"))
+		print("   item values():", self.right_tree.item(item,"values"))
+		value = self.right_tree.item(item, "values")
 	
-		frameNumber = self.eventTree.item(item,"values")[1] # [1] is frame number
+		frameNumber = self.right_tree.item(item,"values")[1] # [1] is frame number
 		print('   frameNumber:', frameNumber)
 		frameNumber = float(frameNumber) # need first because frameNumber (str) can be 100.00000000001
 		frameNumber = int(frameNumber)
 		print('   event_tree_single_click() is progressing to frame number:', frameNumber)
 		
 		# set the video frame
-		self.frame = self.vs.setFrame(frameNumber)
+		self.vs.setFrame(frameNumber)
 		#self.frameSlider_callback(str(frameNumber))
 		
 	# slider
 	def myUpdate(self):
-		# trying to impose an update interval so this does not block
-		#print('myUpdate()', self.vs.currentFrame)
-		# this line seems to block no matter what
-		#self.frameSliderFrame.set(self.vs.currentFrame)
-		
 		self.frameSlider_update = False
 		# set() triggers frameSlider_callback() in background! frameSlider_callback() needs to set self.frameSlider_update = True
 		
 		# put back in
-		"""
 		self.frameSlider.set(self.vs.currentFrame)
-		"""
 		
-		#self.frameSlider.value = self.vs.currentFrame
 		# this does not work as self.frameSlider.set calls frameSlider_callback() in background (different thread?)
 		#self.frameSlider_update = True
 		
-		self.root.after(500, self.myUpdate)
+		self.root.after(20, self.myUpdate)
 		
 	def frameSlider_callback(self, frameNumber):
 		"""
 		frameNumber : str
 		"""
 		#print('gotoFrame()', frameNumber)
+		frameNumber = int(float(frameNumber))
 		if self.frameSlider_update:
-			self.frame = self.vs.setFrame(int(frameNumber))
+			self.vs.setFrame(frameNumber)
 		else:
 			self.frameSlider_update = True
 		
 	# button
 	def playPause(self):
 		self.paused = not self.paused
+		self.vs.paused = self.paused
+		self.pausedAtFrame = self.vs.currentFrame
 		print('playPause()', 'pause' if self.paused else 'play')
 		
 	# key
@@ -318,15 +411,17 @@ class VideoApp:
 		ms = self.vs.stream.get(cv2.CAP_PROP_POS_MSEC)
 		ms = int(float(ms))
 		
-		print('VideoApp.keyPress() pressed:', repr(event.char), 'frame:', frame, 'ms:', ms)
+		print('\nVideoApp.keyPress() pressed:', repr(event.char), 'frame:', frame, 'ms:', ms)
+		print('event.keysym:', event.keysym)
+		print('event.keysym_num:', event.keysym_num)
+		print('event.state:', event.state)
 		
 		theKey = event.char
 
 		# pause/play
 		if theKey == ' ':
-			print('space')
-			self.paused = not self.paused
-
+			self.playPause()
+			
 		# add event
 		validEventKeys = ['1', '2', '3', '4', '5']
 		if theKey in validEventKeys:
@@ -340,12 +435,42 @@ class VideoApp:
 		# delete vent
 		if theKey == 'd':
 			print('keyPress() d will delete -->> not implemented')
+
+		if theKey == 's':
+			# slower
+			if self.myFrameInterval == 1:
+				self.myFrameInterval = 0
+			newFrameInterval = self.myFrameInterval + 10
+			self.setFramesPerSecond(newFrameInterval)
+		if theKey == 'f':
+			# faster
+			newFrameInterval = self.myFrameInterval - 10
+			if newFrameInterval <= 0:
+				newFrameInterval = 0
+			self.setFramesPerSecond(newFrameInterval)
+			
+		if theKey == '\uf702' and event.state==97:
+			# shift + left
+			newFrame = self.vs.currentFrame - 100
+			self.vs.setFrame(newFrame)
+		elif theKey == '\uf702':
+			# left
+			newFrame = self.vs.currentFrame - 10
+			self.vs.setFrame(newFrame)
+		if theKey == '\uf703' and event.state==97:
+			# shift + right
+			newFrame = self.vs.currentFrame + 100
+			self.vs.setFrame(newFrame)
+		elif theKey == '\uf703':
+			# right
+			newFrame = self.vs.currentFrame + 10
+			self.vs.setFrame(newFrame)
 			
 	def setNote(self):
 		# get selection from event list
 		print('setNote()')
-		item = self.eventTree.focus()
-		print(self.eventTree.item(item))
+		item = self.right_tree.focus()
+		print(self.right_tree.item(item))
 		d = myNoteDialog(self)
 		
 	def addEvent(self, theKey, frame, ms):
@@ -358,13 +483,13 @@ class VideoApp:
 		self.eventList.AppendEvent(theKey, frame, ms, autoSave=True)
 		
 		# get a tuple (list) of item names
-		children = self.eventTree.get_children()
+		children = self.right_tree.get_children()
 		numInList = len(children)
 
 		position = "end"
 		numInList += 1
 		text = str(numInList)
-		self.eventTree.insert("" , position, text=text, values=(theKey, frame, ms))
+		self.right_tree.insert("" , position, text=text, values=(theKey, frame, ms))
 		
 	def populateEvents(self):
 		# todo: make bEventList iterable
@@ -376,116 +501,59 @@ class VideoApp:
 			note = event.note
 			
 			position = "end"
-			self.eventTree.insert("" , position, text=str(idx+1), values=(type, frameNumber, ms, note))
+			self.right_tree.insert("" , position, text=str(idx+1), values=(type, frameNumber, ms, note))
 			
-	# thread
 	def videoLoop(self):
-		try:
-			# keep looping over frames until we are instructed to stop
-			#while not self.stopEvent.is_set():
-			while self.isRunning:
-				time.sleep(0.02)
-				if 0: # self.paused:
-					pass
-				else:
-					# grab the frame from the video stream and resize it to
-					# have a maximum width of 300 pixels
-					if self.paused:
-						fontScale = 1.4
-						cv2.putText(self.frame, "Paused",
-							(10, 90),
-							cv2.FONT_HERSHEY_PLAIN,
-							fontScale,
-							(0, 0, 255),
-							lineType=2,
-							thickness = 2)	
-						pass
-					else:
-						self.frame = self.vs.read()
-						# update the visual display in frame slider
-						# 1) this slows down video
-						#self.frameSliderFrame.set(self.vs.currentFrame)
-						# 2) this slows down too
-						#self.frameSlider.set(self.vs.currentFrame)
-						
-					#self.frame = imutils.resize(self.frame, width=300)
-			
-					# watermark the frame using open cv
-					if self.frame is not None:
-						# color order is (blue, green, red)
-						# using cv2 to draw on image, limited by fonts BUT way nore simple than loading a font in PIL
-						fontScale = 1.2
-						cv2.putText(self.frame, "Queue Size: {}".format(self.vs.Q.qsize()),
-							(10, 30), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 0, 255), 2)	
-						cv2.putText(self.frame, "Frame Number: {currentFrame}/{numFrames}".format(currentFrame=self.vs.currentFrame, numFrames=self.vs.streamParams['numFrames']),
-							(10, 50), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 255, 0), 2)	
-						cv2.putText(self.frame, "ms: {ms}".format(ms=self.vs.milliseconds),
-							(10, 70), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 255, 0), 2)
-						
-					# OpenCV represents images in BGR order; however PIL
-					# represents images in RGB order, so we need to swap
-					# the channels, then convert to PIL and ImageTk format
-					
-					# now doing this in FileVideoStream
-					image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
-					image = Image.fromarray(image)
+	
+		# it is important to not vs.read() when paused
+		if self.paused:
+			self.videoPanel.configure(text="Paused")
+			if (self.pausedAtFrame != self.vs.currentFrame):
+				#print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.vs.currentFrame:', self.vs.currentFrame)
+				try:
+					#print('VideoApp2.videoLoop() CALLING self.vs.read()')
+					self.frame = self.vs.read()
+				except:
+					print('zzz qqq')
+				#print('VideoApp2.videoLoop() got new frame')
+				self.pausedAtFrame = self.vs.currentFrame
+				#
+				#self.vs.setFrame(self.vs.currentFrame)
+		else:
+			self.videoPanel.configure(text="")
+			self.frame = self.vs.read()
 
-					
-					## resize
-					tmpWidth = self.content_frame.winfo_width()
-					tmpHeight = self.content_frame.winfo_height()
-					#self.frame = self.frame.resize((tmpWidth, tmpHeight), Image.ANTIALIAS)
+		if self.frame is None:
+			print('ERROR: VideoApp2.videoLoop() got None self.frame')
+		else:
+			## resize
+			tmpWidth = self.content_frame.winfo_width()
+			tmpHeight = self.content_frame.winfo_height()
+			self.frame = cv2.resize(self.frame, (tmpWidth, tmpHeight)) 
+		
+			image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+			image = Image.fromarray(image)
+		
+			image = ImageTk.PhotoImage(image)
 
-					"""
-					# resize video image to match size of window
-					#print(self.videoPanel.winfo_width(), self.videoPanel.winfo_height())
-					#width = self.videoPanel.winfo_width() - 20
-					height = self.videoPanel.winfo_height() - 20
-					width = int(height * (4/3))
-					#print(width,height)
-					if width>1 and height>1:
-						image = image.resize((width, height), Image.ANTIALIAS)
-					"""
-					
-					# WTF: fonts are too complicated in PIL
-					# use PIL to draw text on image
-					"""
-					draw = ImageDraw.Draw(image)
-					print('a')
-					font = ImageFont.load_default()
-					#font = ImageFont.load("arial.pil")
-					#font = ImageFont.truetype("Roboto-Regular.ttf", 50)
-					print('b')
-					textLine1 = "Frame Number: {currentFrame}/{numFrames}".format(currentFrame=self.vs.currentFrame, numFrames=self.vs.streamParams['numFrames'])
-					draw.text((0, 0), textLine1, font=font)
-					"""
-					
-					image = ImageTk.PhotoImage(image)
+			self.videoPanel.configure(image=image)
+			self.videoPanel.image = image
 
-					# if the panel is not None, we need to initialize it
-					self.videoPanel.configure(image=image)
-					self.videoPanel.image = image
-					
-					"""
-					if self.videoPanel_isinit:
-						self.videoPanel.configure(image=image)
-						self.videoPanel.image = image
-						
-						#self.videoPanel = tkinter.Label(image=image)
-						#self.videoPanel.image = image
-						#self.videoPanel.pack(side="bottom", padx=10, pady=10)
-					# otherwise, simply update the panel
-					else:
-						self.videoPanel.image = image
-						self.videoPanel_isinit = True
-					"""
-						
-			print('VideoApp.videoLoop() exited while')
-			 
-		except (RuntimeError) as e:
-			print("my exception in VideoApp.videoLoop()")
-			raise
- 		
+			#
+			# update feedback labels
+			self.currentFrameLabel.configure(text='Frame:' + str(self.vs.currentFrame))
+			self.currentFrameIntervalLabel.configure(text='Interval (ms):' + str(self.myFrameInterval))
+			self.currentSecondsLabel.configure(text='Sec:' + str(self.vs.seconds))
+
+		# leave this here -- CRITICAL
+		self.videoLoopID = self.videoPanel.after(self.myFrameInterval, self.videoLoop)
+		
+	def setFramesPerSecond(self, frameInterval):
+		self.videoPanel.after_cancel(self.videoLoopID)
+		self.myFrameInterval = frameInterval
+		print('setFramesPerSecond() self.myFrameInterval:', self.myFrameInterval)
+		self.videoLoop()
+		
 	def onClose(self):
 		# set the stop event, cleanup the camera, and allow the rest of
 		# the quit process to continue

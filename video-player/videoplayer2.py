@@ -16,7 +16,7 @@ fvs.start()
 pba = VideoApp(fvs)
 
 # this still blocks, any updates to tk slider blocks video thread?
-pba.root.after(500, pba.myUpdate)
+pba.root.after(10, pba.myUpdate)
 
 pba.root.mainloop()
 
