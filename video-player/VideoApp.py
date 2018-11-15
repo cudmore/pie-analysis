@@ -414,8 +414,8 @@ class VideoApp:
 						# color order is (blue, green, red)
 						# using cv2 to draw on image, limited by fonts BUT way nore simple than loading a font in PIL
 						fontScale = 1.2
-						#cv2.putText(self.frame, "Queue Size: {}".format(self.vs.Q.qsize()),
-						#	(10, 30), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 0, 255), 2)	
+						cv2.putText(self.frame, "Queue Size: {}".format(self.vs.Q.qsize()),
+							(10, 30), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 0, 255), 2)	
 						cv2.putText(self.frame, "Frame Number: {currentFrame}/{numFrames}".format(currentFrame=self.vs.currentFrame, numFrames=self.vs.streamParams['numFrames']),
 							(10, 50), cv2.FONT_HERSHEY_PLAIN, fontScale, (0, 255, 0), 2)	
 						cv2.putText(self.frame, "ms: {ms}".format(ms=self.vs.milliseconds),
