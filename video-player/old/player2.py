@@ -1,149 +1,83 @@
-import os
-import numpy as np
-import cv2
+"""
+This plays perfectly well, no delays
+
+see:
+   https://solarianprogrammer.com/2018/04/21/python-opencv-show-video-tkinter-window/
+"""
 
 import tkinter
+import cv2
+import PIL.Image, PIL.ImageTk
+import time
 
-print('cv2.__version__ is', cv2.__version__)
+class App:
+	def __init__(self, window, window_title, video_source=0):
+		self.window = window
+		self.window.title(window_title)
+		self.video_source = video_source
 
+		# open video source (by default this will try to open the computer webcam)
+		self.vid = MyVideoCapture(self.video_source)
+
+		# Create a canvas that can fit the above video source size
+		self.canvas = tkinter.Canvas(window, width = self.vid.width, height = self.vid.height)
+		self.canvas.pack()
+
+		# Button that lets the user take a snapshot
+		self.btn_snapshot=tkinter.Button(window, text="Snapshot", width=50, command=self.snapshot)
+		self.btn_snapshot.pack(anchor=tkinter.CENTER, expand=True)
+
+		# After it is called once, the update method will be automatically called every delay milliseconds
+		self.delay = 5 #15
+		self.update()
+
+		self.window.mainloop()
+
+	def snapshot(self):
+		# Get a frame from the video source
+		ret, frame = self.vid.get_frame()
+
+		if ret:
+			cv2.imwrite("frame-" + time.strftime("%d-%m-%Y-%H-%M-%S") + ".jpg", cv2.cvtColor(frame, cv2.COLOR_RGB2BGR))
+
+	def update(self):
+		# Get a frame from the video source
+		ret, frame = self.vid.get_frame()
+
+		if ret:
+			self.photo = PIL.ImageTk.PhotoImage(image = PIL.Image.fromarray(frame))
+			self.canvas.create_image(0, 0, image = self.photo, anchor = tkinter.NW)
+
+		self.window.after(self.delay, self.update)
+
+
+class MyVideoCapture:
+	def __init__(self, video_source=0):
+		# Open the video source
+		self.vid = cv2.VideoCapture(video_source)
+		if not self.vid.isOpened():
+			raise ValueError("Unable to open video source", video_source)
+
+		# Get video source width and height
+		self.width = self.vid.get(cv2.CAP_PROP_FRAME_WIDTH)
+		self.height = self.vid.get(cv2.CAP_PROP_FRAME_HEIGHT)
+
+	def get_frame(self):
+		if self.vid.isOpened():
+			ret, frame = self.vid.read()
+			if ret:
+				# Return a boolean success flag and the current frame converted to BGR
+				return (ret, cv2.cvtColor(frame, cv2.COLOR_BGR2RGB))
+			else:
+				return (ret, None)
+		else:
+			return (ret, None)
+
+	# Release the video source when the object is destroyed
+	def __del__(self):
+		if self.vid.isOpened():
+			self.vid.release()
+
+# Create a window and pass it to the Application object
 videoPath = '/Users/cudmore/Dropbox/PiE/homecage-movie.mp4'
-
-notesPath = '/Users/cudmore/Dropbox/PiE/homecage-movie.txt'
-
-cv2.namedWindow('videowindow')
-
-cap = cv2.VideoCapture(videoPath)
-
-width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
-height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
-fps = cap.get(cv2.CAP_PROP_FPS)
-nFrames = cap.get(cv2.CAP_PROP_FRAME_COUNT)
-nFrames = int(nFrames)
-
-print('width:', width, 'height:', height, 'fps:', fps, 'nFrame:', nFrames)
-
-# frame slider
-def nothing(x):
-	pass
-
-global currentFrame
-currentFrame = 0
-global frame
-frame = None
-global currentBrightness
-currentBrightness = 0
-global milliseconds
-milliseconds = None
-
-def adjustBrightness():
-	# adjust contrast
-	global currentBrightness
-	if currentBrightness > 0:
-		global frame
-		hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-		print('adjustBrightness hsv.shape:', hsv.shape)
-		hsv[:,:,2] += currentBrightness
-		frame = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
-	
-# work fine
-#def onMouse(event, x, y, flags, userdata):
-#	print('onMouse()', event, x, y, flags, userdata)
-
-def onTrackbar(frameNumber):
-	cap.set(cv2.CAP_PROP_POS_FRAMES, frameNumber)
-	global frame
-	ret, frame = cap.read()
-	global milliseconds
-	milliseconds = round(cap.get(cv2.CAP_PROP_POS_MSEC),2)
-	adjustBrightness()
-	#cv2.imshow('videowindow',frame)
-	global currentFrame
-	currentFrame = frameNumber
-	#print('onTrackbar()', frameNumber, milliseconds)
-	
-cv2.createTrackbar('Frames','videowindow', 0, int(nFrames)-1, onTrackbar)
-cv2.setTrackbarPos('Frames','videowindow',0)
-
-def onBrightness(brightness):
-	global currentBrightness
-	currentBrightness = brightness
-	adjustBrightness()
-	
-cv2.createTrackbar('Brightness','videowindow', 0, 255, onBrightness)
-cv2.setTrackbarPos('Brightness','videowindow',0)
-
-#cv2.setMouseCallback( "videowindow", onMouse, 0 );
-
-play = False
-step = 30
-
-# read the first frame
-ret, frame = cap.read()
-adjustBrightness()
-milliseconds = round(cap.get(cv2.CAP_PROP_POS_MSEC),2)
-
-annotationKeys = ['0', '1', '2', '3', '4', '5']
-
-while(cap.isOpened()):
-
-	#gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-
-	cv2.imshow('videowindow',frame)
-
-	cv2.setTrackbarPos('Frames','videowindow',currentFrame)
-
-	key = cv2.waitKey(1) & 0xff
-	
-	if key == ord('q'):
-		break
-	if key == ord('p') or key == ord(' '):
-		play = not play
-		print('play' if play else 'pause')
-	if key == 2: # left arrow
-		currentFrame -= step
-		if currentFrame<0:
-			currentFrame = 0
-		#print('left currentFrame:', currentFrame)
-		onTrackbar(currentFrame)
-	if key == 3: # right arrow
-		currentFrame += step
-		if currentFrame>nFrames-1:
-			currentFrame = nFrames-2
-		#print('right currentFrame:', currentFrame)
-		onTrackbar(currentFrame)
-	#
-	# annotations
-	if chr(key) in annotationKeys:
-		print('adding annotation', chr(key), 'at milliseconds:', milliseconds)
-		#print('behavior 1 at frame', currentFrame, 'milliseconds', milliseconds)
-		headerLine = 'file,frame,milliseconds,event' + '\n'
-		# make file
-		if not os.path.exists(notesPath):
-			with open(notesPath,'a') as notesFile:
-				notesFile.write(headerLine)
-		# append
-		noteLine = videoPath + ',' + str(currentFrame) + "," + str(milliseconds) + ',' + chr(key) + '\n'
-		with open(notesPath,'a') as notesFile:
-			notesFile.write(noteLine)
-		"""
-		print('file:', notesPath)
-		print('   ', headerLine)
-		print('   ',noteLine)
-		"""
-		
-	#print(key)
-	
-	#if cv2.waitKey(2) & 0xFF == ord('q'): # milliseconds
-	#	break
-
-	if play:
-		currentFrame += 1
-		if currentFrame>nFrames-1:
-			currentFrame = nFrames-2
-		#cap.set(cv2.CAP_PROP_POS_FRAMES, currentFrame)
-		ret, frame = cap.read()
-		#adjustBrightness()
-		milliseconds = round(cap.get(cv2.CAP_PROP_POS_MSEC),2)
-		
-cap.release()
-cv2.destroyAllWindows()
+App(tkinter.Tk(), "Tkinter and OpenCV", videoPath)

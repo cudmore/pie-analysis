@@ -6,8 +6,10 @@ Manager a list of events. Each list is associated with one video file.
 Each event denotes a position in the video file.
 """
 
-import os
+import os, time
 import numpy as np
+
+gEventColumns = ('index', 'path', 'cseconds', 'type', 'frame', 'note')
 
 class bEventList:
 	def __init__(self,videoFilePath):
@@ -29,22 +31,26 @@ class bEventList:
 		
 		self.load()
 		
+	def getColumns(self):
+		return gEventColumns
+	
 	def load(self):
 		"""Load list of events from text file"""
 		if os.path.isfile(self.textFilePath):
 			print('bEventList.load():', self.textFilePath)
-			
-			#data=np.loadtxt(textFilePath, skiprows=1, delimiter=',')
-
 			with open(self.textFilePath, 'r') as file:
 				# header
-				headerStr = file.readline()
+				commentLine = file.readline().strip()
 				# columns
-				colStr = file.readline()
+				headerLine = file.readline().strip()
 				# body
-				for line in file:
-					path, type, frameNumber, ms, note = line.split(',')
-					event = bEvent(path, type, frameNumber,ms, note=note)
+				for eventLine in file:
+					eventLine = eventLine.strip()
+					if eventLine == '\n':
+						pass
+					print('   eventLine:', eventLine)
+					event = bEvent()
+					event.fromFile(headerLine, eventLine)
 					self.eventList.append(event)
 		
 	def save(self):
@@ -55,30 +61,38 @@ class bEventList:
 			# header
 			file.write('#' + eol)
 			# column headers
-			colStr = 'video_path,type,framenumber,ms,note'
-			file.write(colStr + eol)
+			for col in gEventColumns:
+				file.write(col + ',')
+			file.write(eol)
 			# one line per event
 			for event in self.eventList:
 				eventStr = event.asString()
+				print('   eventStr:', eventStr)
 				file.write(eventStr + eol)
 		
+	def asString(self):
+		for event in self.eventList:
+			print(event.asString)
+	
 	def getEvent(self, idx):
 		return self.eventList[idx]
 		
-	def AppendEvent(self, type, frame, ms, autoSave=False):
+	def appendEvent(self, type, frame, autoSave=False):
 		"""
 		type: in (1,2,3,4,5)
 		frame: frame number into video
-		ms: millisconds (ms) into video (REDUNDANT)
 		"""
-		event = bEvent(self.videoFilePath, type, frame, ms)
+		idx = len(self.eventList)
+		event = bEvent(idx, self.videoFilePath, type, frame)
 		self.eventList.append(event)
 		
 		if autoSave:
 			self.save()
-			
+		
+		return event
+
 class bEvent:
-	def __init__(self, path, type, frameNumber, ms, note=''):
+	def __init__(self, index='', path='', type='', frame=''):
 		"""
 		path: (str) path to video file
 		type: (int)
@@ -86,24 +100,53 @@ class bEvent:
 		ms: (int)
 		note: (str)
 		"""
-		self.path = path
-		self.type = type
-		self.frameNumber = frameNumber
-		self.ms = ms
-		self.note = ''
-		# videoFilePath
-		# ms into video (from frameNumber)
-		# cSeconds : creation
-		# mSeconds : modification
-		# note: str
+		self.eventColumns = gEventColumns
+		self.dict = {}
+		for column in self.eventColumns:
+			self.dict[column] = ''
+		self.dict['index'] = index
+		self.dict['path'] = path
+		self.dict['cseconds'] = time.time()
+		self.dict['type'] = type
+		self.dict['frame'] = frame
+
+	def fromFile(self, headerLine, eventLine):
+		"""
+		Initialize a bEvent from one line in a text file
+		"""
+		colValues = eventLine.split(',')
+		idx = 0
+		for column in headerLine.split(','):
+			self.dict[column] = colValues[idx]
+			idx += 1
+			
+	def get(self, column):
+		return self.dict[column]
 	
 	def setNote(self, note):
-		self.note = note
+		self.dict['note'] = note
 		
 	def asString(self):
-		theRet = self.path + ',' + \
-			str(self.type) + ',' + \
-			str(self.frameNumber) + ',' + \
-			str(self.ms) + ',' + \
-			self.note
+		theRet = ''
+		for i, (k,v) in enumerate(self.dict.items()):
+			theRet += str(v) + ','
 		return theRet
+
+	def asTuple(self):
+		str = self.asString()
+		strList = []
+		for s in str.split(','):
+			strList.append(s)
+		retTuple = tuple(strList)
+		return retTuple
+		
+if __name__ == '__main__':
+	videoPath = '/Users/cudmore/Dropbox/PiE/homecage-movie.mp4'
+	eventList = bEventList(videoPath)
+	eventList.appendEvent(type=1, frame=1)
+	eventList.appendEvent(type=2, frame=10)
+	eventList.appendEvent(type=3, frame=100)
+	eventList.asString()
+	eventList.save()
+	
+	
