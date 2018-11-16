@@ -61,9 +61,9 @@ class VideoApp:
 		# parameters from FileVideoStream
 		path = vs.streamParams['path']
 		fileName = vs.streamParams['fileName']
-		width = vs.streamParams['width']
-		height = vs.streamParams['height']
-		fps = vs.streamParams['fps']
+		width = int(vs.streamParams['width'])
+		height = int(vs.streamParams['height'])
+		fps = int(vs.streamParams['fps'])
 		numFrames = vs.streamParams['numFrames']
 
 		self.eventList = bEventList.bEventList(path)
@@ -112,10 +112,18 @@ class VideoApp:
 		
 		#
 		# video file tree
-		left_tree = ttk.Treeview(upper_frame)
+		videoColumns = ("File", "Width", "Height", "FPS", "NumFrames")
+		left_tree = ttk.Treeview(upper_frame, columns=videoColumns, show='headings')
 		left_tree.grid(row=0,column=1, sticky="nsew", padx=myPadding, pady=myPadding)
 
-		left_tree.insert("" , "end", text=fileName, values=(width,height,fps,numFrames))
+		for column in videoColumns:
+			left_tree.heading(column, text=column)
+			left_tree.column(column, width=50)
+
+		#left_tree.heading("File", text="File")
+		#left_tree.column("File", width=25)
+		
+		left_tree.insert("" , "end", text=fileName, values=(fileName, width,height,fps,numFrames))
 
 		# video file tree scroll bar
 		videoFileTree_scrollBar = ttk.Scrollbar(upper_frame, orient="vertical", command = left_tree.yview)

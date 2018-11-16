@@ -4,7 +4,43 @@ This is a Python based video player that allows frames to be annotated.
 
 ## Screenshot
 
-<IMG SRC="img/player-screenshot.png" width=500>
+Video files are listed in upper left. Annotations of current video are in upper right. Selecting an annotation from the list will snap the video to the frame of the annotation.
+
+<IMG SRC="img/player-screenshot.png" width=550>
+
+## Keyboard commands
+
+Controlling video
+
+```
+space: play/pause
+left/right arrows: Backward/forward in video
+shift + left/right arrows: Larger backward/forward in video
+f: Play video faster, sets interval (ms)
+s: Play video slower, sets interval (ms)
+```
+
+Editing annotations
+
+```
+1/2/3/4/5: Create new annotation at current frame
+n: Set note of current selected annotation
+```
+
+## Saving annotations
+
+All annotations are saved in a text file (.txt) with the same base name as the video file. For example
+
+```
+#
+index,path,cseconds,type,frame,note,
+0,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542328413.412974,1,367,,,
+1,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542328419.127083,1,538,,,
+2,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542328420.329067,2,574,,,
+3,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542328422.295312,3,633,,,
+4,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542330941.973472,2,788,,,
+5,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542330942.505339,3,804,,,
+```
 
 ## Install on macOS
 
