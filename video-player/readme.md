@@ -2,6 +2,8 @@
 
 This is a Python based video player that allows frames to be annotated.
 
+**Disclaimer**. As of November 2018, this is a work in progress and is updated daily.
+
 ## Screenshot
 
 Video files are listed in upper left. Annotations of current video are in upper right. Selecting an annotation from the list will snap the video to the frame of the annotation.
@@ -26,6 +28,8 @@ Editing annotations
 1/2/3/4/5: Create new annotation at current frame
 n: Set note of current selected annotation
 ```
+
+There are currently 5 different annotation types corresponding to keyboard 1/2/3/4/5.
 
 ## Saving annotations
 
@@ -56,22 +60,29 @@ index,path,cseconds,type,frame,note,
 
 4) Make sure you have required Python libraries
 
- - Numpy
- - TKInter
+ - [numpy](http://www.numpy.org/)
+ - [tkinter](https://docs.python.org/3/library/tkinter.html)
 	
-If having trouble, see this tutorial
-
-	https://www.pyimagesearch.com/2016/12/19/install-opencv-3-on-macos-with-homebrew-the-easy-way/
+If having trouble with Homebrew and OpenCV, see [this tutorial](https://www.pyimagesearch.com/2016/12/19/install-opencv-3-on-macos-with-homebrew-the-easy-way/).
 
 ## Run
 
 	python3 player.py
 	
-## Learning TKInter
+## To Do
+
+ - Highlight most recent annotation in list as video is played.
+ - Expand code to open a folder of video files. Right now it is one hard-coded video file.
+ - Finish setting annotation notes with keyboard 'n'.
+ - Finish sorting annotation columns when clicked.
+ - Add standard video control buttons like play/pause/forward/backward/large-forward/large-backward.
+ - Implement saving/loading options via JSON file. Include window geometry and mapping of annotation event numbers to names.
+ - Write recipe for installation into Python virtual environment.
+ - Design system where annotations can have start/stop frames or start frame and number of frames (duration). Right now annotations only have single (start) frame.
+
+## Learning Tkinter
 
 https://www.inoreader.com/article/3a9c6e79a229d841-stack-abuse-gui-development-with-python-tkinter-an-introduction
-
-this tutorial seems to use both cv2 and tkinter?
 
 https://www.pyimagesearch.com/2016/05/23/opencv-with-tkinter/
 
