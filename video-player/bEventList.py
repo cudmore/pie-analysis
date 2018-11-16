@@ -9,7 +9,7 @@ Each event denotes a position in the video file.
 import os, time
 import numpy as np
 
-gEventColumns = ('index', 'path', 'cseconds', 'type', 'frame', 'note')
+gEventColumns = ('index', 'path', 'cseconds', 'type', 'frameStart', 'frameStop', 'note')
 
 class bEventList:
 	def __init__(self,videoFilePath):

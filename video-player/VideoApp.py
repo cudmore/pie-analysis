@@ -20,7 +20,9 @@ import cv2
 import tkinter
 from tkinter import ttk
 
+from FileVideoStream import FileVideoStream
 import bEventList
+import bVideoList
 
 ##################################################################################
 class myNoteDialog:
@@ -49,24 +51,30 @@ class myNoteDialog:
 
 ##################################################################################
 class VideoApp:
-	def __init__(self, vs):
+	def __init__(self, path, vs):
 		"""
 		TKInter application to create interface for loading, viewing, and annotating video
 		
+		path: pth to folder with video files
 		vs: FileVideoStream
 		"""
-
-		myBakgroundColor = '#666666'
+		
+		"""
+		# on selection need to make one of these, make sure it is destroyed correctly
+		fvs = FileVideoStream(videoPath) #.start()
+		fvs.start()
+		"""
 		
 		# parameters from FileVideoStream
-		path = vs.streamParams['path']
+		tmpVideoFilePath = vs.streamParams['path']
 		fileName = vs.streamParams['fileName']
 		width = int(vs.streamParams['width'])
 		height = int(vs.streamParams['height'])
 		fps = int(vs.streamParams['fps'])
 		numFrames = vs.streamParams['numFrames']
 
-		self.eventList = bEventList.bEventList(path)
+		self.videoList = bVideoList.bVideoList(path)
+		self.eventList = bEventList.bEventList(tmpVideoFilePath)
 		
 		self.vs = vs
 		self.frame = None
@@ -112,26 +120,31 @@ class VideoApp:
 		
 		#
 		# video file tree
-		videoColumns = ("File", "Width", "Height", "FPS", "NumFrames")
-		left_tree = ttk.Treeview(upper_frame, columns=videoColumns, show='headings')
-		left_tree.grid(row=0,column=1, sticky="nsew", padx=myPadding, pady=myPadding)
+		videoFileColumns = self.videoList.getColumns()
+		self.left_tree = ttk.Treeview(upper_frame, columns=videoFileColumns, show='headings')
+		self.left_tree.grid(row=0,column=1, sticky="nsew", padx=myPadding, pady=myPadding)
 
-		for column in videoColumns:
-			left_tree.heading(column, text=column)
-			left_tree.column(column, width=50)
+		hideColumns = ['path'] # hide some columns
+		displaycolumns = [] # build a list of columns not in hideColumns
+		for column in videoFileColumns:
+			self.left_tree.heading(column, text=column)
+			self.left_tree.column(column, width=50)
+			if column not in hideColumns:
+				displaycolumns.append(column)
 
-		#left_tree.heading("File", text="File")
-		#left_tree.column("File", width=25)
+		# hide some columns
+		self.left_tree["displaycolumns"] = displaycolumns
 		
-		left_tree.insert("" , "end", text=fileName, values=(fileName, width,height,fps,numFrames))
+		#self.left_tree.insert("" , "end", text=fileName, values=(fileName, width,height,fps,numFrames))
+		self.populateVideoFiles()
 
 		# video file tree scroll bar
-		videoFileTree_scrollBar = ttk.Scrollbar(upper_frame, orient="vertical", command = left_tree.yview)
+		videoFileTree_scrollBar = ttk.Scrollbar(upper_frame, orient="vertical", command = self.left_tree.yview)
 		videoFileTree_scrollBar.grid(row=0, column=1, sticky='nse', padx=myPadding, pady=myPadding)
-		left_tree.configure(yscrollcommand=videoFileTree_scrollBar.set)
+		self.left_tree.configure(yscrollcommand=videoFileTree_scrollBar.set)
 		
-		left_tree.bind("<Double-1>", self.tree_double_click)
-		left_tree.bind("<ButtonRelease-1>", self.video_tree_single_click)
+		#self.left_tree.bind("<Double-1>", self.tree_double_click)
+		self.left_tree.bind("<ButtonRelease-1>", self.video_tree_single_click)
 
 
 		#
@@ -141,11 +154,11 @@ class VideoApp:
 		self.right_tree = ttk.Treeview(upper_frame, columns=eventColumns, show='headings')
 		self.right_tree.grid(row=0,column=2, sticky="nsew", padx=myPadding, pady=myPadding)
 
-		# gEventColumns = ('index', 'path', 'cseconds', 'type', 'frame', 'note')
+		# gEventColumns = ('index', 'path', 'cseconds', 'type', 'frameStart', 'frameStop', 'note')
 		hideColumns = ['path', 'cseconds'] # hide some columns
 		displaycolumns = [] # build a list of columns not in hideColumns
 		for column in eventColumns:
-			self.right_tree.heading(column, text=column, command=lambda:self.treeview_sort_column(self.right_tree, 'Frame', False))
+			self.right_tree.heading(column, text=column, command=lambda:self.treeview_sort_column(self.right_tree, 'frameStart', False))
 			self.right_tree.column(column, width=12)
 			if column not in hideColumns:
 				displaycolumns.append(column)
@@ -174,26 +187,26 @@ class VideoApp:
 		feedback_frame.grid(row=1, column=0, columnspan=3, sticky="w", padx=myPadding, pady=myPadding)
 
 		# Label also has 'justify' but is used when more than one line of text
-		self.currentFrameLabel = ttk.Label(feedback_frame, width=11, anchor="w", text="Frame:")
+		self.currentFrameLabel = ttk.Label(feedback_frame, width=11, anchor="w", text='Frame:')
 		self.currentFrameLabel.grid(row=0, column=0)
 		
-		self.numFrameLabel = ttk.Label(feedback_frame, width=8, anchor="w", text="of " + str(self.vs.streamParams['numFrames']))
+		self.numFrameLabel = ttk.Label(feedback_frame, width=8, anchor="w", text='of ' + str(self.vs.streamParams['numFrames']))
 		self.numFrameLabel.grid(row=0, column=1)
 
-		self.currentSecondsLabel = ttk.Label(feedback_frame, width=8, anchor="w", text="Sec:")
+		self.currentSecondsLabel = ttk.Label(feedback_frame, width=8, anchor="w", text='Sec:')
 		self.currentSecondsLabel.grid(row=0, column=2, sticky="w")
 		
-		self.numSecondsLabel = ttk.Label(feedback_frame, width=8, anchor="w", text="of " + str(self.vs.streamParams['numSeconds']))
+		self.numSecondsLabel = ttk.Label(feedback_frame, width=8, anchor="w", text='of ' + str(self.vs.streamParams['numSeconds']))
 		self.numSecondsLabel.grid(row=0, column=3, sticky="w")
 		
-		self.currentFrameIntervalLabel = ttk.Label(feedback_frame, width=20, anchor="w", text="Interval (ms):")
+		self.currentFrameIntervalLabel = ttk.Label(feedback_frame, width=20, anchor="w", text='Interval (ms):')
 		self.currentFrameIntervalLabel.grid(row=0, column=4, sticky="w")
 		
 		# configure sizing of upper_frame
 		upper_frame.grid_rowconfigure(0,weight=1) # 
 		#upper_frame.grid_rowconfigure(1,weight=0) # row 1 is feedback_frame
 		upper_frame.grid_columnconfigure(0,weight=0) #  column 0 is left_buttons_frame
-		upper_frame.grid_columnconfigure(1,weight=0) #  column 1 is left_tree
+		upper_frame.grid_columnconfigure(1,weight=0) #  column 1 is self.left_tree
 		upper_frame.grid_columnconfigure(2,weight=1) # column 2 is self.right_tree
 
 		# video
@@ -317,6 +330,7 @@ class VideoApp:
 	"""
 	
 	# video file tree
+	'''
 	def tree_double_click(self, event):
 		"""
 		event seems to be a ButtonPress
@@ -326,11 +340,15 @@ class VideoApp:
 		print("   tree_double_click()", self.videoFileTree.item(item,"text"))
 		print("   tree_double_click()", self.videoFileTree.item(item,"values"))
 		print('   item:', item)
-		
+	'''
+	
 	def video_tree_single_click(self, event):
 		print('=== video_tree_single_click()')
 		print('   event:', event)
 		# use coordinates of event to get item
+		
+		# todo: fixt this
+		print('todo: fix video_tree_single_click()')
 		item = self.videoFileTree.identify('item',event.x,event.y)
 		print('   item:', item)
 		print("   item text:", self.videoFileTree.item(item,"text"))
@@ -365,7 +383,7 @@ class VideoApp:
 
 		columns = self.right_tree['columns']				
 		# assuming 'frame' exists
-		frameColIdx = columns.index('frame')
+		frameColIdx = columns.index('frameStart')
 
 		# get a tuple (list) of item names
 		#children = self.right_tree.get_children()
@@ -510,6 +528,11 @@ class VideoApp:
 			position = "end"
 			self.right_tree.insert("" , position, text=str(idx+1), values=event.asTuple())
 			
+	def populateVideoFiles(self):
+		for idx, videoFile in enumerate(self.videoList.getList()):
+			position = "end"
+			self.left_tree.insert("" , position, text=str(idx+1), values=videoFile.asTuple())
+	
 	def videoLoop(self):
 	
 		# it is important to not vs.read() when paused
