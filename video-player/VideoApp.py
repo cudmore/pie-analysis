@@ -90,7 +90,8 @@ class VideoApp:
 		###
 		self.root = tkinter.Tk()
 
-		self.root.geometry("500x650")
+		self.root.geometry("690x827")
+
 
 		pane = ttk.PanedWindow(self.root, orient="vertical")
 		pane.grid(row=0, column=0, sticky="nsew")
@@ -137,6 +138,7 @@ class VideoApp:
 		displaycolumns = [] # build a list of columns not in hideColumns
 		for column in eventColumns:
 			self.right_tree.heading(column, text=column, command=lambda:self.treeview_sort_column(self.right_tree, 'Frame', False))
+			self.right_tree.column(column, width=12)
 			if column not in hideColumns:
 				displaycolumns.append(column)
 				
@@ -242,11 +244,6 @@ class VideoApp:
 		self.root.wm_title("PiE Video Analysis")
 		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
 
-
-		children = self.root.winfo_children()
-		for child in children:
-			print(child)
-			
 	def treeview_sort_column(self, tv, col, reverse):
 		print('treeview_sort_column()', 'tv:', tv, 'col:', col, 'reverse:', reverse)
 		l = [(tv.set(k, col), k) for k in tv.get_children('')]
@@ -282,6 +279,10 @@ class VideoApp:
 			# place the window, giving it an explicit size
 			content_frame.place(in_=pad_frame, x=0, y=0, 
 				width=desired_width, height=desired_height)
+
+			#print('h:', self.root.winfo_height())
+			#print('w:', self.root.winfo_width())
+			#print('winfo_geometry:', self.root.winfo_geometry())
 
 		pad_frame.bind("<Configure>", enforce_aspect_ratio)
 
@@ -553,6 +554,7 @@ class VideoApp:
 		self.videoLoop()
 		
 	def onClose(self):
+
 		# set the stop event, cleanup the camera, and allow the rest of
 		# the quit process to continue
 		print("onClose()")

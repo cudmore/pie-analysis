@@ -1,37 +1,37 @@
 ## Video player
 
-This needs a desktop environment which most of my Raspberry Pi's do not have. Use OSX instead.
+This is a Python based video player that allows frames to be annotated.
 
-## Install opencv
+## Screenshot
 
-Debian
+<IMG SRC="img/player-screenshot.png" width=500>
 
-	sudo apt-get install python-opencv
+## Install on macOS
 
-OSX
+1)  [Brew](https://brew.sh/)
 
-	# takes a very long time to build
+2) OpenCV (takes a long time to build)
+	
 	brew install opencv3 --with-python3
 
-	# install pillow
+3) Pillow
+
 	pip3 install pillow
+
+4) Make sure you have required Python libraries
+
+ - Numpy
+ - TKInter
 	
 If having trouble, see this tutorial
 
 	https://www.pyimagesearch.com/2016/12/19/install-opencv-3-on-macos-with-homebrew-the-easy-way/
 
-## opencv is slow!!!
+## Run
 
-see this on threading the reading of video frames
-
-https://www.pyimagesearch.com/2017/02/06/faster-video-file-fps-with-cv2-videocapture-and-opencv/
-
-
-## trying out tkinter
-
-not sure how to install but is installed on work macOS python3 ?
-
-following tutorial at
+	python3 player.py
+	
+## Learning TKInter
 
 https://www.inoreader.com/article/3a9c6e79a229d841-stack-abuse-gui-development-with-python-tkinter-an-introduction
 

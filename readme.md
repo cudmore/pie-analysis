@@ -6,12 +6,12 @@ Python scripts to read temperature from PiE server and plot with Plotly.
 
 The following install commands work on macOS with [Anaconda](https://www.anaconda.com/download/#macos) installed.
 
-'''
+```
 pip install pandas --upgrade
 pip install ipython --upgrade
 pip install ipywidgets --upgrade
 pip install plotly --upgrade
-'''
+```
 
 Sometimes need this?
 
