@@ -18,7 +18,7 @@ videoPath = '/Users/cudmore/Dropbox/PiE/video/homecage-movie.mp4'
 pba = VideoApp(path)
 
 # this still blocks, any updates to tk slider blocks video thread?
-pba.root.after(10, pba.myUpdate)
+#pba.root.after(10, pba.myUpdate)
 
 pba.root.mainloop()
 

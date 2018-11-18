@@ -69,6 +69,7 @@ class FileVideoStream:
 				self.stream.set(cv2.CAP_PROP_POS_FRAMES, self.gotoFrame)
 				if self.paused:
 					try:
+						print('FileVideoStream.update() gotoFrame is clearing queue when paused')
 						with self.Q.mutex:
 							self.Q.queue.clear()
 						(grabbed, frame) = self.stream.read()
@@ -77,9 +78,10 @@ class FileVideoStream:
 					self.currentFrame = int(self.stream.get(cv2.CAP_PROP_POS_FRAMES))
 					self.milliseconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC),2)
 					self.seconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC)/1000,2)
-					self.Q.put(frame)
+					self.Q.put([frame, self.currentFrame])
 					#print('FileVideoStream.update() self.Q.put(frame) done')
 				else:
+					print('FileVideoStream.update() gotoFrame is clearing queue when playing')
 					with self.Q.mutex:
 						self.Q.queue.clear()
 				self.gotoFrame = None
@@ -103,7 +105,7 @@ class FileVideoStream:
 					# reached the end of the video file
 					if grabbed:
 						# add the frame to the queue
-						self.Q.put(frame)
+						self.Q.put([frame, self.currentFrame])
 					else:
 						#self.stop()
 						#return
@@ -123,7 +125,7 @@ class FileVideoStream:
 			#ret = self.Q.get()
 		except:
 			print('my exception in FileVideoStream.read()')
-			ret = None
+			ret = [None, None]
 		#print('FileVideoStream.read() done')
 		return ret #self.Q.get(block=True, timeout=2.0)
 		
@@ -152,9 +154,11 @@ class FileVideoStream:
 		print('FileVideoStream.playPause()', 'pause' if self.paused else 'play')
 		
 	def setFrame(self, newFrame):
+		print('FileVideoStream.setFrame()', newFrame)
+		newFrame = int(float(newFrame))
 		if newFrame<0 or newFrame>self.streamParams['numFrames']-1:
 			# error
-			print('setFrame() error:', newFrame)
+			print('FileVideoStream.setFrame() error:', newFrame)
 		else:
 			#print('FileVideoStream.setFrame() newFrame:', newFrame)
 			self.gotoFrame = newFrame

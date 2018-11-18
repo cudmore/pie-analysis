@@ -116,6 +116,7 @@ class VideoApp:
 		self.vs = None
 		self.frame = None
  
+		self.myCurrentFrame = None
 		self.pausedAtFrame = None
 
 		self.videoList = bVideoList.bVideoList(path)
@@ -431,32 +432,10 @@ class VideoApp:
 
 			#print('h:', self.root.winfo_height())
 			#print('w:', self.root.winfo_width())
-			print('winfo_geometry:', self.root.winfo_geometry())
+			#print('winfo_geometry:', self.root.winfo_geometry())
 
 		pad_frame.bind("<Configure>", enforce_aspect_ratio)
 
-	"""
-	def noteEntry_callback(self, event):
-		print('noteEntry_callback():', self.noteEntry.get())
-		d = myNoteDialog(self.root)
-	"""
-		
-	"""
-	def _resize_image(self, event):
-		new_width = event.width
-		new_height = event.height
-
-		#print('self.frame:', self.frame)
-		
-		#image = Image.fromarray(self.frame)
-		self.frame = self.frame.resize((new_width, new_height))
-		image = ImageTk.PhotoImage(self.frame)
-		self.videoPanel.image = image
-
-		#self.background_image = ImageTk.PhotoImage(self.image)
-		#self.background.configure(image =  self.background_image)
-	"""
-	
 	# treeview util
 	def _getTreeVidewSelection(self, tv, col):
 		"""
@@ -519,6 +498,7 @@ class VideoApp:
 		self.vs.setFrame(frameStart) # set the video frame
 		
 	# slider
+	"""
 	def myUpdate(self):
 		self.frameSlider_update = False
 		# set() triggers frameSlider_callback() in background! frameSlider_callback() needs to set self.frameSlider_update = True
@@ -530,10 +510,16 @@ class VideoApp:
 		#self.frameSlider_update = True
 		
 		self.root.after(20, self.myUpdate)
+	"""
 		
 	def frameSlider_callback(self, frameNumber):
 		"""
 		frameNumber : str
+		"""
+		
+		print('VideoApp.frameSlider_callback()', frameNumber)
+		self.vs.setFrame(frameNumber)
+		
 		"""
 		#print('gotoFrame()', frameNumber)
 		frameNumber = int(float(frameNumber))
@@ -541,15 +527,15 @@ class VideoApp:
 			self.vs.setFrame(frameNumber)
 		else:
 			self.frameSlider_update = True
-		
-	# button
-		
+		"""
 	# key
 	def keyPress(self, event):
+		"""
 		frame = self.vs.stream.get(cv2.CAP_PROP_POS_FRAMES)
 		frame = int(float(frame))
+		"""
 		
-		print('=== VideoApp.keyPress() pressed:', repr(event.char), 'frame:', frame)
+		print('=== VideoApp.keyPress() pressed:', repr(event.char), 'self.myCurrentFrame:', self.myCurrentFrame)
 		"""
 		print('event.keysym:', event.keysym)
 		print('event.keysym_num:', event.keysym_num)
@@ -566,7 +552,7 @@ class VideoApp:
 		validEventKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 		if theKey in validEventKeys:
 			print('keyPress() adding event')
-			self.addEvent(theKey, frame)
+			self.addEvent(theKey, self.myCurrentFrame)
 		
 		# set note of selected event
 		if theKey == 'n':
@@ -578,10 +564,10 @@ class VideoApp:
 
 		# set event start frame
 		if theKey == 'f':
-			self.setStartFrame(frame)
+			self.setStartFrame(self.myCurrentFrame)
 		# set stop frame
 		if theKey == 'l':
-			self.setEndFrame(frame)
+			self.setEndFrame(self.myCurrentFrame)
 			
 		# slower (increase frame interval)
 		if theKey == '-':
@@ -598,20 +584,24 @@ class VideoApp:
 			
 		if theKey == '\uf702' and event.state==97:
 			# shift + left
-			newFrame = self.vs.currentFrame - 100
-			self.vs.setFrame(newFrame)
+			newFrame = self.myCurrentFrame - 100
+			#self.vs.setFrame(self.myCurrentFrame)
+			self.setFrame(newFrame)
 		elif theKey == '\uf702':
 			# left
-			newFrame = self.vs.currentFrame - 10
-			self.vs.setFrame(newFrame)
+			newFrame = self.myCurrentFrame - 10
+			#self.vs.setFrame(newFrame)
+			self.setFrame(newFrame)
 		if theKey == '\uf703' and event.state==97:
 			# shift + right
-			newFrame = self.vs.currentFrame + 100
-			self.vs.setFrame(newFrame)
+			newFrame = self.myCurrentFrame + 100
+			#self.vs.setFrame(newFrame)
+			self.setFrame(newFrame)
 		elif theKey == '\uf703':
 			# right
-			newFrame = self.vs.currentFrame + 10
-			self.vs.setFrame(newFrame)
+			newFrame = self.myCurrentFrame + 10
+			#self.vs.setFrame(newFrame)
+			self.setFrame(newFrame)
 			
 		# figuring out 'tab' between widgets
 		# i am intercepting all keystrokes at app level, not widget level
@@ -619,6 +609,10 @@ class VideoApp:
 			focused_widget = self.root.focus_get()
 			print('focused_widget.name:', focused_widget)
 			
+	def setFrame(self, theFrame):
+		self.myCurrentFrame = theFrame
+		self.vs.setFrame(self.myCurrentFrame)
+		
 	def setStartFrame(self, frame):
 		print('setStartFrame()')
 
@@ -688,20 +682,20 @@ class VideoApp:
 		# it is important to not vs.read() when paused
 		if self.vs.paused:
 			self.videoLabel.configure(text="Paused")
-			if (self.pausedAtFrame != self.vs.currentFrame):
-				#print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.vs.currentFrame:', self.vs.currentFrame)
+			if (self.pausedAtFrame != self.myCurrentFrame):
+				print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.myCurrentFrame:', self.myCurrentFrame)
 				try:
 					#print('VideoApp2.videoLoop() CALLING self.vs.read()')
-					self.frame = self.vs.read()
+					[self.frame, self.myCurrentFrame] = self.vs.read()
 				except:
 					print('zzz qqq')
 				#print('VideoApp2.videoLoop() got new frame')
-				self.pausedAtFrame = self.vs.currentFrame
+				self.pausedAtFrame = self.myCurrentFrame
 				#
 				#self.vs.setFrame(self.vs.currentFrame)
 		else:
 			self.videoLabel.configure(text="")
-			self.frame = self.vs.read()
+			[self.frame, self.myCurrentFrame] = self.vs.read()
 
 		if self.frame is None:
 			#print('ERROR: VideoApp2.videoLoop() got None self.frame')
@@ -710,9 +704,14 @@ class VideoApp:
 			## resize
 			tmpWidth = self.content_frame.winfo_width()
 			tmpHeight = self.content_frame.winfo_height()
-			self.frame = cv2.resize(self.frame, (tmpWidth, tmpHeight)) 
-		
-			image = cv2.cvtColor(self.frame, cv2.COLOR_BGR2RGB)
+			#print('tmpWidth:', tmpWidth, 'tmpHeight:', tmpHeight)
+			try:
+				image = self.frame
+				#image = cv2.resize(image, (tmpWidth, tmpHeight))
+			except:
+				print('my exception: cv2.resize()')
+				
+			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 			image = Image.fromarray(image)
 		
 			image = ImageTk.PhotoImage(image)
@@ -722,9 +721,11 @@ class VideoApp:
 
 			#
 			# update feedback labels
-			self.currentFrameLabel.configure(text='Frame:' + str(self.vs.currentFrame))
+			self.currentFrameLabel.configure(text='Frame:' + str(self.myCurrentFrame))
 			self.currentFrameIntervalLabel.configure(text='Interval (ms):' + str(self.myFrameInterval))
-			self.currentSecondsLabel.configure(text='Sec:' + str(self.vs.seconds))
+			# todo: fix this, keep track of current seconds from current frame and fps
+			#self.currentSecondsLabel.configure(text='Sec:' + str(self.vs.seconds))
+			self.video_frame_slider['value'] = self.myCurrentFrame
 
 		# leave this here -- CRITICAL
 		self.videoLoopID = self.videoLabel.after(self.myFrameInterval, self.videoLoop)
