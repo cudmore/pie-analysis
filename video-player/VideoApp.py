@@ -21,6 +21,7 @@ import tkinter
 from tkinter import ttk
 
 from FileVideoStream import FileVideoStream
+import bMenus
 import bEventList
 import bVideoList
 
@@ -29,7 +30,16 @@ class myNoteDialog:
 	"""Opens a modal dialog to set the note of an event"""
 	def __init__(self, parentApp):
 		self.parentApp = parentApp
+		
+		# to make modal
+		#self.grab_set()
+		# see: http://effbot.org/tkinterbook/tkinter-dialog-windows.htm
+		
 		top = self.top = tkinter.Toplevel(parentApp.root)
+		
+		#top.focus_force() # added
+		#top.grab_set()
+		
 		tkinter.Label(top, text="Note").pack()
 
 		#
@@ -141,6 +151,8 @@ class VideoApp:
 		###
 		self.root = tkinter.Tk()
 
+		bMenus.bMenus(self.root)
+		
 		self.root.geometry("690x827")
 
 		self.root.grid_rowconfigure(0, weight=1)

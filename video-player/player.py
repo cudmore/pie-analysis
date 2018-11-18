@@ -6,7 +6,7 @@
 ##################################################################################
 
 from FileVideoStream import FileVideoStream
-from VideoApp import VideoApp
+from VideoApp2 import VideoApp
 
 path = '/Users/cudmore/Dropbox/PiE/video'
 videoPath = '/Users/cudmore/Dropbox/PiE/video/homecage-movie.mp4'
