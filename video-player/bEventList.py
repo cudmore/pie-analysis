@@ -8,6 +8,7 @@ Each event denotes a position in the video file.
 
 import os, time
 import numpy as np
+from collections import OrderedDict 
 
 gEventColumns = ('index', 'path', 'cseconds', 'type', 'frameStart', 'frameStop', 'note')
 
@@ -100,15 +101,16 @@ class bEvent:
 		ms: (int)
 		note: (str)
 		"""
+		# gEventColumns = ('index', 'path', 'cseconds', 'type', 'frameStart', 'frameStop', 'note')
 		self.eventColumns = gEventColumns
-		self.dict = {}
+		self.dict = OrderedDict()
 		for column in self.eventColumns:
 			self.dict[column] = ''
 		self.dict['index'] = index
 		self.dict['path'] = path
 		self.dict['cseconds'] = time.time()
 		self.dict['type'] = type
-		self.dict['frame'] = frame
+		self.dict['frameStart'] = frame
 
 	def fromFile(self, headerLine, eventLine):
 		"""
@@ -128,7 +130,7 @@ class bEvent:
 		
 	def asString(self):
 		theRet = ''
-		for i, (k,v) in enumerate(self.dict.items()):
+		for (k,v) in self.dict.items():
 			theRet += str(v) + ','
 		return theRet
 
@@ -141,7 +143,7 @@ class bEvent:
 		return retTuple
 		
 if __name__ == '__main__':
-	videoPath = '/Users/cudmore/Dropbox/PiE/homecage-movie.mp4'
+	videoPath = '/Users/cudmore/Dropbox/PiE/video/homecage-movie.mp4'
 	eventList = bEventList(videoPath)
 	eventList.appendEvent(type=1, frame=1)
 	eventList.appendEvent(type=2, frame=10)

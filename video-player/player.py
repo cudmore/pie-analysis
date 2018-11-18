@@ -8,13 +8,14 @@
 from FileVideoStream import FileVideoStream
 from VideoApp import VideoApp
 
-path = '/Users/cudmore/Dropbox/PiE'
-videoPath = '/Users/cudmore/Dropbox/PiE/homecage-movie.mp4'
+path = '/Users/cudmore/Dropbox/PiE/video'
+videoPath = '/Users/cudmore/Dropbox/PiE/video/homecage-movie.mp4'
 
-fvs = FileVideoStream(videoPath) #.start()
-fvs.start()
+#fvs = FileVideoStream(videoPath) #.start()
+#fvs.start()
 
-pba = VideoApp(path, fvs)
+#pba = VideoApp(path, fvs)
+pba = VideoApp(path)
 
 # this still blocks, any updates to tk slider blocks video thread?
 pba.root.after(10, pba.myUpdate)

@@ -14,22 +14,24 @@ Video files are listed in upper left. Annotations of current video are in upper 
 
 Controlling video
 
-```
-space: play/pause
-left/right arrows: Backward/forward in video
-shift + left/right arrows: Larger backward/forward in video
-f: Play video faster, sets interval (ms)
-s: Play video slower, sets interval (ms)
-```
+| Keyboard	| Action 
+| -----		| -----
+| space		| play/pause
+| left/right arrows	| Backward/forward in video
+| shift + left/right arrows	| Larger backward/forward in video
+| +				| Play video faster, sets interval (ms)
+| -				| Play video slower, sets interval (ms)
 
 Editing annotations
 
-```
-1/2/3/4/5: Create new annotation at current frame
-n: Set note of current selected annotation
-```
+| Keyboard	| Action 
+| -----		| -----
+| 1..9			| Create new annotation at current frame
+| f				| Set first frame of selected event
+| l				| Set last frame of selected event
+| n				| Set note of current selected annotation
 
-There are currently 5 different annotation types corresponding to keyboard 1/2/3/4/5.
+There are currently 9 different annotation types corresponding to keyboard 1, 2, 3, 4, 5, 6, 7, 8, 9.
 
 ## Saving annotations
 
@@ -79,7 +81,8 @@ If having trouble with Homebrew and OpenCV, see [this tutorial](https://www.pyim
  - Implement saving/loading options via JSON file. Include window geometry and mapping of annotation event numbers to names.
  - Write recipe for installation into Python virtual environment.
  - Design system where annotations can have start/stop frames or start frame and number of frames (duration). Right now annotations only have single (start) frame.
-
+ - Add note to video file by putting it in event list header
+ 
 ## Learning Tkinter
 
 https://www.inoreader.com/article/3a9c6e79a229d841-stack-abuse-gui-development-with-python-tkinter-an-introduction

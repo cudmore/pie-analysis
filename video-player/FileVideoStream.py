@@ -14,7 +14,7 @@ from PIL import Image
 
 ##################################################################################
 class FileVideoStream:
-	def __init__(self, path, queueSize=256):
+	def __init__(self, path, paused=False, gotoFrame=None, queueSize=256):
 		self.stream = cv2.VideoCapture(path)
 		self.stopped = False
 
@@ -34,9 +34,8 @@ class FileVideoStream:
 		print('fps:', self.streamParams['fps'])
 		print('numFrames:', self.streamParams['numFrames'])
 		
-		self.gotoFrame = None
-		#self.clearQueue = False
-		self.paused = False
+		self.gotoFrame = gotoFrame #None
+		self.paused = paused #False
 		self.currentFrame = 0
 		self.milliseconds = 0
 		self.seconds = 0
@@ -102,12 +101,14 @@ class FileVideoStream:
 					
 					# if the `grabbed` boolean is `False`, then we have
 					# reached the end of the video file
-					if not grabbed:
-						self.stop()
-						return
- 
-					# add the frame to the queue
-					self.Q.put(frame)
+					if grabbed:
+						# add the frame to the queue
+						self.Q.put(frame)
+					else:
+						#self.stop()
+						#return
+ 						pass
+ 						
 		print('FileVideoStream.update() exited while loop')
 		# this causes fault ???
 		#self.stream.release()
@@ -138,6 +139,18 @@ class FileVideoStream:
 		"""
 		self.stopped = True
 
+	def playPause(self, doThis=None):
+		if doThis is not None:
+			if doThis == 'play':
+				self.paused = False
+			elif doThis == 'pause':
+				self.paused = True
+		else:
+			# toggle
+			self.paused = not self.paused
+		#self.pausedAtFrame = self.currentFrame
+		print('FileVideoStream.playPause()', 'pause' if self.paused else 'play')
+		
 	def setFrame(self, newFrame):
 		if newFrame<0 or newFrame>self.streamParams['numFrames']-1:
 			# error
