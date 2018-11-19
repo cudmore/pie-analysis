@@ -430,7 +430,7 @@ class VideoApp:
 					#video_control_frame.place(in_=pad_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
 					#video_control_frame.place(in_=lower_right_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
 					video_control_frame.place(x=0, y=desired_height + buttonHeight, width=desired_width)
-			
+
 				print('   3')
 				#print('winfo_geometry:', self.root.winfo_geometry())
 			except:
