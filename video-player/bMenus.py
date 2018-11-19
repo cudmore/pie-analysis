@@ -23,7 +23,14 @@ class bMenus:
 		filemenu.add_separator()
 		filemenu.add_command(label="Quit", command=root.quit)
 
+		windowmenu = tkinter.Menu(menubar, tearoff=0)
+		windowmenu.add_command(label="Toggle Video Files", command=self.togglevideofiles)
+		windowmenu.add_command(label="Toggle Events", command=self.toggleevents)
+		windowmenu.add_separator()
+		windowmenu.add_command(label="Toggle Random Chunks", command=self.togglerandomchunks)
+		
 		menubar.add_cascade(menu=filemenu, label='File')
+		menubar.add_cascade(menu=windowmenu, label='Window')
 
 		# display the menu
 		root['menu'] = [menubar]
@@ -38,4 +45,11 @@ class bMenus:
 		filename =  filedialog.askopenfilename(initialdir = "/",title = "Select a random chunk file",filetypes = (("text files","*.txt"),("all files","*.*")))
 		print('filename:', filename)
 
+	def togglevideofiles(self):
+		print('bMenus.togglevideofiles()')
 
+	def toggleevents(self):
+		print('bMenus.toggleevents()')
+
+	def togglerandomchunks(self):
+		print('bMenus.togglerandomchunks()')
