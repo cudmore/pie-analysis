@@ -62,19 +62,15 @@ class VideoApp:
 		
 		self.eventList = bEventList.bEventList(firstVideoPath)
 		
- 		
 		self.myFrameInterval = 30
-		self.myApectRatio = 4.0/3.0
 		
-		myPadding = 10
-
 		###
 		# tkinter interface
 		###
 		self.root = tkinter.Tk()
 
 		# make window not resiazeable
-		self.root.resizable(width=False, height=False)
+		#self.root.resizable(width=False, height=False)
 		
 		bMenus.bMenus(self.root)
 		
@@ -93,71 +89,13 @@ class VideoApp:
 		
 
 	###################################################################################
-	def populateVideoFiles(self, doInit=False):
-		
-		if doInit:
-			videoFileColumns = self.videoList.getColumns()
-			
-			# configure columns
-			self.videoFileTree['columns'] = videoFileColumns
-			hideColumns = ['path'] # hide some columns
-			displaycolumns = [] # build a list of columns not in hideColumns
-			for column in videoFileColumns:
-				self.videoFileTree.column(column, width=10)
-				self.videoFileTree.heading(column, text=column, command=lambda c=column: self.treeview_sort_column(self.videoFileTree, c, False))
-				if column not in hideColumns:
-					displaycolumns.append(column)
-			self.videoFileTree.column('index', width=5)
-			
-			# hide some columns
-			self.videoFileTree["displaycolumns"] = displaycolumns
-			
-			self.videoFileTree.bind("<ButtonRelease-1>", self.video_tree_single_click)
-
-		# first delete entries
-		for i in self.videoFileTree.get_children():
-		    self.videoFileTree.delete(i)
-
-		for idx, videoFile in enumerate(self.videoList.getList()):
-			position = "end"
-			self.videoFileTree.insert("" , position, text=str(idx+1), values=videoFile.asTuple())
-
-	
-	###################################################################################
-	def populateEvents(self, doInit=False):
-		eventColumns = self.eventList.getColumns()
-		
-		if doInit:
-			# configure columns
-			self.eventTree['columns'] = eventColumns
-			hideColumns = ['path', 'cseconds'] # hide some columns
-			displaycolumns = [] # build a list of columns not in hideColumns
-			for column in eventColumns:
-				self.eventTree.column(column, width=20)
-				self.eventTree.heading(column, text=column, command=lambda c=column: self.treeview_sort_column(self.eventTree, c, False))
-				if column not in hideColumns:
-					displaycolumns.append(column)
-	
-			# hide some columns
-			self.eventTree["displaycolumns"] = displaycolumns
-
-			self.eventTree.bind('<<TreeviewSelect>>', self.event_tree_single_selected)
-
-		# first delete entries
-		for i in self.eventTree.get_children():
-		    self.eventTree.delete(i)
-
-		# todo: make bEventList iterable
-		for idx, event in enumerate(self.eventList.eventList):
-			position = "end"
-			self.eventTree.insert("" , position, text=str(idx+1), values=event.asTuple())
-
-			
-	###################################################################################
 	def buildInterface(self):
 		myPadding = 5
 		myBorderWidth = 0
 
+		self.lastResizeWidth = None
+		self.lastResizeHeight = None
+		
 		self.root.grid_rowconfigure(0, weight=1)
 		self.root.grid_columnconfigure(0, weight=1)
 
@@ -223,7 +161,7 @@ class VideoApp:
 		self.hPane.add(self.lower_right_frame)
 
 		# video
-		myApectRatio = 4.0/3.0
+		#myApectRatio = 4.0/3.0
 	
 		#
 		# random chunks
@@ -291,7 +229,7 @@ class VideoApp:
 		tmpImage = Image.fromarray(tmpImage)
 		tmpImage = ImageTk.PhotoImage(tmpImage)
 		self.videoLabel = ttk.Label(self.content_frame, text="xxx", font=("Helvetica", 48), compound="center", foreground="green")
-		self.videoLabel.grid(row=0, column=0, sticky="nsew")
+		#self.videoLabel.grid(row=0, column=0, sticky="nsew")
 		self.videoLabel.configure(image=tmpImage)
 		self.videoLabel.image = tmpImage
 
@@ -327,8 +265,8 @@ class VideoApp:
 		#
 		# set aspect of video frame
 		#self.set_aspect(self.lower_right_frame, self.content_frame, self.pad_frame, self.video_control_frame, aspect_ratio=myApectRatio) 
-		self.set_aspect(self.hPane, self.lower_right_frame, self.content_frame, self.pad_frame, self.video_control_frame, self.videoLabel, aspect_ratio=myApectRatio) 
-			
+		#self.set_aspect(self.hPane, self.lower_right_frame, self.content_frame, self.pad_frame, self.video_control_frame, self.videoLabel) #, aspect_ratio=myApectRatio) 
+				
 		#
 		# configure panel
 		"""
@@ -340,12 +278,76 @@ class VideoApp:
 		"""
 		
 		# do this at end to get window panels to size correctly
-		self.root.geometry("1285x815")
+		#self.root.geometry("1285x815") # home
+		self.root.geometry("1810x1198") # work
 
 		self.root.update()
 		vPane.sashpos(0, 100)
 		self.hPane.sashpos(0, 400)
 
+		self.lower_right_frame.bind("<Configure>", self.mySetAspect)
+
+	###################################################################################
+	def populateVideoFiles(self, doInit=False):
+		
+		if doInit:
+			videoFileColumns = self.videoList.getColumns()
+			
+			# configure columns
+			self.videoFileTree['columns'] = videoFileColumns
+			hideColumns = ['path'] # hide some columns
+			displaycolumns = [] # build a list of columns not in hideColumns
+			for column in videoFileColumns:
+				self.videoFileTree.column(column, width=10)
+				self.videoFileTree.heading(column, text=column, command=lambda c=column: self.treeview_sort_column(self.videoFileTree, c, False))
+				if column not in hideColumns:
+					displaycolumns.append(column)
+			self.videoFileTree.column('index', width=5)
+			
+			# hide some columns
+			self.videoFileTree["displaycolumns"] = displaycolumns
+			
+			self.videoFileTree.bind("<ButtonRelease-1>", self.video_tree_single_click)
+
+		# first delete entries
+		for i in self.videoFileTree.get_children():
+		    self.videoFileTree.delete(i)
+
+		for idx, videoFile in enumerate(self.videoList.getList()):
+			position = "end"
+			self.videoFileTree.insert("" , position, text=str(idx+1), values=videoFile.asTuple())
+
+	
+	###################################################################################
+	def populateEvents(self, doInit=False):
+		eventColumns = self.eventList.getColumns()
+		
+		if doInit:
+			# configure columns
+			self.eventTree['columns'] = eventColumns
+			hideColumns = ['path', 'cseconds'] # hide some columns
+			displaycolumns = [] # build a list of columns not in hideColumns
+			for column in eventColumns:
+				self.eventTree.column(column, width=20)
+				self.eventTree.heading(column, text=column, command=lambda c=column: self.treeview_sort_column(self.eventTree, c, False))
+				if column not in hideColumns:
+					displaycolumns.append(column)
+	
+			# hide some columns
+			self.eventTree["displaycolumns"] = displaycolumns
+
+			self.eventTree.bind('<<TreeviewSelect>>', self.event_tree_single_selected)
+
+		# first delete entries
+		for i in self.eventTree.get_children():
+		    self.eventTree.delete(i)
+
+		# todo: make bEventList iterable
+		for idx, event in enumerate(self.eventList.eventList):
+			position = "end"
+			self.eventTree.insert("" , position, text=str(idx+1), values=event.asTuple())
+
+			
 	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
 		if self.vs is not None:
 			self.vs.stop()
@@ -382,9 +384,35 @@ class VideoApp:
 		print('set_aspect2')
 	"""
 	
+	def mySetAspect(self, event):
+		print('~~~~~ mySetAspect() event:', event)
+		print('   event.widget:', event.widget)
+		print('   event.type:', event.type)
+		aspect_ratio = self.vs.streamParams['aspectRatio']
+		buttonHeight = 36
+		
+		desired_width = event.width - buttonHeight
+		desired_height = int(desired_width * aspect_ratio)
+		
+		desired_width = self.content_frame.winfo_width()
+		desired_height = self.content_frame.winfo_height()
+		print('   desired_width:', desired_width, 'desired_height:', desired_height)
+		
+		if desired_height > event.height:
+			desired_height = event.height - buttonHeight
+			desired_width = int(desired_height / aspect_ratio)
+		
+		desired_width -= 50
+		desired_height -= 50
+		
+		self.videoLabel.place(x=50, y=50, width=desired_width, height=desired_height)
+		#self.video_control_frame.place(x=0, y=desired_height + buttonHeight, width=desired_width)
+		
+		print('~~~~~ mySetAspect() done')
+  	
     # see: https://stackoverflow.com/questions/16523128/resizing-tkinter-frames-with-fixed-aspect-ratio
 	#def set_aspect(self, lower_right_frame, content_frame, pad_frame, video_control_frame, aspect_ratio):
-	def set_aspect(self, hPane, lower_right_frame, content_frame, pad_frame, video_control_frame, videoLabel, aspect_ratio):
+	def set_aspect(self, hPane, lower_right_frame, content_frame, pad_frame, video_control_frame, videoLabel, aspect_ratio=None):
 		# a function which places a frame within a containing frame, and
 		# then forces the inner frame to keep a specific aspect ratio
 
@@ -393,51 +421,87 @@ class VideoApp:
 			# either by fixing the width or the height and then
 			# adjusting the height or width based on the aspect ratio.
 
-			print('0')
+			print('0a')
 			print('enforce_aspect_ratio() event:', event)
 			try:
-				buttonHeight = 36
+				if self.lastResizeWidth is None:
+					# initialize
+					print('enforce_aspect_ratio() init')
+					self.lastResizeWidth = event.width
+					self.lastResizeHeight = event.height
+				else:
+					if event.width == self.lastResizeWidth:
+						# do nothing
+						print('enforce_aspect_ratio() no change')
+						return "break"
+					else:
+						# continue
+						print('enforce_aspect_ratio() processing')
+						pass
 
+				try:
+					buttonHeight = 36
+				except:
+					print('eeeee 0')
 				#event.width = lower_right_frame.winfo_width()
 				#event.height = lower_right_frame.winfo_height()
 				
 				# start by using the width as the controlling dimension
-				desired_width = event.width - buttonHeight
-				desired_height = int(desired_width / aspect_ratio)
-
+				try:
+					desired_width = event.width - buttonHeight
+					desired_height = int(desired_width * aspect_ratio)
+				except:
+					print('eeeee 1')
+					
 				# if the window is too tall to fit, use the height as
 				# the controlling dimension
-				if desired_height > event.height:
-					desired_height = event.height - buttonHeight
-					desired_width = int(desired_height * aspect_ratio)
+				try:
+					if desired_height > event.height:
+						desired_height = event.height - buttonHeight
+						desired_width = int(desired_height / aspect_ratio)
+				except:
+					print('eeeee 2')
 
-				self.currentWidth = desired_width
-				self.currentHeight = desired_height
+				try:
+					self.currentWidth = desired_width
+					self.currentHeight = desired_height
+				except:
+					print('eeeee 3')
 			
+				try:
+					print('   desired_width:', desired_width, 'desired_height:', desired_height)
+				except:
+					print('eeeee 4')
 				# place the window, giving it an explicit size
-				print('   1')
+				print('   1a')
 				#content_frame.place(in_=pad_frame, x=0, y=0, width=desired_width, height=desired_height)
 				if 1:
 					#content_frame.place(in_=pad_frame, x=0, y=0, width=desired_width, height=desired_height)
 					#content_frame.place(in_=lower_right_frame, x=0, y=0, width=desired_width, height=desired_height)
 					# laast attempt
-					videoLabel.place(in_=content_frame, x=0, y=0, width=desired_width, height=desired_height)
-					
+					#videoLabel.place(in_=content_frame, x=0, y=0, width=desired_width, height=desired_height)
+					pass
 				# place the video controls just below the video frame
-				print('   2')
+				print('   2a')
 				#video_control_frame.place(in_=lower_right_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
 				if 1:
 					#video_control_frame.place(in_=pad_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
 					#video_control_frame.place(in_=lower_right_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
-					video_control_frame.place(x=0, y=desired_height + buttonHeight, width=desired_width)
-
-				print('   3')
+					#video_control_frame.place(x=0, y=desired_height + buttonHeight, width=desired_width)
+					pass
+					
+				print('   3a')
 				#print('winfo_geometry:', self.root.winfo_geometry())
 			except:
-				print('bingo: exception in enforce_aspect_ratio()')
-			print('   4')
+				print('*** bingo: exception in enforce_aspect_ratio()')
+			print('   4a')
+
+		aspect_ratio = self.vs.streamParams['aspectRatio']
+		
+		# this works reasonably well but causes crash in editing note?
 		#content_frame.bind("<Configure>", enforce_aspect_ratio)
-		pad_frame.bind("<Configure>", enforce_aspect_ratio)
+		
+		#pad_frame.bind("<Configure>", enforce_aspect_ratio)
 		#lower_right_frame.bind("<Configure>", enforce_aspect_ratio)
 		#hPane.bind("<Configure>", enforce_aspect_ratio)
 		#self.root.bind("<Configure>", enforce_aspect_ratio)
@@ -699,10 +763,10 @@ class VideoApp:
 			pass
 		else:
 			## resize
-			#tmpWidth = self.content_frame.winfo_width()
-			#tmpHeight = self.content_frame.winfo_height()
-			tmpWidth = self.currentWidth
-			tmpHeight = self.currentHeight
+			tmpWidth = self.videoLabel.winfo_width()
+			tmpHeight = self.videoLabel.winfo_height()
+			#tmpWidth = self.currentWidth
+			#tmpHeight = self.currentHeight
 			#print('   tmpWidth:', tmpWidth, 'tmpHeight:', tmpHeight)
 			tmpImage = None
 			try:

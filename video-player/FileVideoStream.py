@@ -23,16 +23,20 @@ class FileVideoStream:
 		self.streamParams['fileName'] = os.path.basename(path)
 		self.streamParams['width'] = self.stream.get(cv2.CAP_PROP_FRAME_WIDTH)
 		self.streamParams['height'] = self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT)
+		self.streamParams['aspectRatio'] = round(self.streamParams['height'] / self.streamParams['width'],2)
 		self.streamParams['fps'] = self.stream.get(cv2.CAP_PROP_FPS)
 		self.streamParams['numFrames'] = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
 		self.streamParams['numSeconds'] = round(self.streamParams['numFrames'] / self.streamParams['fps'],2)
 		
-		print('queueSize:', queueSize)
+		"""
 		print('path:', path)
 		print('width:', self.streamParams['width'])
 		print('height:', self.streamParams['height'])
+		print('aspectRatio:', self.streamParams['aspectRatio'])
 		print('fps:', self.streamParams['fps'])
 		print('numFrames:', self.streamParams['numFrames'])
+		print('queueSize:', queueSize)
+		"""
 		
 		self.gotoFrame = gotoFrame #None
 		self.paused = paused #False

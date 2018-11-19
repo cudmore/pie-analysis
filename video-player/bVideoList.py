@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 import cv2
 
-gVideoFileColumns = ('index', 'path', 'file', 'width', 'height', 'fps', 'numFrames')
+gVideoFileColumns = ('index', 'path', 'file', 'width', 'height', 'frames', 'fps', 'seconds')
 
 #############################################################
 class bVideoList:
@@ -71,9 +71,9 @@ class bVideoFile:
 		
 		self.dict['width'] = int(myFile.get(cv2.CAP_PROP_FRAME_WIDTH))
 		self.dict['height'] = int(myFile.get(cv2.CAP_PROP_FRAME_HEIGHT))
+		self.dict['frames'] = int(myFile.get(cv2.CAP_PROP_FRAME_COUNT))
 		self.dict['fps'] = int(myFile.get(cv2.CAP_PROP_FPS))
-		self.dict['numFrames'] = int(myFile.get(cv2.CAP_PROP_FRAME_COUNT))
-		self.dict['numSeconds'] = round(self.dict['numFrames'] / self.dict['fps'],2)
+		self.dict['seconds'] = round(self.dict['frames'] / self.dict['fps'],2)
 		
 		cv2.VideoCapture.release(myFile)
 		
