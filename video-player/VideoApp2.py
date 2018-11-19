@@ -171,7 +171,8 @@ class VideoApp:
 				self.videoFileTree.heading(column, text=column, command=lambda c=column: self.treeview_sort_column(self.videoFileTree, c, False))
 				if column not in hideColumns:
 					displaycolumns.append(column)
-	
+			self.videoFileTree.column('index', width=5)
+			
 			# hide some columns
 			self.videoFileTree["displaycolumns"] = displaycolumns
 
@@ -513,28 +514,30 @@ class VideoApp:
 	"""
 		
 	def frameSlider_callback(self, frameNumber):
-		"""
-		frameNumber : str
-		"""
-		
-		print('VideoApp.frameSlider_callback()', frameNumber)
-		self.vs.setFrame(frameNumber)
-		
-		"""
-		#print('gotoFrame()', frameNumber)
-		frameNumber = int(float(frameNumber))
-		if self.frameSlider_update:
-			self.vs.setFrame(frameNumber)
-		else:
-			self.frameSlider_update = True
-		"""
-	# key
+		#print('VideoApp.frameSlider_callback()', frameNumber)
+		self.setFrame(frameNumber)
+
+	def doCommand(self, cmd):
+		smallFrameStep = 10
+		largeFrameStep = 100
+
+		if cmd == 'playpause':
+			self.vs.playPause()
+				
+		if cmd == 'forward':
+			 newFrame = self.myCurrentFrame + smallFrameStep
+			 self.setFrame(newFrame)
+		if cmd == 'fast-forward':
+			 newFrame = self.myCurrentFrame + largeFrameStep
+			 self.setFrame(newFrame)
+		if cmd == 'backward':
+			 newFrame = self.myCurrentFrame - smallFrameStep
+			 self.setFrame(newFrame)
+		if cmd == 'fast-backward':
+			 newFrame = self.myCurrentFrame - largeFrameStep
+			 self.setFrame(newFrame)
+			 
 	def keyPress(self, event):
-		"""
-		frame = self.vs.stream.get(cv2.CAP_PROP_POS_FRAMES)
-		frame = int(float(frame))
-		"""
-		
 		print('=== VideoApp.keyPress() pressed:', repr(event.char), 'self.myCurrentFrame:', self.myCurrentFrame)
 		"""
 		print('event.keysym:', event.keysym)
@@ -546,7 +549,8 @@ class VideoApp:
 
 		# pause/play
 		if theKey == ' ':
-			self.vs.playPause()
+			#self.vs.playPause()
+			self.doCommand('playpause')
 			
 		# add event
 		validEventKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
@@ -584,24 +588,17 @@ class VideoApp:
 			
 		if theKey == '\uf702' and event.state==97:
 			# shift + left
-			newFrame = self.myCurrentFrame - 100
-			#self.vs.setFrame(self.myCurrentFrame)
-			self.setFrame(newFrame)
+			self.doCommand('fast-backward')
 		elif theKey == '\uf702':
 			# left
 			newFrame = self.myCurrentFrame - 10
-			#self.vs.setFrame(newFrame)
-			self.setFrame(newFrame)
+			self.doCommand('backward')
 		if theKey == '\uf703' and event.state==97:
 			# shift + right
-			newFrame = self.myCurrentFrame + 100
-			#self.vs.setFrame(newFrame)
-			self.setFrame(newFrame)
+			self.doCommand('fast-forward')
 		elif theKey == '\uf703':
 			# right
-			newFrame = self.myCurrentFrame + 10
-			#self.vs.setFrame(newFrame)
-			self.setFrame(newFrame)
+			self.doCommand('forward')
 			
 		# figuring out 'tab' between widgets
 		# i am intercepting all keystrokes at app level, not widget level
@@ -677,22 +674,25 @@ class VideoApp:
 		print('newEvent.asTuple():', newEvent.asTuple())
 		self.eventTree.insert("" , position, text=text, values=newEvent.asTuple())
 		
+	def setFramesPerSecond(self, frameInterval):
+		self.videoLabel.after_cancel(self.videoLoopID)
+		self.myFrameInterval = frameInterval
+		print('setFramesPerSecond() self.myFrameInterval:', self.myFrameInterval)
+		self.videoLoop()
+		
 	def videoLoop(self):
 	
 		# it is important to not vs.read() when paused
 		if self.vs.paused:
 			self.videoLabel.configure(text="Paused")
 			if (self.pausedAtFrame != self.myCurrentFrame):
-				print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.myCurrentFrame:', self.myCurrentFrame)
+				#print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.myCurrentFrame:', self.myCurrentFrame)
 				try:
 					#print('VideoApp2.videoLoop() CALLING self.vs.read()')
 					[self.frame, self.myCurrentFrame] = self.vs.read()
 				except:
 					print('zzz qqq')
-				#print('VideoApp2.videoLoop() got new frame')
 				self.pausedAtFrame = self.myCurrentFrame
-				#
-				#self.vs.setFrame(self.vs.currentFrame)
 		else:
 			self.videoLabel.configure(text="")
 			[self.frame, self.myCurrentFrame] = self.vs.read()
@@ -707,6 +707,7 @@ class VideoApp:
 			#print('tmpWidth:', tmpWidth, 'tmpHeight:', tmpHeight)
 			try:
 				image = self.frame
+				# this crashes
 				#image = cv2.resize(image, (tmpWidth, tmpHeight))
 			except:
 				print('my exception: cv2.resize()')
@@ -714,6 +715,9 @@ class VideoApp:
 			image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 			image = Image.fromarray(image)
 		
+			# this crashes too
+			#image = image.resize((tmpWidth, tmpHeight), Image.ANTIALIAS)
+			
 			image = ImageTk.PhotoImage(image)
 
 			self.videoLabel.configure(image=image)
@@ -723,18 +727,11 @@ class VideoApp:
 			# update feedback labels
 			self.currentFrameLabel.configure(text='Frame:' + str(self.myCurrentFrame))
 			self.currentFrameIntervalLabel.configure(text='Interval (ms):' + str(self.myFrameInterval))
-			# todo: fix this, keep track of current seconds from current frame and fps
-			#self.currentSecondsLabel.configure(text='Sec:' + str(self.vs.seconds))
+			self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentFrame / self.vs.streamParams['fps'])
 			self.video_frame_slider['value'] = self.myCurrentFrame
 
 		# leave this here -- CRITICAL
 		self.videoLoopID = self.videoLabel.after(self.myFrameInterval, self.videoLoop)
-		
-	def setFramesPerSecond(self, frameInterval):
-		self.videoLabel.after_cancel(self.videoLoopID)
-		self.myFrameInterval = frameInterval
-		print('setFramesPerSecond() self.myFrameInterval:', self.myFrameInterval)
-		self.videoLoop()
 		
 	def onClose(self):
 
