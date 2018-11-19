@@ -6,7 +6,7 @@ This is a Python based video player that allows frames to be annotated.
 
 ## Screenshot
 
-Video files are listed in upper left. Annotations of current video are in upper right. Selecting an annotation from the list will snap the video to the frame of the annotation.
+Video files are listed on top, annotations of current video on the left. Selecting an annotation from the list will snap the video to the frame of the annotation.
 
 <IMG SRC="img/v2-interface.png" width=800>
 
