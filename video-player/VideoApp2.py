@@ -73,6 +73,9 @@ class VideoApp:
 		###
 		self.root = tkinter.Tk()
 
+		# make window not resiazeable
+		self.root.resizable(width=False, height=False)
+		
 		bMenus.bMenus(self.root)
 		
 		self.buildInterface()
@@ -433,8 +436,8 @@ class VideoApp:
 			except:
 				print('bingo: exception in enforce_aspect_ratio()')
 			print('   4')
-		content_frame.bind("<Configure>", enforce_aspect_ratio)
-		#pad_frame.bind("<Configure>", enforce_aspect_ratio)
+		#content_frame.bind("<Configure>", enforce_aspect_ratio)
+		pad_frame.bind("<Configure>", enforce_aspect_ratio)
 		#lower_right_frame.bind("<Configure>", enforce_aspect_ratio)
 		#hPane.bind("<Configure>", enforce_aspect_ratio)
 		#self.root.bind("<Configure>", enforce_aspect_ratio)
