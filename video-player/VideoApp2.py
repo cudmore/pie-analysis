@@ -280,8 +280,8 @@ class VideoApp:
 		self.content_frame = ttk.Frame(self.lower_right_frame, borderwidth=contentBorderWidth) # PARENT IS ROOT
 		self.content_frame.grid(row=2, column=0, sticky="nsew", padx=5, pady=5)
 		#self.content_frame.grid(row=2, column=0, padx=5, pady=5)
-		#self.content_frame.grid_rowconfigure(0, weight=1)
-		#self.content_frame.grid_columnconfigure(0, weight=1)
+		self.content_frame.grid_rowconfigure(0, weight=1)
+		self.content_frame.grid_columnconfigure(0, weight=1)
 	
 		# insert image into content frame
 		tmpImage = np.zeros((480,640,3), np.uint8)
@@ -324,7 +324,7 @@ class VideoApp:
 		#
 		# set aspect of video frame
 		#self.set_aspect(self.lower_right_frame, self.content_frame, self.pad_frame, self.video_control_frame, aspect_ratio=myApectRatio) 
-		self.set_aspect(self.hPane, self.lower_right_frame, self.content_frame, self.pad_frame, self.video_control_frame, aspect_ratio=myApectRatio) 
+		self.set_aspect(self.hPane, self.lower_right_frame, self.content_frame, self.pad_frame, self.video_control_frame, self.videoLabel, aspect_ratio=myApectRatio) 
 			
 		#
 		# configure panel
@@ -381,7 +381,7 @@ class VideoApp:
 	
     # see: https://stackoverflow.com/questions/16523128/resizing-tkinter-frames-with-fixed-aspect-ratio
 	#def set_aspect(self, lower_right_frame, content_frame, pad_frame, video_control_frame, aspect_ratio):
-	def set_aspect(self, hPane, lower_right_frame, content_frame, pad_frame, video_control_frame, aspect_ratio):
+	def set_aspect(self, hPane, lower_right_frame, content_frame, pad_frame, video_control_frame, videoLabel, aspect_ratio):
 		# a function which places a frame within a containing frame, and
 		# then forces the inner frame to keep a specific aspect ratio
 
@@ -395,8 +395,8 @@ class VideoApp:
 			try:
 				buttonHeight = 36
 
-				event.width = lower_right_frame.winfo_width()
-				event.height = lower_right_frame.winfo_height()
+				#event.width = lower_right_frame.winfo_width()
+				#event.height = lower_right_frame.winfo_height()
 				
 				# start by using the width as the controlling dimension
 				desired_width = event.width - buttonHeight
@@ -416,21 +416,25 @@ class VideoApp:
 				#content_frame.place(in_=pad_frame, x=0, y=0, width=desired_width, height=desired_height)
 				if 1:
 					#content_frame.place(in_=pad_frame, x=0, y=0, width=desired_width, height=desired_height)
-					content_frame.place(in_=lower_right_frame, x=0, y=0, width=desired_width, height=desired_height)
-			
+					#content_frame.place(in_=lower_right_frame, x=0, y=0, width=desired_width, height=desired_height)
+					# laast attempt
+					videoLabel.place(in_=content_frame, x=0, y=0, width=desired_width, height=desired_height)
+					
 				# place the video controls just below the video frame
 				print('   2')
 				#video_control_frame.place(in_=lower_right_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
 				if 1:
 					#video_control_frame.place(in_=pad_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
-					video_control_frame.place(in_=lower_right_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
+					#video_control_frame.place(in_=lower_right_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
+					video_control_frame.place(x=0, y=desired_height + buttonHeight, width=desired_width)
 			
 				print('   3')
 				#print('winfo_geometry:', self.root.winfo_geometry())
 			except:
 				print('bingo: exception in enforce_aspect_ratio()')
 			print('   4')
-		pad_frame.bind("<Configure>", enforce_aspect_ratio)
+		content_frame.bind("<Configure>", enforce_aspect_ratio)
+		#pad_frame.bind("<Configure>", enforce_aspect_ratio)
 		#lower_right_frame.bind("<Configure>", enforce_aspect_ratio)
 		#hPane.bind("<Configure>", enforce_aspect_ratio)
 		#self.root.bind("<Configure>", enforce_aspect_ratio)
