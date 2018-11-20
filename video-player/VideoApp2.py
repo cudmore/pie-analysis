@@ -82,6 +82,9 @@ class VideoApp:
 		# make window not resiazeable
 		#self.root.resizable(width=False, height=False)
 				
+		# remove the default behavior of invoking the button with the space key
+		self.root.unbind_class("Button", "<Key-space>")
+
 		self.buildInterface()
 
 		self.root.bind("<Key>", self.keyPress)
@@ -315,8 +318,17 @@ class VideoApp:
 		self.chunkFileLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='File:')
 		self.chunkFileLabel.grid(row=0, column=0)
 	
-		self.nextChunkButton = ttk.Button(self.random_chunks_frame, width=4, text="Next", command=self.chunk_next)
-		self.nextChunkButton.grid(row=0, column=1)
+		self.currentChunkLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='')
+		self.currentChunkLabel.grid(row=0, column=1)
+	
+		self.numChunksLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='')
+		self.numChunksLabel.grid(row=0, column=2)
+	
+		self.previousChunkButton = ttk.Button(self.random_chunks_frame, width=1, text="<", command=self.chunk_previous)
+		self.previousChunkButton.grid(row=0, column=3)
+
+		self.nextChunkButton = ttk.Button(self.random_chunks_frame, width=1, text=">", command=self.chunk_next)
+		self.nextChunkButton.grid(row=0, column=4)
 
 	def chunkInterface_populate(self):
 		"""
@@ -337,9 +349,21 @@ class VideoApp:
 		self.chunkFileLabel['text'] = os.path.basename(filepath)
 		self.chunkFileLabel['width'] = len(os.path.basename(filepath))
 		
+		self.currentChunkLabel['text'] = str(self.currentChunk)
+		self.numChunksLabel['text'] = 'of ' + str(len(self.chunkData['chunkOrder']))
+		
+	def chunk_previous(self):
+		print('chunk_previous()')
+		self.currentChunk -= 1
+		if self.currentChunk < 0:
+			self.currentChunk = 0
+		self.chunk_goto(self.currentChunk)
+		
 	def chunk_next(self):
 		print('chunk_next()')
 		self.currentChunk += 1
+		if self.currentChunk > len(self.chunkData['chunkOrder']):
+			self.currentChunk = len(self.chunkData['chunkOrder']) - 1
 		self.chunk_goto(self.currentChunk)
 		
 	def chunk_goto(self, chunkNumber):
@@ -355,6 +379,8 @@ class VideoApp:
 		self.switchvideo(path, paused=True, gotoFrame=startFrame)
 		
 		self.setFrame(startFrame)
+
+		self.currentChunkLabel['text'] = str(chunkNumber)
 		
 	###################################################################################
 	def populateVideoFiles(self, doInit=False):
