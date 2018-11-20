@@ -27,7 +27,8 @@ from FileVideoStream import FileVideoStream
 import bMenus
 import bEventList
 import bVideoList
-from bNoteDialog import bNoteDialog
+import bNoteDialog
+import bChunkView
 
 ##################################################################################
 class VideoApp:
@@ -37,95 +38,93 @@ class VideoApp:
 		TKInter application to create interface for loading, viewing, and annotating video
 		
 		path: path to folder with video files
-		vs: FileVideoStream
 		"""
 		
-		"""
-		# on selection need to make one of these, make sure it is destroyed correctly
-		fvs = FileVideoStream(videoPath) #.start()
-		fvs.start()
-		"""
-		
-		self.vs = None
-		self.frame = None # read from FileVideoStream
-		self.scaledImage = None
-		self.currentWidth = 640
-		self.currentHeight = 480
+		self.vs = None # FileVideoStream
+		self.frame = None # the current frame, read from FileVideoStream
+		#self.scaledImage = None
+		#self.currentWidth = 640
+		#self.currentHeight = 480
  		
 		self.myCurrentFrame = None
 		self.pausedAtFrame = None
 
-		self.videoList = bVideoList.bVideoList(path)
-		
+		self.videoList = bVideoList.bVideoList(path)		
+
 		# initialize with first video in path
 		firstVideoPath = self.videoList.videoFileList[0].dict['path']
 
-		# fire up a video stream
-		self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
-		
 		self.eventList = bEventList.bEventList(firstVideoPath)
 		
 		self.myFrameInterval = 30
+		self.myFramesPerSecond = round(1 / self.myFrameInterval,3)
 		
 		self.configDict = OrderedDict()
 		self.configDict['showRandomChunks'] = True
 		self.configDict['showVideoFiles'] = True
 		self.configDict['showEvents'] = True
-		self.configDict['videoFileSash'] = 100
-		self.configDict['eventSash'] = 400
+		self.configDict['videoFileSash'] = 200 # pixels
+		self.configDict['eventSash'] = 400 # pixels
+		self.configDict['smallSecondsStep'] = 1 # seconds
+		self.configDict['largeSecondsStep'] = 10 # seconds
 		
 		###
 		# tkinter interface
 		###
 		self.root = tkinter.Tk()
-
+		self.root.title('PiE Video Analysis')
+		
 		# make window not resiazeable
 		#self.root.resizable(width=False, height=False)
 				
 		# remove the default behavior of invoking the button with the space key
 		self.root.unbind_class("Button", "<Key-space>")
 
-		self.buildInterface()
-
 		self.root.bind("<Key>", self.keyPress)
 
+		self.buildInterface()
+
+		self.chunkView.chunkInterface_populate()
+		
 		bMenus.bMenus(self)
+
+		# fire up a video stream
+		self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
 
 		# this will return but run in background using tkinter after()
 		self.videoLoop()
 		
 		# set a callback to handle when the window is closed
-		self.root.wm_title("PiE Video Analysis")
 		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
 		
 
 	###################################################################################
-	def toggleVideoFiles(self):
-		print('toggleVideoFiles()')
-		self.configDict['showVideoFiles'] = not self.configDict['showVideoFiles']
-		if self.configDict['showVideoFiles']:
-			self.vPane.sashpos(0, self.configDict['videoFileSash'])
-		else:
-			self.vPane.sashpos(0, 0)
-
-	###################################################################################
-	def toggleEvents(self):
-		print('toggleEvents()')
-		self.configDict['showEvents'] = not self.configDict['showEvents']
-		if self.configDict['showEvents']:
-			self.hPane.sashpos(0, self.configDict['eventSash'])
-		else:
-			self.hPane.sashpos(0, 0)
-
-	###################################################################################
-	def toggleRandomChunks(self):
-		print('toggleRandomChunks()')
-		self.configDict['showRandomChunks'] = not self.configDict['showRandomChunks']
-		if self.configDict['showRandomChunks']:
-			self.random_chunks_frame.grid()
-		else:
-			self.random_chunks_frame.grid_remove()
-
+	def toggleInterface(self, this):
+		"""
+		toggle window panel/frames on and off, including
+			videofiles
+			events
+			chunks
+		"""
+		if this == 'videofiles':
+			self.configDict['showVideoFiles'] = not self.configDict['showVideoFiles']
+			if self.configDict['showVideoFiles']:
+				self.vPane.sashpos(0, self.configDict['videoFileSash'])
+			else:
+				self.vPane.sashpos(0, 0)
+		if this == 'events':
+			self.configDict['showEvents'] = not self.configDict['showEvents']
+			if self.configDict['showEvents']:
+				self.hPane.sashpos(0, self.configDict['eventSash'])
+			else:
+				self.hPane.sashpos(0, 0)
+		if this == 'randomchunks':
+			self.configDict['showRandomChunks'] = not self.configDict['showRandomChunks']
+			if self.configDict['showRandomChunks']:
+				self.random_chunks_frame.grid()
+			else:
+				self.random_chunks_frame.grid_remove()
+						
 	###################################################################################
 	def buildInterface(self):
 		myPadding = 5
@@ -208,7 +207,7 @@ class VideoApp:
 			self.random_chunks_frame.grid()
 		else:
 			self.random_chunks_frame.grid_remove()
-		self.chunkInterface()
+		self.chunkView = bChunkView.bChunkView(self, self.random_chunks_frame)
 		
 		#
 		# video feedback
@@ -218,17 +217,20 @@ class VideoApp:
 		self.currentFrameLabel = ttk.Label(video_feedback_frame, width=11, anchor="w", text='Frame:')
 		self.currentFrameLabel.grid(row=0, column=0)
 		
-		self.numFrameLabel = ttk.Label(video_feedback_frame, width=8, anchor="w", text='of ' + str(self.vs.streamParams['numFrames']))
+		self.numFrameLabel = ttk.Label(video_feedback_frame, width=8, anchor="w", text='of ')
 		self.numFrameLabel.grid(row=0, column=1)
 
 		self.currentSecondsLabel = ttk.Label(video_feedback_frame, width=8, anchor="w", text='Sec:')
 		self.currentSecondsLabel.grid(row=0, column=2, sticky="w")
 		
-		self.numSecondsLabel = ttk.Label(video_feedback_frame, width=8, anchor="w", text='of ' + str(self.vs.streamParams['numSeconds']))
+		self.numSecondsLabel = ttk.Label(video_feedback_frame, width=8, anchor="w", text='of ')
 		self.numSecondsLabel.grid(row=0, column=3, sticky="w")
 		
-		self.currentFrameIntervalLabel = ttk.Label(video_feedback_frame, width=20, anchor="w", text='Interval (ms):')
+		self.currentFrameIntervalLabel = ttk.Label(video_feedback_frame, width=20, anchor="w", text='Frame Interval (ms):')
 		self.currentFrameIntervalLabel.grid(row=0, column=4, sticky="w")
+
+		self.currentFramePerScondLabel = ttk.Label(video_feedback_frame, width=20, anchor="w", text='fps:')
+		self.currentFramePerScondLabel.grid(row=0, column=5, sticky="w")
 
 		#
 		# video frame
@@ -289,7 +291,7 @@ class VideoApp:
 		video_ff_button.grid(row=0, column=4)
 		#video_ff_button.bind("<Key>", self.keyPress)
 	
-		self.video_frame_slider = ttk.Scale(self.video_control_frame, from_=0, to=self.vs.streamParams['numFrames'], orient="horizontal", command=self.frameSlider_callback)
+		self.video_frame_slider = ttk.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback)
 		self.video_frame_slider.grid(row=0, column=5, sticky="ew")
 
 		#
@@ -306,81 +308,13 @@ class VideoApp:
 		#self.root.geometry("1810x1198") # work
 
 		self.root.update()
-		self.vPane.sashpos(0, 100)
-		self.hPane.sashpos(0, 400)
+		self.vPane.sashpos(0, self.configDict['videoFileSash'])
+		self.hPane.sashpos(0, self.configDict['eventSash'])
 
 		#self.videoLabel.bind("<Configure>", self.mySetAspect)
 		#self.mySetAspect()
 		
 	###################################################################################
-	def chunkInterface(self):
-		# insert into self.random_chunks_frame
-		self.chunkFileLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='File:')
-		self.chunkFileLabel.grid(row=0, column=0)
-	
-		self.currentChunkLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='')
-		self.currentChunkLabel.grid(row=0, column=1)
-	
-		self.numChunksLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='')
-		self.numChunksLabel.grid(row=0, column=2)
-	
-		self.previousChunkButton = ttk.Button(self.random_chunks_frame, width=1, text="<", command=self.chunk_previous)
-		self.previousChunkButton.grid(row=0, column=3)
-
-		self.nextChunkButton = ttk.Button(self.random_chunks_frame, width=1, text=">", command=self.chunk_next)
-		self.nextChunkButton.grid(row=0, column=4)
-
-	def chunkInterface_populate(self):
-		"""
-		Open a chunks file and populate interface
-		"""
-		self.currentChunk = 0 #NEW
-		print('chunkInterface_populate()')
-		initialdir = self.videoList.path
-		filepath =  tkinter.filedialog.askopenfilename(initialdir = initialdir,title = "Select a random chunk file",filetypes = (("text files","*.txt"),("all files","*.*")))
-		print('filepath:', filepath)
-		#chunkFile = bRandomChunks(filename).open()
-		#print(chunkFile)
-		with open(filepath) as f:
-			self.chunkData = json.load(f) #NEW
-		# data is a dict of {'chunks', 'chunkOrder'}
-		#pprint(data)
-		
-		self.chunkFileLabel['text'] = os.path.basename(filepath)
-		self.chunkFileLabel['width'] = len(os.path.basename(filepath))
-		
-		self.currentChunkLabel['text'] = str(self.currentChunk)
-		self.numChunksLabel['text'] = 'of ' + str(len(self.chunkData['chunkOrder']))
-		
-	def chunk_previous(self):
-		print('chunk_previous()')
-		self.currentChunk -= 1
-		if self.currentChunk < 0:
-			self.currentChunk = 0
-		self.chunk_goto(self.currentChunk)
-		
-	def chunk_next(self):
-		print('chunk_next()')
-		self.currentChunk += 1
-		if self.currentChunk > len(self.chunkData['chunkOrder']):
-			self.currentChunk = len(self.chunkData['chunkOrder']) - 1
-		self.chunk_goto(self.currentChunk)
-		
-	def chunk_goto(self, chunkNumber):
-		print('chunk_goto() chunkNumber:', chunkNumber)
-		actualChunkNumber = self.chunkData['chunkOrder'][chunkNumber]
-		chunk = self.chunkData['chunks'][actualChunkNumber]
-		
-		path = chunk['path']
-		startFrame = chunk['startFrame']
-		
-		print('chunk_goto() chunkNumber:', chunkNumber, 'path:', path, 'startFrame:', startFrame)
-		
-		self.switchvideo(path, paused=True, gotoFrame=startFrame)
-		
-		self.setFrame(startFrame)
-
-		self.currentChunkLabel['text'] = str(chunkNumber)
 		
 	###################################################################################
 	def populateVideoFiles(self, doInit=False):
@@ -398,6 +332,18 @@ class VideoApp:
 				if column not in hideColumns:
 					displaycolumns.append(column)
 			self.videoFileTree.column('index', width=5)
+			
+			# set some column widths, width is in pixels?
+			#gVideoFileColumns = ('index', 'path', 'file', 'width', 'height', 'frames', 'fps', 'seconds', 'numevents', 'note')
+			defaultWidth = 80
+			self.videoFileTree.column('index', minwidth=50, width=50, stretch="no")
+			self.videoFileTree.column('file', width=150)
+			self.videoFileTree.column('width', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.videoFileTree.column('height', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.videoFileTree.column('frames', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.videoFileTree.column('fps', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.videoFileTree.column('seconds', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.videoFileTree.column('numevents', minwidth=defaultWidth, width=defaultWidth, stretch="no")
 			
 			# hide some columns
 			self.videoFileTree["displaycolumns"] = displaycolumns
@@ -428,6 +374,10 @@ class VideoApp:
 				if column not in hideColumns:
 					displaycolumns.append(column)
 	
+			# set some column widths, width is in pixels?
+			self.eventTree.column('index', minwidth=50, width=50, stretch="no")
+			self.eventTree.column('type', minwidth=50, width=50, stretch="no")
+
 			# hide some columns
 			self.eventTree["displaycolumns"] = displaycolumns
 
@@ -459,6 +409,22 @@ class VideoApp:
 		# select the first video
 		#child_id = self.videoFileTree.get_children()[-1] #last
 		#child_id = self.videoFileTree.get_children()[0] #first
+
+		# switch event list
+		self.eventList = bEventList.bEventList(videoPath)
+		
+		# populate event list tree
+		self.populateEvents()
+		
+		# set feedback frame
+		self.numFrameLabel['text'] = 'of ' + str(self.vs.streamParams['numFrames'])
+		self.numSecondsLabel['text'] = 'of ' + str(self.vs.streamParams['numSeconds'])
+		
+		# set frame slider
+		self.video_frame_slider['to'] = self.vs.streamParams['numFrames']
+		
+		# select in video file tree view
+		self._selectTreeViewRow(self.videoFileTree, 'path', videoPath)
 		
 	def treeview_sort_column(self, tv, col, reverse):
 		print('treeview_sort_column()', 'tv:', tv, 'col:', col, 'reverse:', reverse)
@@ -520,103 +486,47 @@ class VideoApp:
 		print('~~~~~ mySetAspect() done')
 		#self.root.after(100, self.mySetAspect)
   		
-    # see: https://stackoverflow.com/questions/16523128/resizing-tkinter-frames-with-fixed-aspect-ratio
-	#def set_aspect(self, lower_right_frame, content_frame, pad_frame, video_control_frame, aspect_ratio):
-	def _set_aspect(self, hPane, lower_right_frame, content_frame, pad_frame, video_control_frame, videoLabel, aspect_ratio=None):
-		# a function which places a frame within a containing frame, and
-		# then forces the inner frame to keep a specific aspect ratio
-
-		def enforce_aspect_ratio(event):
-			# when the pad window resizes, fit the content into it,
-			# either by fixing the width or the height and then
-			# adjusting the height or width based on the aspect ratio.
-
-			print('0a')
-			print('enforce_aspect_ratio() event:', event)
-			try:
-				if self.lastResizeWidth is None:
-					# initialize
-					print('enforce_aspect_ratio() init')
-					self.lastResizeWidth = event.width
-					self.lastResizeHeight = event.height
-				else:
-					if event.width == self.lastResizeWidth:
-						# do nothing
-						print('enforce_aspect_ratio() no change')
-						return "break"
-					else:
-						# continue
-						print('enforce_aspect_ratio() processing')
-						pass
-
-				try:
-					buttonHeight = 36
-				except:
-					print('eeeee 0')
-				#event.width = lower_right_frame.winfo_width()
-				#event.height = lower_right_frame.winfo_height()
-				
-				# start by using the width as the controlling dimension
-				try:
-					desired_width = event.width - buttonHeight
-					desired_height = int(desired_width * aspect_ratio)
-				except:
-					print('eeeee 1')
-					
-				# if the window is too tall to fit, use the height as
-				# the controlling dimension
-				try:
-					if desired_height > event.height:
-						desired_height = event.height - buttonHeight
-						desired_width = int(desired_height / aspect_ratio)
-				except:
-					print('eeeee 2')
-
-				try:
-					self.currentWidth = desired_width
-					self.currentHeight = desired_height
-				except:
-					print('eeeee 3')
-			
-				try:
-					print('   desired_width:', desired_width, 'desired_height:', desired_height)
-				except:
-					print('eeeee 4')
-				# place the window, giving it an explicit size
-				print('   1a')
-				#content_frame.place(in_=pad_frame, x=0, y=0, width=desired_width, height=desired_height)
-				if 1:
-					#content_frame.place(in_=pad_frame, x=0, y=0, width=desired_width, height=desired_height)
-					#content_frame.place(in_=lower_right_frame, x=0, y=0, width=desired_width, height=desired_height)
-					# laast attempt
-					#videoLabel.place(in_=content_frame, x=0, y=0, width=desired_width, height=desired_height)
-					pass
-				# place the video controls just below the video frame
-				print('   2a')
-				#video_control_frame.place(in_=lower_right_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
-				if 1:
-					#video_control_frame.place(in_=pad_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
-					#video_control_frame.place(in_=lower_right_frame, x=0, y=desired_height + buttonHeight, width=desired_width)
-					#video_control_frame.place(x=0, y=desired_height + buttonHeight, width=desired_width)
-					pass
-					
-				print('   3a')
-				#print('winfo_geometry:', self.root.winfo_geometry())
-			except:
-				print('*** bingo: exception in enforce_aspect_ratio()')
-			print('   4a')
-
-		aspect_ratio = self.vs.streamParams['aspectRatio']
-		
-		# this works reasonably well but causes crash in editing note?
-		#content_frame.bind("<Configure>", enforce_aspect_ratio)
-		
-		#pad_frame.bind("<Configure>", enforce_aspect_ratio)
-		#lower_right_frame.bind("<Configure>", enforce_aspect_ratio)
-		#hPane.bind("<Configure>", enforce_aspect_ratio)
-		#self.root.bind("<Configure>", enforce_aspect_ratio)
-
 	# treeview util
+	def _selectTreeViewRow(self, tv, col, isThis):
+		"""
+		Given a treeview (tv), a column name (col) and a value (isThis)
+		Visually select the row in tree view that has column mathcing isThis
+		
+		tv: treeview
+		col: (str) column name
+		isThis: (str) value of a cell in column (col)
+		"""
+		theRow = self._getTreeViewRow(tv, col, isThis)
+		
+		# get the item
+		children = tv.get_children()
+		item = children[theRow]
+		#print('item:', item)
+		
+		# select the row
+		tv.focus(item) # select internally
+		tv.selection_set(item) # visually select
+		
+	def _getTreeViewRow(self, tv, col, isThis):
+		"""
+		Given a treeview, a col name and a value (isThis)
+		Return the row index of the column col mathing isThis
+		"""
+		# get the tree view columns and find the col we are looking for
+		columns = tv['columns']				
+		colIdx = columns.index(col) # assuming 'frameStart' exists
+
+		#print('tv.get_children():', tv.get_children())
+		
+		rowIdx = 0
+		for child in tv.get_children():
+		    values = tv.item(child)["values"] # values at current row
+		    if values[colIdx] == isThis:
+		    	theRet = rowIdx
+		    	break
+		    rowIdx += 1
+		return rowIdx
+
 	def _getTreeVidewSelection(self, tv, col):
 		"""
 		Get value of selected column
@@ -625,6 +535,7 @@ class VideoApp:
 		"""
 		item = tv.focus()
 		if item == '':
+			print('_getTreeVidewSelection() did not find a selection in treeview  tv:', tv)
 			return None, None
 		columns = tv['columns']				
 		colIdx = columns.index(col) # assuming 'frameStart' exists
@@ -648,6 +559,7 @@ class VideoApp:
 		# switch video stream
 		self.switchvideo(path, paused=True, gotoFrame=0)
 		
+		"""
 		# switch event list
 		self.eventList = bEventList.bEventList(path)
 		
@@ -660,6 +572,7 @@ class VideoApp:
 		
 		# set frame slider
 		self.video_frame_slider['to'] = self.vs.streamParams['numFrames']
+		"""
 		
 	def event_tree_single_selected(self, event):
 		print('=== event_tree_single_selected()')
@@ -684,24 +597,24 @@ class VideoApp:
 		self.setFrame(frameNumber)
 
 	def doCommand(self, cmd):
-		smallFrameStep = 10
-		largeFrameStep = 100
 
+		myCurrentSeconds = self.vs.getSecondsFromFrame(self.myCurrentFrame)
+		
 		if cmd == 'playpause':
 			self.vs.playPause()
 				
 		if cmd == 'forward':
-			 newFrame = self.myCurrentFrame + smallFrameStep
-			 self.setFrame(newFrame)
+			 newSeconds = myCurrentSeconds + self.configDict['smallSecondsStep']
+			 self.setSeconds(newSeconds)
 		if cmd == 'fast-forward':
-			 newFrame = self.myCurrentFrame + largeFrameStep
-			 self.setFrame(newFrame)
+			 newSeconds = myCurrentSeconds + self.configDict['largeSecondsStep']
+			 self.setSeconds(newSeconds)
 		if cmd == 'backward':
-			 newFrame = self.myCurrentFrame - smallFrameStep
-			 self.setFrame(newFrame)
+			 newSeconds = myCurrentSeconds - self.configDict['smallSecondsStep']
+			 self.setSeconds(newSeconds)
 		if cmd == 'fast-backward':
-			 newFrame = self.myCurrentFrame - largeFrameStep
-			 self.setFrame(newFrame)
+			 newSeconds = myCurrentSeconds - self.configDict['largeSecondsStep']
+			 self.setSeconds(newSeconds)
 			 
 	def keyPress(self, event):
 		print('=== VideoApp.keyPress() pressed:', repr(event.char), 'self.myCurrentFrame:', self.myCurrentFrame)
@@ -740,16 +653,16 @@ class VideoApp:
 			self.setEndFrame(self.myCurrentFrame)
 			
 		# slower (increase frame interval)
-		if theKey == '-':
+		if theKey in ['-', '_']:
 			if self.myFrameInterval == 1:
 				self.myFrameInterval = 0
 			newFrameInterval = self.myFrameInterval + 10
 			self.setFramesPerSecond(newFrameInterval)
 		# faster, decrease frame interval
-		if theKey == '+':
+		if theKey in ['+', '=']:
 			newFrameInterval = self.myFrameInterval - 10
 			if newFrameInterval <= 0:
-				newFrameInterval = 0
+				newFrameInterval = 1
 			self.setFramesPerSecond(newFrameInterval)
 			
 		if theKey == '\uf702' and event.state==97:
@@ -771,6 +684,13 @@ class VideoApp:
 			focused_widget = self.root.focus_get()
 			print('focused_widget.name:', focused_widget)
 			
+	def setSeconds(self, seconds):
+		"""
+		move to position in video seconds
+		"""
+		theFrame = self.vs.getFrameFromSeconds(seconds)
+		self.setFrame(theFrame)
+		
 	def setFrame(self, theFrame):
 		self.myCurrentFrame = theFrame
 		self.vs.setFrame(self.myCurrentFrame)
@@ -820,8 +740,17 @@ class VideoApp:
 		Open modal dialog to set note of selected event
 		"""
 		print('setNote()')
+		
 		# get selection from event list
-		d = bNoteDialog(self)
+		item = self.eventTree.focus()
+		if item == '':
+			print('Please select an event')
+			return
+			
+		d = bNoteDialog.bNoteDialog(self)
+		
+		if d is not None:
+			self.root.wait_window(d.top)
 		
 	def addEvent(self, theKey, frame):
 		"""
@@ -843,14 +772,23 @@ class VideoApp:
 		#print('newEvent.asTuple():', newEvent.asTuple())
 		self.eventTree.insert("" , position, text=text, values=newEvent.asTuple())
 		
+		# todo: update 'numevents' in video file list
+		
 	def setFramesPerSecond(self, frameInterval):
+		"""
+		frameInterval: the interval (sec) between frames
+		"""
+		print('setFramesPerSecond() frameInterval:', frameInterval)
 		# make sure I cancel using the same widget at end of videoloop()
-		"""
-		self.videoLabel.after_cancel(self.videoLoopID)
+		# cancel existing after()
+		
+		print('   shutting down video loop')
+		self.root.after_cancel(self.videoLoopID)
+		
 		self.myFrameInterval = frameInterval
-		print('setFramesPerSecond() self.myFrameInterval:', self.myFrameInterval)
+		self.myFramesPerSecond = round(1 / self.myFrameInterval,3)
+		print('   starting video loop with self.myFrameInterval:', self.myFrameInterval)
 		self.videoLoop()
-		"""
 		
 	def videoLoop(self):
 	
@@ -922,7 +860,8 @@ class VideoApp:
 			# update feedback labels
 			if 1:
 				self.currentFrameLabel['text'] = 'Frame:' + str(self.myCurrentFrame)
-				self.currentFrameIntervalLabel['text'] ='Interval (ms):' + str(self.myFrameInterval)
+				self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
+				self.currentFramePerScondLabel['text'] ='fps:' + str(self.myFramesPerSecond)
 				self.currentSecondsLabel['text'] = 'Sec:' + str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
 				self.video_frame_slider['value'] = self.myCurrentFrame
 

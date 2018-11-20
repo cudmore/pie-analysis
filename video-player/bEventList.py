@@ -23,6 +23,8 @@ class bEventList:
 
 		self.eventList = []
 		
+		self.videoFileNote = 'yyy'
+		
 		# populate from txt file
 		videoDirName = os.path.dirname(videoFilePath)
 		videoFileName = os.path.basename(videoFilePath)
@@ -31,6 +33,10 @@ class bEventList:
 		self.textFilePath = os.path.join(videoDirName, textFileName)
 		
 		self.load()
+		
+	@property
+	def numEvents(self):
+		return len(self.eventList)
 		
 	def getColumns(self):
 		return gEventColumns
@@ -60,7 +66,9 @@ class bEventList:
 		eol = '\n'
 		with open(self.textFilePath, 'w') as file:
 			# header
-			file.write('#' + eol)
+			headerStr = 'numEvents=' + str(self.numEvents) + ','
+			headerStr += 'videoFileNote=' + self.videoFileNote + ','
+			file.write(headerStr + eol)
 			# column headers
 			for col in gEventColumns:
 				file.write(col + ',')

@@ -10,7 +10,7 @@ from collections import OrderedDict
 
 import cv2
 
-gVideoFileColumns = ('index', 'path', 'file', 'width', 'height', 'frames', 'fps', 'seconds')
+gVideoFileColumns = ('index', 'path', 'file', 'width', 'height', 'frames', 'fps', 'seconds', 'numevents', 'note')
 
 #############################################################
 class bVideoList:
@@ -28,7 +28,7 @@ class bVideoList:
 		
 	def populateFolder(self, path):
 		"""
-		populate with list of .mp4 files in a folder specified by path
+		given a folder path containing .mp4 files, populate with list of .mp4 files
 		"""
 		useExtension = '.mp4'
 		videoFileIdx = 0
@@ -64,21 +64,46 @@ class bVideoFile:
 			print('error: bVideoFile() found file but could not open it:', path)
 			return
 
-		filename = os.path.basename(path)
+		width = int(myFile.get(cv2.CAP_PROP_FRAME_WIDTH))
+		height = int(myFile.get(cv2.CAP_PROP_FRAME_HEIGHT))
+		numFrames = int(myFile.get(cv2.CAP_PROP_FRAME_COUNT))
+		fps = int(myFile.get(cv2.CAP_PROP_FPS))
+		
+		videoFileName = os.path.basename(path)
 		
 		self.dict = OrderedDict()
 		self.dict['index'] = index
 		self.dict['path'] = path
-		self.dict['file'] = filename
+		self.dict['file'] = videoFileName
 		
-		self.dict['width'] = int(myFile.get(cv2.CAP_PROP_FRAME_WIDTH))
-		self.dict['height'] = int(myFile.get(cv2.CAP_PROP_FRAME_HEIGHT))
-		self.dict['frames'] = int(myFile.get(cv2.CAP_PROP_FRAME_COUNT))
-		self.dict['fps'] = int(myFile.get(cv2.CAP_PROP_FPS))
+		self.dict['width'] = width
+		self.dict['height'] = height
+		self.dict['frames'] = numFrames
+		self.dict['fps'] = fps
 		self.dict['seconds'] = round(self.dict['frames'] / self.dict['fps'],2)
+		self.dict['numevents'] = ''
+		self.dict['note'] = ''
 		
 		cv2.VideoCapture.release(myFile)
 		
+		# read the header from event .txt file
+		videoDirName = os.path.dirname(path)
+		eventFileName = videoFileName.replace('.mp4', '.txt')
+		eventFilePath = os.path.join(videoDirName, eventFileName)
+		print('eventFilePath:', eventFilePath)
+		if os.path.isfile(eventFilePath):
+			print('bVideoFile() is parsing event header:', eventFilePath)
+			with open(eventFilePath) as f:
+				header = f.readline().strip()
+				for n in header.split(','):
+					print('n:',n)
+					if len(n) > 0:
+						name, value = n.split('=')
+						print(name, value)
+						if name == 'videoFileNote':
+							self.dict['note'] = value
+						if name == 'numEvents':
+							self.dict['numevents'] = value
 	def asString(self):
 		theRet = ''
 		for i, (k,v) in enumerate(self.dict.items()):

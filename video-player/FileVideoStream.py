@@ -169,3 +169,24 @@ class FileVideoStream:
 			self.gotoFrame = newFrame
 		return True
 
+	def getFrameFromSeconds(self, seconds):
+		theFrame = int(float(seconds * self.streamParams['fps']))
+		return theFrame
+		
+	def getSecondsFromFrame(self, frame):
+		theSeconds = round(frame / self.streamParams['fps'],2)
+		return theSeconds
+		
+if __name__ == '__main__':
+
+	videoPath = '/Users/cudmore/Dropbox/PiE/video/1-homecage-movie.mp4'
+	paused = True
+	gotoFrame = 100
+	vs = FileVideoStream(videoPath, paused, gotoFrame)
+	
+	print('fps:', vs.streamParams['fps'], 'gives frame interval (sec) of', 1/vs.streamParams['fps'])
+	print('second 2 is at frame:', vs.getFrameFromSeconds(2))
+	print('frame 2 is at seconds:', vs.getSecondsFromFrame(2))
+	
+	
+	

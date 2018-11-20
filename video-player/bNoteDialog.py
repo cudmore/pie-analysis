@@ -16,8 +16,8 @@ class bNoteDialog:
 		# grab the note of selected event
 		self.item = self.parentApp.eventTree.focus()
 		if self.item == '':
-			print('please select an event')
-			return 0
+			print('bNoteDialog() please select an event')
+			return None
 		columns = self.parentApp.eventTree['columns']				
 		noteColIdx = columns.index('note') # assuming 'frameStart' exists
 		values = self.parentApp.eventTree.item(self.item, "values")
