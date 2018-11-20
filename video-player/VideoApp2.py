@@ -56,8 +56,8 @@ class VideoApp:
 
 		self.eventList = bEventList.bEventList(firstVideoPath)
 		
-		self.myFrameInterval = 30
-		self.myFramesPerSecond = round(1 / self.myFrameInterval,3)
+		self.myFrameInterval = 30 # ms per frame
+		self.myFramesPerSecond = round(1 / self.myFrameInterval,3) * 1000
 		
 		self.configDict = OrderedDict()
 		self.configDict['showRandomChunks'] = True
@@ -786,7 +786,7 @@ class VideoApp:
 		self.root.after_cancel(self.videoLoopID)
 		
 		self.myFrameInterval = frameInterval
-		self.myFramesPerSecond = round(1 / self.myFrameInterval,3)
+		self.myFramesPerSecond = round(1 / self.myFrameInterval,3) * 1000
 		print('   starting video loop with self.myFrameInterval:', self.myFrameInterval)
 		self.videoLoop()
 		

@@ -55,7 +55,7 @@ class bEventList:
 					eventLine = eventLine.strip()
 					if eventLine == '\n':
 						pass
-					print('   eventLine:', eventLine)
+					#print('   eventLine:', eventLine)
 					event = bEvent()
 					event.fromFile(headerLine, eventLine)
 					self.eventList.append(event)
