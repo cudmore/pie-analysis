@@ -22,6 +22,8 @@ class bVideoList:
 		
 		self.videoFileList = []
 
+		self.path = path
+		
 		self.populateFolder(path)
 		
 	def populateFolder(self, path):

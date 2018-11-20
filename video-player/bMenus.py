@@ -1,18 +1,26 @@
 # Author: Robert Cudmore
 # Date: 20181118
 
+import json
+
 import tkinter
 from tkinter import ttk
 from tkinter import filedialog
+
+from pprint import pprint
+
+#from bRandomChunks import bRandomChunks
 
 #
 # menus
 class bMenus:
 
 	def __init__(self, app):
-		root  = app
+
+		self.app = app
+		self.root  = app.root
 		
-		menubar = tkinter.Menu(root)
+		menubar = tkinter.Menu(self.root)
 		appmenu = tkinter.Menu(menubar, name='apple')
 		menubar.add_cascade(menu=appmenu)
 
@@ -21,7 +29,7 @@ class bMenus:
 		filemenu.add_separator()
 		filemenu.add_command(label="Open Random Chunks ...", command=self.open_random)
 		filemenu.add_separator()
-		filemenu.add_command(label="Quit", command=root.quit)
+		filemenu.add_command(label="Quit", command=self.root.quit)
 
 		windowmenu = tkinter.Menu(menubar, tearoff=0)
 		windowmenu.add_command(label="Toggle Video Files", command=self.togglevideofiles)
@@ -33,7 +41,7 @@ class bMenus:
 		menubar.add_cascade(menu=windowmenu, label='Window')
 
 		# display the menu
-		root['menu'] = [menubar]
+		self.root['menu'] = [menubar]
 	
 	def open_folder(self):
 		print("open a folder with video files")
@@ -42,14 +50,16 @@ class bMenus:
 
 	def open_random(self):
 		print("open a random chunks file")
-		filename =  filedialog.askopenfilename(initialdir = "/",title = "Select a random chunk file",filetypes = (("text files","*.txt"),("all files","*.*")))
-		print('filename:', filename)
-
+		self.app.chunkInterface_populate()
+				
 	def togglevideofiles(self):
 		print('bMenus.togglevideofiles()')
-
+		self.app.toggleVideoFiles()
+		
 	def toggleevents(self):
 		print('bMenus.toggleevents()')
-
+		self.app.toggleEvents()
+		
 	def togglerandomchunks(self):
 		print('bMenus.togglerandomchunks()')
+		self.app.toggleRandomChunks()

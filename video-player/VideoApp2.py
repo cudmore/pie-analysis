@@ -5,8 +5,10 @@
 Create a video editing interface using tkinter
 """
 
-import time
+import os, time
 import threading
+import json
+from collections import OrderedDict 
 
 import numpy as np
 
@@ -19,6 +21,7 @@ import cv2
 
 import tkinter
 from tkinter import ttk
+#from tkinter import filedialog
 
 from FileVideoStream import FileVideoStream
 import bMenus
@@ -64,6 +67,13 @@ class VideoApp:
 		
 		self.myFrameInterval = 30
 		
+		self.configDict = OrderedDict()
+		self.configDict['showRandomChunks'] = True
+		self.configDict['showVideoFiles'] = True
+		self.configDict['showEvents'] = True
+		self.configDict['videoFileSash'] = 100
+		self.configDict['eventSash'] = 400
+		
 		###
 		# tkinter interface
 		###
@@ -71,14 +81,12 @@ class VideoApp:
 
 		# make window not resiazeable
 		#self.root.resizable(width=False, height=False)
-		
-		bMenus.bMenus(self.root)
-		
+				
 		self.buildInterface()
 
 		self.root.bind("<Key>", self.keyPress)
 
-		self.videoLoop()
+		bMenus.bMenus(self)
 
 		# this will return but run in background using tkinter after()
 		self.videoLoop()
@@ -87,6 +95,33 @@ class VideoApp:
 		self.root.wm_title("PiE Video Analysis")
 		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
 		
+
+	###################################################################################
+	def toggleVideoFiles(self):
+		print('toggleVideoFiles()')
+		self.configDict['showVideoFiles'] = not self.configDict['showVideoFiles']
+		if self.configDict['showVideoFiles']:
+			self.vPane.sashpos(0, self.configDict['videoFileSash'])
+		else:
+			self.vPane.sashpos(0, 0)
+
+	###################################################################################
+	def toggleEvents(self):
+		print('toggleEvents()')
+		self.configDict['showEvents'] = not self.configDict['showEvents']
+		if self.configDict['showEvents']:
+			self.hPane.sashpos(0, self.configDict['eventSash'])
+		else:
+			self.hPane.sashpos(0, 0)
+
+	###################################################################################
+	def toggleRandomChunks(self):
+		print('toggleRandomChunks()')
+		self.configDict['showRandomChunks'] = not self.configDict['showRandomChunks']
+		if self.configDict['showRandomChunks']:
+			self.random_chunks_frame.grid()
+		else:
+			self.random_chunks_frame.grid_remove()
 
 	###################################################################################
 	def buildInterface(self):
@@ -100,14 +135,14 @@ class VideoApp:
 		self.root.grid_columnconfigure(0, weight=1)
 
 		#
-		vPane = ttk.PanedWindow(self.root, orient="vertical")
-		vPane.grid(row=0, column=0, sticky="nsew")
+		self.vPane = ttk.PanedWindow(self.root, orient="vertical")
+		self.vPane.grid(row=0, column=0, sticky="nsew")
 
-		upper_frame = ttk.Frame(vPane, borderwidth=myBorderWidth, relief="sunken")
+		upper_frame = ttk.Frame(self.vPane, borderwidth=myBorderWidth, relief="sunken")
 		upper_frame.grid(row=0, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		upper_frame.grid_rowconfigure(0, weight=1)
 		upper_frame.grid_columnconfigure(0, weight=1)
-		vPane.add(upper_frame)
+		self.vPane.add(upper_frame)
 
 		#self.videoFileTree = ttk.Treeview(upper_frame, columns=gVideoFileColumns, show='headings')
 		self.videoFileTree = ttk.Treeview(upper_frame, show='headings')
@@ -119,11 +154,11 @@ class VideoApp:
 
 
 		#
-		lower_frame = ttk.Frame(vPane, borderwidth=myBorderWidth, relief="sunken")
+		lower_frame = ttk.Frame(self.vPane, borderwidth=myBorderWidth, relief="sunken")
 		#lower_frame.grid(row=0, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		lower_frame.grid_rowconfigure(0, weight=1)
 		lower_frame.grid_columnconfigure(0, weight=1)
-		vPane.add(lower_frame)
+		self.vPane.add(lower_frame)
 
 		#
 		self.hPane = ttk.PanedWindow(lower_frame, orient="horizontal")
@@ -149,6 +184,7 @@ class VideoApp:
 		self.populateEvents(doInit=True)
 
 		#
+		# video
 		self.lower_right_frame = ttk.Frame(self.hPane, borderwidth=myBorderWidth, relief="sunken")
 		self.lower_right_frame.grid(row=0, column=1, sticky="nsew", padx=myPadding, pady=myPadding)
 		self.lower_right_frame.grid_rowconfigure(0, weight=0)
@@ -160,26 +196,17 @@ class VideoApp:
 		self.lower_right_frame.grid_columnconfigure(0, weight=1)
 		self.hPane.add(self.lower_right_frame)
 
-		# video
-		#myApectRatio = 4.0/3.0
-	
 		#
 		# random chunks
-		showRandomChunks = False # toggle this when we load random chunks file
-		random_chunks_frame = ttk.Frame(self.lower_right_frame)
-		random_chunks_frame.grid(row=0, column=0, sticky="new")
+		self.random_chunks_frame = ttk.Frame(self.lower_right_frame)
+		self.random_chunks_frame.grid(row=0, column=0, sticky="new")
 		# this removes and then re-adds a frame from the grid ... very useful
-		if showRandomChunks:
-			random_chunks_frame.grid()
+		if self.configDict['showRandomChunks']:
+			self.random_chunks_frame.grid()
 		else:
-			random_chunks_frame.grid_remove()
-
-		random_chunks_label1 = ttk.Label(random_chunks_frame, text="random param 1")
-		random_chunks_label1.grid(row=0, column=0, sticky="nw", padx=myPadding, pady=myPadding)
-
-		random_chunks_label2 = ttk.Label(random_chunks_frame, text="random param 2")
-		random_chunks_label2.grid(row=0, column=1, sticky="nw", padx=myPadding, pady=myPadding)
-	
+			self.random_chunks_frame.grid_remove()
+		self.chunkInterface()
+		
 		#
 		# video feedback
 		video_feedback_frame = ttk.Frame(self.lower_right_frame)
@@ -209,17 +236,17 @@ class VideoApp:
 		#videoFrame2.grid_rowconfigure(0, weight=1)
 		#videoFrame2.grid_columnconfigure(0, weight=1)
 
-		self.pad_frame = ttk.Frame(self.lower_right_frame, borderwidth=0, width=200, height=200)
+		#self.pad_frame = ttk.Frame(self.lower_right_frame, borderwidth=0, width=200, height=200)
 		#self.pad_frame = ttk.Frame(self.root, borderwidth=0, width=200, height=200)
 		#self.pad_frame = ttk.Frame(videoFrame2, borderwidth=0, width=200, height=200)
 		# when in lower_right_frame
-		self.pad_frame.grid(row=2, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
+		#self.pad_frame.grid(row=2, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		# when in root
 		#self.pad_frame.grid(row=0, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 	
 		contentBorderWidth = 1
 		self.content_frame = ttk.Frame(self.lower_right_frame, borderwidth=contentBorderWidth) # PARENT IS ROOT
-		self.content_frame.grid(row=2, column=0, sticky="nsew", padx=5, pady=5)
+		self.content_frame.grid(row=2, column=0, sticky="nsew") #, padx=5, pady=5)
 		#self.content_frame.grid(row=2, column=0, padx=5, pady=5)
 		self.content_frame.grid_rowconfigure(0, weight=1)
 		self.content_frame.grid_columnconfigure(0, weight=1)
@@ -269,24 +296,66 @@ class VideoApp:
 				
 		#
 		# configure panel
-		"""
-		vPane.add(upper_frame)
-		vPane.add(lower_frame)
 
-		self.hPane.add(lower_left_frame)
-		self.hPane.add(self.lower_right_frame)
-		"""
-		
 		# do this at end to get window panels to size correctly
 		#self.root.geometry("1285x815") # home
-		self.root.geometry("1810x1198") # work
+		self.root.geometry("1100x700") # home2
+		#self.root.geometry("1810x1198") # work
 
 		self.root.update()
-		vPane.sashpos(0, 100)
+		self.vPane.sashpos(0, 100)
 		self.hPane.sashpos(0, 400)
 
-		self.lower_right_frame.bind("<Configure>", self.mySetAspect)
+		#self.videoLabel.bind("<Configure>", self.mySetAspect)
+		#self.mySetAspect()
+		
+	###################################################################################
+	def chunkInterface(self):
+		# insert into self.random_chunks_frame
+		self.chunkFileLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='File:')
+		self.chunkFileLabel.grid(row=0, column=0)
+	
+		self.nextChunkButton = ttk.Button(self.random_chunks_frame, width=4, text="Next", command=self.chunk_next)
+		self.nextChunkButton.grid(row=0, column=1)
 
+	def chunkInterface_populate(self):
+		"""
+		Open a chunks file and populate interface
+		"""
+		self.currentChunk = 0 #NEW
+		print('chunkInterface_populate()')
+		initialdir = self.videoList.path
+		filepath =  tkinter.filedialog.askopenfilename(initialdir = initialdir,title = "Select a random chunk file",filetypes = (("text files","*.txt"),("all files","*.*")))
+		print('filepath:', filepath)
+		#chunkFile = bRandomChunks(filename).open()
+		#print(chunkFile)
+		with open(filepath) as f:
+			self.chunkData = json.load(f) #NEW
+		# data is a dict of {'chunks', 'chunkOrder'}
+		#pprint(data)
+		
+		self.chunkFileLabel['text'] = os.path.basename(filepath)
+		self.chunkFileLabel['width'] = len(os.path.basename(filepath))
+		
+	def chunk_next(self):
+		print('chunk_next()')
+		self.currentChunk += 1
+		self.chunk_goto(self.currentChunk)
+		
+	def chunk_goto(self, chunkNumber):
+		print('chunk_goto() chunkNumber:', chunkNumber)
+		actualChunkNumber = self.chunkData['chunkOrder'][chunkNumber]
+		chunk = self.chunkData['chunks'][actualChunkNumber]
+		
+		path = chunk['path']
+		startFrame = chunk['startFrame']
+		
+		print('chunk_goto() chunkNumber:', chunkNumber, 'path:', path, 'startFrame:', startFrame)
+		
+		self.switchvideo(path, paused=True, gotoFrame=startFrame)
+		
+		self.setFrame(startFrame)
+		
 	###################################################################################
 	def populateVideoFiles(self, doInit=False):
 		
@@ -355,7 +424,10 @@ class VideoApp:
 		self.vs = FileVideoStream(videoPath, paused, gotoFrame) #.start()
 		self.vs.start()
 		
-		self.setFrame(0)
+		if gotoFrame is None:
+			self.setFrame(0)
+		else:
+			self.setFrame(gotoFrame)
 
 		# set the selection in video tree
 		# select the first video
@@ -384,35 +456,47 @@ class VideoApp:
 		print('set_aspect2')
 	"""
 	
+	#def mySetAspect(self):
 	def mySetAspect(self, event):
-		print('~~~~~ mySetAspect() event:', event)
+		print('~~~~~ mySetAspect() event:')
+		print('   event:', event)
+		"""
 		print('   event.widget:', event.widget)
 		print('   event.type:', event.type)
+		"""
 		aspect_ratio = self.vs.streamParams['aspectRatio']
 		buttonHeight = 36
 		
-		desired_width = event.width - buttonHeight
+		#desired_width = event.width - buttonHeight
+		#desired_height = int(desired_width * aspect_ratio)
+		
+		#print(self.lower_right_frame.winfo_width(), self.lower_right_frame.winfo_height())
+		
+		#width = event.width
+		#height = event.height
+		width = self.videoLabel.winfo_width()
+		height = self.videoLabel.winfo_height()
+		desired_width = self.videoLabel.winfo_width() - buttonHeight
 		desired_height = int(desired_width * aspect_ratio)
 		
-		desired_width = self.content_frame.winfo_width()
-		desired_height = self.content_frame.winfo_height()
-		print('   desired_width:', desired_width, 'desired_height:', desired_height)
-		
-		if desired_height > event.height:
-			desired_height = event.height - buttonHeight
+		if desired_height > height:
+			desired_height = height - buttonHeight
 			desired_width = int(desired_height / aspect_ratio)
 		
-		desired_width -= 50
-		desired_height -= 50
-		
-		self.videoLabel.place(x=50, y=50, width=desired_width, height=desired_height)
+		print('   width:', width, 'height:', height)
+		print('   desired_width:', desired_width, 'desired_height:', desired_height)
+
+		#self.content_frame.place(in_=self.lower_right_frame, x=0, y=0, width=desired_width, height=desired_height)
+
+		#self.videoLabel.place(in_=self.content_frame, x=0, y=0, width=desired_width, height=desired_height)
 		#self.video_control_frame.place(x=0, y=desired_height + buttonHeight, width=desired_width)
 		
 		print('~~~~~ mySetAspect() done')
-  	
+		#self.root.after(100, self.mySetAspect)
+  		
     # see: https://stackoverflow.com/questions/16523128/resizing-tkinter-frames-with-fixed-aspect-ratio
 	#def set_aspect(self, lower_right_frame, content_frame, pad_frame, video_control_frame, aspect_ratio):
-	def set_aspect(self, hPane, lower_right_frame, content_frame, pad_frame, video_control_frame, videoLabel, aspect_ratio=None):
+	def _set_aspect(self, hPane, lower_right_frame, content_frame, pad_frame, video_control_frame, videoLabel, aspect_ratio=None):
 		# a function which places a frame within a containing frame, and
 		# then forces the inner frame to keep a specific aspect ratio
 
@@ -763,15 +847,29 @@ class VideoApp:
 			pass
 		else:
 			## resize
-			tmpWidth = self.videoLabel.winfo_width()
-			tmpHeight = self.videoLabel.winfo_height()
+			#tmpWidth = self.videoLabel.winfo_width()
+			#tmpHeight = self.videoLabel.winfo_height()
+
+			buttonHeight = 32
+			
+			width = self.content_frame.winfo_width()
+			height = self.content_frame.winfo_height()
+			
+			tmpWidth = self.content_frame.winfo_width() - buttonHeight
+			#tmpHeight = self.content_frame.winfo_height()
+			tmpHeight = int(tmpWidth * self.vs.streamParams['aspectRatio'])
+
+			if tmpHeight > height:
+				tmpHeight = height - buttonHeight
+				tmpWidth = int(tmpHeight / self.vs.streamParams['aspectRatio'])
+
 			#tmpWidth = self.currentWidth
 			#tmpHeight = self.currentHeight
 			#print('   tmpWidth:', tmpWidth, 'tmpHeight:', tmpHeight)
 			tmpImage = None
 			try:
-				#tmpImage = self.frame
-				tmpImage = cv2.resize(self.frame, (tmpWidth, tmpHeight))
+				tmpImage = self.frame
+				#tmpImage = cv2.resize(self.frame, (tmpWidth, tmpHeight))
 			except:
 				#print('exception: in videoLoop() ... cv2.resize()')
 				pass
@@ -780,7 +878,8 @@ class VideoApp:
 				tmpImage = cv2.cvtColor(tmpImage, cv2.COLOR_BGR2RGB)
 				tmpImage = Image.fromarray(tmpImage)
 			
-				#tmpImage = tmpImage.resize((tmpWidth, tmpHeight), Image.ANTIALIAS)
+				tmpImage = tmpImage.resize((tmpWidth, tmpHeight), Image.ANTIALIAS)
+				#tmpImage = tmpImage.resize((width, height), Image.ANTIALIAS)
 				
 				tmpImage = ImageTk.PhotoImage(tmpImage)
 	
@@ -789,6 +888,10 @@ class VideoApp:
 					self.videoLabel.image = tmpImage
 				except:
 					print('exception: videoLoop() configure self.videoLabel')
+			
+			self.videoLabel.place(x=0, y=0, width=tmpWidth, height=tmpHeight)
+			self.video_control_frame.place(x=0, y=tmpHeight + buttonHeight, width=tmpWidth)
+			
 			#
 			# update feedback labels
 			if 1:
