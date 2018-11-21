@@ -29,7 +29,8 @@ class bMenus:
 		filemenu.add_separator()
 		filemenu.add_command(label="Open Random Chunks ...", command=self.open_random)
 		filemenu.add_separator()
-		filemenu.add_command(label="Quit", command=self.root.quit)
+		#filemenu.add_command(label="Quit", command=self.root.quit)
+		filemenu.add_command(label="Quit", command=self.app.onClose)
 
 		windowmenu = tkinter.Menu(menubar, tearoff=0)
 		windowmenu.add_command(label="Toggle Video Files", command=self.togglevideofiles)

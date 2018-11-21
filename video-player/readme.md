@@ -115,14 +115,18 @@ Pillow==5.3.0
 ## To Do
 
  - Highlight most recent annotation in list as video is played.
- - Expand code to open a folder of video files. Right now it is one hard-coded video file.
- - Finish setting annotation notes with keyboard 'n'.
- - Finish sorting annotation columns when clicked.
- - Add standard video control buttons like play/pause/forward/backward/large-forward/large-backward.
+ - Finish sorting annotation columns when clicked. Need to insert str(), int(float() to do this.
+ - [done]Add standard video control buttons like play/pause/forward/backward/large-forward/large-backward.
  - Implement saving/loading options via JSON file. Include window geometry and mapping of annotation event numbers to names.
- - Write recipe for installation into Python virtual environment.
- - Design system where annotations can have start/stop frames or start frame and number of frames (duration). Right now annotations only have single (start) frame.
- - Add note to video file by putting it in event list header
+ - Add note to video file by putting it in event list header. 
+ - Running video faster/slower using +/- increments frame interval, it should increment frames per second (+/- 5). This way user can get back to original fps. 
+ - toggle 'play' button to reflect state
+ 
+ - [done] Expand code to open a folder of video files. Right now it is one hard-coded video file.
+ - [done] Finish setting annotation notes with keyboard 'n'.
+ - [done]Write recipe for installation into Python virtual environment.
+ - [done] Design system where annotations can have start/stop frames or start frame and number of frames (duration). Right now annotations only have single (start) frame.
+
  
 ## Learning Tkinter
 

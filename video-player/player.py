@@ -13,7 +13,6 @@ from VideoApp import VideoApp
 #fvs.start()
 
 path = '/Users/cudmore/Dropbox/PiE/video'
-path = ''
 
 pba = VideoApp(path)
 

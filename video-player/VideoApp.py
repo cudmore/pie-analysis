@@ -452,9 +452,10 @@ class VideoApp:
 		print('treeview_sort_column()', 'tv:', tv, 'col:', col, 'reverse:', reverse)
 		l = [(tv.set(k, col), k) for k in tv.get_children('')]
 		
-		print(l)
+		print('   l:', l)
 		
-		"""
+		#newlist = sorted(list_to_be_sorted, key=lambda k: k['name'])
+		
 		l.sort(reverse=reverse)
 
 		# rearrange items in sorted positions
@@ -463,7 +464,6 @@ class VideoApp:
 
 		# reverse sort next time
 		tv.heading(col, command=lambda:self.treeview_sort_column(tv, col, not reverse))
-		"""
 		           
 	"""
 	def set_aspect2(self, event):
