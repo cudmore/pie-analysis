@@ -371,15 +371,42 @@ class VideoApp:
 			
 			self.videoFileTree.bind("<ButtonRelease-1>", self.video_tree_single_click)
 
+			# right-click popup
+			# see: https://stackoverflow.com/questions/12014210/tkinter-app-adding-a-right-click-context-menu
+			self.popup_menu = tkinter.Menu(self.root, tearoff=0)
+			self.popup_menu.add_command(label="Delete",
+										command=self.delete_selected) #command=self.delete_selected
+			self.popup_menu.add_command(label="Set Note",
+										command=self.select_all) #command=self.select_all
+			self.popup_menu.bind("<Button-2>", self.popup)
+			#self.popup_menu.bind("<Button-3>", self.popup) # Button-2 on Aqua
+		
 		# first delete entries
 		for i in self.videoFileTree.get_children():
-		    self.videoFileTree.delete(i)
+			self.videoFileTree.delete(i)
 
 		for idx, videoFile in enumerate(self.videoList.getList()):
 			position = "end"
 			self.videoFileTree.insert("" , position, text=str(idx+1), values=videoFile.asTuple())
 
 	
+	# right click interface
+	def popup(self, event):
+		print('popup()')
+		try:
+			self.popup_menu.tk_popup(event.x_root, event.y_root) #, 0)
+		finally:
+			self.popup_menu.grab_release()
+
+	def delete_selected(self):
+		print('delete_selected() not implemented')
+		#for i in self.curselection()[::-1]:
+		#	self.delete(i)
+
+	def select_all(self):
+		print('select_all() not implemented')
+		#self.selection_set(0, 'end')
+
 	###################################################################################
 	def populateEvents(self, doInit=False):
 		eventColumns = self.eventList.getColumns()
@@ -406,7 +433,7 @@ class VideoApp:
 
 		# first delete entries
 		for i in self.eventTree.get_children():
-		    self.eventTree.delete(i)
+			self.eventTree.delete(i)
 
 		# todo: make bEventList iterable
 		for idx, event in enumerate(self.eventList.eventList):
@@ -464,7 +491,7 @@ class VideoApp:
 
 		# reverse sort next time
 		tv.heading(col, command=lambda:self.treeview_sort_column(tv, col, not reverse))
-		           
+				   
 	"""
 	def set_aspect2(self, event):
 		print('set_aspect2')
@@ -542,11 +569,11 @@ class VideoApp:
 		
 		rowIdx = 0
 		for child in tv.get_children():
-		    values = tv.item(child)["values"] # values at current row
-		    if values[colIdx] == isThis:
-		    	theRet = rowIdx
-		    	break
-		    rowIdx += 1
+			values = tv.item(child)["values"] # values at current row
+			if values[colIdx] == isThis:
+				theRet = rowIdx
+				break
+			rowIdx += 1
 		return rowIdx
 
 	def _getTreeVidewSelection(self, tv, col):
