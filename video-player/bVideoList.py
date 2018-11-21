@@ -30,6 +30,9 @@ class bVideoList:
 		"""
 		given a folder path containing .mp4 files, populate with list of .mp4 files
 		"""
+		if not os.path.isdir(path):
+			return
+			
 		useExtension = '.mp4'
 		videoFileIdx = 0
 		for file in os.listdir(path):

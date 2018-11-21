@@ -6,6 +6,8 @@ Break each video file into numChunks = floor(numFrames / chunkInterval)
 
 Randomly select chunksPerFile without replacement
 
+todo: Add parameters used when saving json
+
 """
 
 import os, time, math, json
@@ -82,6 +84,7 @@ class bChunk:
 			data = json.load(f)
 		pprint(data)
 		# data is a dict of {'chunks', 'chunkOrder'}
+		
 if __name__ == '__main__':
 	path = '/Users/cudmore/Dropbox/PiE/video'
 	chunks = bChunk(path)

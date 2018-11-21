@@ -50,7 +50,7 @@ class bMenus:
 
 	def open_random(self):
 		print("open a random chunks file")
-		self.app.chunkView.chunkInterface_populate()
+		self.app.chunkView.chunkInterface_populate(askForFile=True)
 				
 	def togglevideofiles(self):
 		print('bMenus.togglevideofiles()')

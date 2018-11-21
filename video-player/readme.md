@@ -50,26 +50,67 @@ index,path,cseconds,type,frame,note,
 
 ## Install on macOS
 
-1)  [Brew](https://brew.sh/)
+Requires Python 3.7, Open CV 3, Pillow (PIL), Numpy
 
-2) OpenCV (takes a long time to build)
-	
-	brew install opencv3 --with-python3
-
-3) Pillow
-
-	pip3 install pillow
-
-4) Make sure you have required Python libraries
-
- - [numpy](http://www.numpy.org/)
- - [tkinter](https://docs.python.org/3/library/tkinter.html)
-	
-If having trouble with Homebrew and OpenCV, see [this tutorial](https://www.pyimagesearch.com/2016/12/19/install-opencv-3-on-macos-with-homebrew-the-easy-way/).
+```
+git clone https://github.com/cudmore/pie-analysis.git
+cd pie-analysis
+python3 -m env
+source env/bin/activate
+pip install -r requirements.txt
+```
 
 ## Run
 
-	python3 player.py
+```
+python player.py
+```
+
+## Detailed installation
+
+	# install homebrew
+	ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+	# upgrade to Python 3.7
+	brew upgrade python
+	
+	# check Python 3.7 is installed, should return Python 3.7.1
+	python3 --version
+	
+	# check pip3, should return
+	# pip 18.1 from /usr/local/lib/python3.7/site-packages/pip (python 3.7)
+	pip3 --version
+	
+	# add the following to profile using 'pico ~/.profile'
+	# assuming username is 'cudmore', change as neccessary
+	export PATH="$PATH:/Users/cudmore/Library/Python/3.7/bin"
+
+	# activate the changes made to path
+	source ~/.profile
+	
+	# clone repository
+	git clone https://github.com/cudmore/pie-analysis.git
+	
+	# create a python 3 virtual environment 'env' and activate it
+	# once activated, command line should begin with '(env)'
+	cd pie-analysis/video-player
+	python3 -m env
+	source env/bin/activate
+	
+    # install with pip
+    pip install -r requirements.txt
+
+	# if needed, install opencv with brew
+	brew install opencv3 --with-python3
+    
+Current working system has 'pip freeze'
+
+```
+numpy==1.15.4
+opencv-python==3.4.3.18
+Pillow==5.3.0
+```
+
 	
 ## To Do
 

@@ -14,25 +14,29 @@ gEventColumns = ('index', 'path', 'cseconds', 'type', 'frameStart', 'frameStop',
 
 class bEventList:
 	def __init__(self,videoFilePath):
+		
+		"""
 		# check that videoFilePath exists
 		if not os.path.isfile(videoFilePath):
 			print('error: bEvenList() did not find video file path:', videoFilePath)
 			return 0
+		"""
 			
 		self.videoFilePath = videoFilePath
 
 		self.eventList = []
 		
-		self.videoFileNote = 'yyy'
+		self.videoFileNote = ''
 		
 		# populate from txt file
-		videoDirName = os.path.dirname(videoFilePath)
-		videoFileName = os.path.basename(videoFilePath)
+		if os.path.isfile(videoFilePath):
+			videoDirName = os.path.dirname(videoFilePath)
+			videoFileName = os.path.basename(videoFilePath)
 		
-		textFileName = videoFileName.split('.')[0] + '.txt'
-		self.textFilePath = os.path.join(videoDirName, textFileName)
+			textFileName = videoFileName.split('.')[0] + '.txt'
+			self.textFilePath = os.path.join(videoDirName, textFileName)
 		
-		self.load()
+			self.load()
 		
 	@property
 	def numEvents(self):

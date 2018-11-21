@@ -32,7 +32,17 @@ import bChunkView
 
 ##################################################################################
 class VideoApp:
-	#def __init__(self, path, vs):
+	def loadFolder(self, path):
+		self.videoList = bVideoList.bVideoList(path)		
+	
+		# initialize with first video in path
+		firstVideoPath = self.videoList.videoFileList[0].dict['path']
+
+		self.eventList = bEventList.bEventList(firstVideoPath)
+
+		# fire up a video stream
+		self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
+	
 	def __init__(self, path):
 		"""
 		TKInter application to create interface for loading, viewing, and annotating video
@@ -52,7 +62,9 @@ class VideoApp:
 		self.videoList = bVideoList.bVideoList(path)		
 
 		# initialize with first video in path
-		firstVideoPath = self.videoList.videoFileList[0].dict['path']
+		firstVideoPath = ''
+		if len(self.videoList.videoFileList) > 0:
+			firstVideoPath = self.videoList.videoFileList[0].dict['path']
 
 		self.eventList = bEventList.bEventList(firstVideoPath)
 		
@@ -67,6 +79,7 @@ class VideoApp:
 		self.configDict['eventSash'] = 400 # pixels
 		self.configDict['smallSecondsStep'] = 1 # seconds
 		self.configDict['largeSecondsStep'] = 10 # seconds
+		self.configDict['lastPath'] = path
 		
 		###
 		# tkinter interface
@@ -97,7 +110,8 @@ class VideoApp:
 		# set a callback to handle when the window is closed
 		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
 		
-
+		self.root.mainloop()
+		
 	###################################################################################
 	def toggleInterface(self, this):
 		"""

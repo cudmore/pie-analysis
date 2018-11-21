@@ -5,22 +5,18 @@
 # Main
 ##################################################################################
 
-from FileVideoStream import FileVideoStream
 from VideoApp2 import VideoApp
 
-path = '/Users/cudmore/Dropbox/PiE/video'
-videoPath = '/Users/cudmore/Dropbox/PiE/video/homecage-movie.mp4'
-
+#from FileVideoStream import FileVideoStream
+#videoPath = '/Users/cudmore/Dropbox/PiE/video/homecage-movie.mp4'
 #fvs = FileVideoStream(videoPath) #.start()
 #fvs.start()
 
-#pba = VideoApp(path, fvs)
+path = '/Users/cudmore/Dropbox/PiE/video'
+
 pba = VideoApp(path)
 
-# this still blocks, any updates to tk slider blocks video thread?
-#pba.root.after(10, pba.myUpdate)
+#pba.root.mainloop()
 
-pba.root.mainloop()
-
-print('videoplayer after root.mainloop()')
+print('player is ending')
 

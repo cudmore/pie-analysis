@@ -39,7 +39,7 @@ class bChunkView:
 		self.gotoChunkEntry.grid(row=0, column=6)
 		self.gotoChunkEntry.insert(0, '0')
 		
-	def chunkInterface_populate(self):
+	def chunkInterface_populate(self, askForFile=False):
 		"""
 		Open a chunks file and populate interface
 		"""
@@ -51,9 +51,13 @@ class bChunkView:
 		filepath = os.path.join(initialdir,defaultFile)
 		if os.path.isfile(filepath):
 			pass	
-		else:
+		elif askForFile:
 			filepath =  tkinter.filedialog.askopenfilename(initialdir = initialdir,title = "Select a random chunk file",filetypes = (("text files","*.txt"),("all files","*.*")))
 		print('filepath:', filepath)
+		
+		if not os.path.isfile(filepath):
+			return
+		
 		#chunkFile = bRandomChunks(filename).open()
 		#print(chunkFile)
 		with open(filepath) as f:
