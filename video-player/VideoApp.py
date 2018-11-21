@@ -77,13 +77,14 @@ class VideoApp:
 		self.myFramesPerSecond = round(1 / self.myFrameInterval,3) * 1000
 		
 		self.configDict = OrderedDict()
-		self.configDict['showRandomChunks'] = True
 		self.configDict['showVideoFiles'] = True
 		self.configDict['showEvents'] = True
 		self.configDict['videoFileSash'] = 200 # pixels
 		self.configDict['eventSash'] = 400 # pixels
-		self.configDict['smallSecondsStep'] = 1 # seconds
-		self.configDict['largeSecondsStep'] = 10 # seconds
+		self.configDict['showRandomChunks'] = True
+		self.configDict['showVideoFeedback'] = True
+		self.configDict['smallSecondsStep'] = 10 # seconds
+		self.configDict['largeSecondsStep'] = 60 # seconds
 		self.configDict['lastPath'] = path
 		
 		###
@@ -145,6 +146,12 @@ class VideoApp:
 				self.random_chunks_frame.grid()
 			else:
 				self.random_chunks_frame.grid_remove()
+		if this == 'videofeedback':
+			self.configDict['showVideoFeedback'] = not self.configDict['showVideoFeedback']
+			if self.configDict['showVideoFeedback']:
+				self.video_feedback_frame.grid()
+			else:
+				self.video_feedback_frame.grid_remove()
 						
 	###################################################################################
 	def buildInterface(self):
@@ -232,26 +239,31 @@ class VideoApp:
 		
 		#
 		# video feedback
-		video_feedback_frame = ttk.Frame(self.lower_right_frame)
-		video_feedback_frame.grid(row=1, column=0, sticky="nw")
+		self.video_feedback_frame = ttk.Frame(self.lower_right_frame)
+		self.video_feedback_frame.grid(row=1, column=0, sticky="nw")
 
-		self.currentFrameLabel = ttk.Label(video_feedback_frame, width=11, anchor="w", text='Frame:')
+		self.currentFrameLabel = ttk.Label(self.video_feedback_frame, width=11, anchor="w", text='Frame:')
 		self.currentFrameLabel.grid(row=0, column=0)
 		
-		self.numFrameLabel = ttk.Label(video_feedback_frame, width=8, anchor="w", text='of ')
+		self.numFrameLabel = ttk.Label(self.video_feedback_frame, width=8, anchor="w", text='of ')
 		self.numFrameLabel.grid(row=0, column=1)
 
-		self.currentSecondsLabel = ttk.Label(video_feedback_frame, width=8, anchor="w", text='Sec:')
+		self.currentSecondsLabel = ttk.Label(self.video_feedback_frame, width=8, anchor="w", text='Sec:')
 		self.currentSecondsLabel.grid(row=0, column=2, sticky="w")
 		
-		self.numSecondsLabel = ttk.Label(video_feedback_frame, width=8, anchor="w", text='of ')
+		self.numSecondsLabel = ttk.Label(self.video_feedback_frame, width=8, anchor="w", text='of ')
 		self.numSecondsLabel.grid(row=0, column=3, sticky="w")
 		
-		self.currentFrameIntervalLabel = ttk.Label(video_feedback_frame, width=20, anchor="w", text='Frame Interval (ms):')
+		self.currentFrameIntervalLabel = ttk.Label(self.video_feedback_frame, width=20, anchor="w", text='Frame Interval (ms):')
 		self.currentFrameIntervalLabel.grid(row=0, column=4, sticky="w")
 
-		self.currentFramePerScondLabel = ttk.Label(video_feedback_frame, width=20, anchor="w", text='fps:')
+		self.currentFramePerScondLabel = ttk.Label(self.video_feedback_frame, width=20, anchor="w", text='fps:')
 		self.currentFramePerScondLabel.grid(row=0, column=5, sticky="w")
+
+		if self.configDict['showVideoFeedback']:
+			self.video_feedback_frame.grid()
+		else:
+			self.video_feedback_frame.grid_remove()
 
 		#
 		# video frame
@@ -556,6 +568,25 @@ class VideoApp:
 		tv.focus(item) # select internally
 		tv.selection_set(item) # visually select
 		
+	def _setTreeViewCell(self, tv, row, col, toThis):
+		
+		print('_setTreeViewCell() tv:', tv, 'row:', row, 'col:', col, 'toThis:', toThis)
+		
+		# get the item at row
+		item = self.eventTree.get_children()[row]
+		
+		# get the tree view columns and find the col we are looking for
+		columns = tv['columns']				
+		colIdx = columns.index(col) # assuming 'frameStart' exists
+	
+		values = tv.item(item, "values") # tuple of all values in tv row
+		
+		# set
+		values[colIdx] = str(toThis) # for now, keep everything as a string
+		
+		# put it back into tree
+		tv.item(item, vlaues=values)
+		
 	def _getTreeViewRow(self, tv, col, isThis):
 		"""
 		Given a treeview, a col name and a value (isThis)
@@ -805,23 +836,36 @@ class VideoApp:
 		"""
 		Append a new event at the current frame
 		"""
-		frame = float(frame)
-		frame = int(frame)
+		frame = int(float(frame))
 
+		# add new event to eventList
 		newEvent = self.eventList.appendEvent(theKey, frame)
 		self.eventList.save()
 		
-		# get a tuple (list) of item names
+		# get a tuple (list) of item names in event tree view
 		children = self.eventTree.get_children()
 		numInList = len(children)
 
+		# append to end of list in tree view
 		position = "end"
 		numInList += 1
 		text = str(numInList)
 		#print('newEvent.asTuple():', newEvent.asTuple())
 		self.eventTree.insert("" , position, text=text, values=newEvent.asTuple())
 		
+		#
+		# interface
+		
 		# todo: update 'numevents' in video file list
+		# need a simple way to get row of video file (in video file list) from event
+		#videoListRow = none
+		#self._setTreeViewCell(self.videoFileTree, videoListRow, 'numevents', self.eventList.numEvents)
+		
+		# select new event in event list
+		self._selectTreeViewRow(self.eventTree, 'index', newEvent.dict['index'])
+		
+		# scroll to bottom of event tree
+		self.eventTree.yview_moveto(1) # 1 is fractional
 		
 	def setFramesPerSecond(self, frameInterval):
 		"""

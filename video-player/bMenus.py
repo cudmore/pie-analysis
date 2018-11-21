@@ -37,6 +37,7 @@ class bMenus:
 		windowmenu.add_command(label="Toggle Events", command=self.toggleevents)
 		windowmenu.add_separator()
 		windowmenu.add_command(label="Toggle Random Chunks", command=self.togglerandomchunks)
+		windowmenu.add_command(label="Toggle Video Feedback", command=self.togglevideofeedback)
 		
 		menubar.add_cascade(menu=filemenu, label='File')
 		menubar.add_cascade(menu=windowmenu, label='Window')
@@ -69,3 +70,8 @@ class bMenus:
 		print('bMenus.togglerandomchunks()')
 		#self.app.toggleRandomChunks()
 		self.app.toggleInterface('randomchunks')
+
+	def togglevideofeedback(self):
+		print('bMenus.togglevideofeedback()')
+		#self.app.toggleRandomChunks()
+		self.app.toggleInterface('videofeedback')
