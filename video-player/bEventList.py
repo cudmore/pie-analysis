@@ -10,6 +10,8 @@ import os, time
 import numpy as np
 from collections import OrderedDict 
 
+import FileVideoStream
+
 gEventColumns = ('index', 'path', 'cseconds', 'type', 'frameStart', 'frameStop', 'note')
 
 class bEventList:
@@ -36,7 +38,11 @@ class bEventList:
 			textFileName = videoFileName.split('.')[0] + '.txt'
 			self.textFilePath = os.path.join(videoDirName, textFileName)
 		
+			vs = FileVideoStream.FileVideoStream(videoFilePath)
+			self.streamParams = vs.streamParams
+
 			self.load()
+
 		
 	@property
 	def numEvents(self):
@@ -70,8 +76,12 @@ class bEventList:
 		eol = '\n'
 		with open(self.textFilePath, 'w') as file:
 			# header
-			headerStr = 'numEvents=' + str(self.numEvents) + ','
+			headerStr = ''
+			for (k,v) in self.streamParams.items():
+				headerStr += k + '=' + str(v) + ','
+			headerStr += 'numEvents=' + str(self.numEvents) + ','
 			headerStr += 'videoFileNote=' + self.videoFileNote + ','
+
 			file.write(headerStr + eol)
 			# column headers
 			for col in gEventColumns:
@@ -124,6 +134,16 @@ class bEvent:
 		self.dict['type'] = type
 		self.dict['frameStart'] = frame
 
+		"""
+		self.streamParams['path'] = path
+		self.streamParams['fileName'] = os.path.basename(path)
+		self.streamParams['width'] = self.stream.get(cv2.CAP_PROP_FRAME_WIDTH)
+		self.streamParams['height'] = self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT)
+		self.streamParams['aspectRatio'] = round(self.streamParams['height'] / self.streamParams['width'],2)
+		self.streamParams['fps'] = self.stream.get(cv2.CAP_PROP_FPS)
+		self.streamParams['numFrames'] = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
+		self.streamParams['numSeconds'] = round(self.streamParams['numFrames'] / self.streamParams['fps'],2)
+		"""
 	def fromFile(self, headerLine, eventLine):
 		"""
 		Initialize a bEvent from one line in a text file
