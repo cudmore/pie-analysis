@@ -5,7 +5,7 @@
 # Main
 ##################################################################################
 
-from VideoApp2 import VideoApp
+from VideoApp import VideoApp
 
 #from FileVideoStream import FileVideoStream
 #videoPath = '/Users/cudmore/Dropbox/PiE/video/homecage-movie.mp4'
@@ -13,6 +13,7 @@ from VideoApp2 import VideoApp
 #fvs.start()
 
 path = '/Users/cudmore/Dropbox/PiE/video'
+path = ''
 
 pba = VideoApp(path)
 

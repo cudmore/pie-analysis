@@ -45,9 +45,11 @@ class bMenus:
 	
 	def open_folder(self):
 		print("open a folder with video files")
-		path =  filedialog.askdirectory()
-		print('path:', path)
-
+		path = ''
+		#path =  filedialog.askdirectory()
+		#print('path:', path)
+		self.app.loadFolder(path)
+		
 	def open_random(self):
 		print("open a random chunks file")
 		self.app.chunkView.chunkInterface_populate(askForFile=True)
