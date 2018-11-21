@@ -373,13 +373,13 @@ class VideoApp:
 
 			# right-click popup
 			# see: https://stackoverflow.com/questions/12014210/tkinter-app-adding-a-right-click-context-menu
-			self.popup_menu = tkinter.Menu(self.root, tearoff=0)
+			self.popup_menu = tkinter.Menu(self.videoFileTree, tearoff=0)
 			self.popup_menu.add_command(label="Delete",
 										command=self.delete_selected) #command=self.delete_selected
 			self.popup_menu.add_command(label="Set Note",
 										command=self.select_all) #command=self.select_all
-			self.popup_menu.bind("<Button-2>", self.popup)
-			#self.popup_menu.bind("<Button-3>", self.popup) # Button-2 on Aqua
+			self.videoFileTree.bind("<Button-2>", self.popup)
+			self.videoFileTree.bind("<Button-3>", self.popup) # Button-2 on Aqua
 		
 		# first delete entries
 		for i in self.videoFileTree.get_children():
