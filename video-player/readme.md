@@ -33,20 +33,32 @@ Editing annotations
 
 There are currently 9 different annotation types corresponding to keyboard 1, 2, 3, 4, 5, 6, 7, 8, 9.
 
+## Menus
+
+ - **File**. Open Folder, Open Chunks, Save Options, Quit
+ - **Window**. Toggle interface on/off for: video files, events, video feedback, chunks
+ 
 ## Saving annotations
 
-All annotations are saved in a text file (.txt) with the same base name as the video file. For example
+All events are automatically saved in a text file (.txt) with the same base name as the video file. One events .txt file per video file. The events file is saved when new events are created or edited (first/last frame, note, file video note).
+
+First line in events file is comma separated parameters. Second line is column headers. Remaining lines in file are event with one event per line. For example:
 
 ```
 #
-index,path,cseconds,type,frame,note,
-0,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542328413.412974,1,367,,,
-1,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542328419.127083,1,538,,,
-2,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542328420.329067,2,574,,,
-3,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542328422.295312,3,633,,,
-4,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542330941.973472,2,788,,,
-5,/Users/cudmore/Dropbox/PiE/homecage-movie.mp4,1542330942.505339,3,804,,,
+path=/Users/cudmore/Dropbox/PiE/video/1-homecage-movie.mp4,fileName=1-homecage-movie.mp4,width=640.0,height=480.0,aspectRatio=0.75,fps=15.0,numFrames=4500,numSeconds=300.0,numEvents=68,videoFileNote=,
+index,path,cseconds,type,frameStart,frameStop,note,
+0,/Users/cudmore/Dropbox/PiE/video/1-homecage-movie.mp4,1542723509.0230012,1,21,21,xxx,,
+1,/Users/cudmore/Dropbox/PiE/video/1-homecage-movie.mp4,1542724942.9451919,2,50,253,,,
+2,/Users/cudmore/Dropbox/PiE/video/1-homecage-movie.mp4,1542814082.8857589,5,737,1020,,,
+3,/Users/cudmore/Dropbox/PiE/video/1-homecage-movie.mp4,1542821655.198092,1,1407,,,,
+4,/Users/cudmore/Dropbox/PiE/video/1-homecage-movie.mp4,1542821684.321075,1,1732,,,,
+5,/Users/cudmore/Dropbox/PiE/video/1-homecage-movie.mp4,1542821768.373924,4,1274,,,,
 ```
+
+## Blinding
+
+<IMG SRC="img/chunks-interface.png" width=600>
 
 ## Install on macOS
 
