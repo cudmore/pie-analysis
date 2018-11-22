@@ -99,6 +99,8 @@ class bChunkView:
 			print('chunk_goto() error')
 			return
 			
+		self.currentChunk = chunkNumber
+		
 		actualChunkNumber = self.chunkData['chunkOrder'][chunkNumber]
 		chunk = self.chunkData['chunks'][actualChunkNumber]
 		

@@ -202,6 +202,12 @@ class VideoApp:
 		videoFileTree_scrollbar = ttk.Scrollbar(upper_frame, orient="vertical", command = self.videoFileTree.yview)
 		videoFileTree_scrollbar.grid(row=0, column=0, sticky='nse', padx=myPadding, pady=myPadding)
 		self.videoFileTree.configure(yscrollcommand=videoFileTree_scrollbar.set)
+		"""
+		if self.configDict['showVideoFiles']:
+			self.videoFileTree.grid()
+		else:
+			self.videoFileTree.grid_remove()
+		"""
 		self.populateVideoFiles(doInit=True)
 
 
@@ -233,6 +239,12 @@ class VideoApp:
 		eventTree_scrollbar = ttk.Scrollbar(lower_left_frame, orient="vertical", command = self.eventTree.yview)
 		eventTree_scrollbar.grid(row=0, column=0, sticky='nse', padx=myPadding, pady=myPadding)
 		self.eventTree.configure(yscrollcommand=eventTree_scrollbar.set)
+		"""
+		if self.configDict['showEvents']:
+			self.eventTree.grid()
+		else:
+			self.eventTree.grid_remove()
+		"""
 		self.populateEvents(doInit=True)
 
 		#
@@ -283,7 +295,8 @@ class VideoApp:
 		self.currentFramePerScondLabel.grid(row=0, column=5, sticky="w")
 
 		if self.configDict['showVideoFeedback']:
-			self.video_feedback_frame.grid()
+			#self.video_feedback_frame.grid()
+			pass
 		else:
 			self.video_feedback_frame.grid_remove()
 
@@ -355,13 +368,7 @@ class VideoApp:
 		#self.set_aspect(self.hPane, self.lower_right_frame, self.content_frame, self.pad_frame, self.video_control_frame, self.videoLabel) #, aspect_ratio=myApectRatio) 
 				
 		#
-		# configure panel
-
-		# do this at end to get window panels to size correctly
-		#self.root.geometry("1285x815") # home
-		#self.root.geometry("1100x700") # home2
-		#self.root.geometry("1810x1198") # work
-
+		# do this at very end
 		self.root.update()
 		self.vPane.sashpos(0, self.configDict['videoFileSash'])
 		self.hPane.sashpos(0, self.configDict['eventSash'])
@@ -971,8 +978,10 @@ class VideoApp:
 	def saveOptions(self):
 		print('saveOptions()')
 
-		self.configDict['videoFileSash'] = self.vPane.sashpos(0)
-		self.configDict['eventSash'] = self.hPane.sashpos(0)
+		if self.vPane.sashpos(0) > 0:
+			self.configDict['videoFileSash'] = self.vPane.sashpos(0)
+		if self.hPane.sashpos(0) > 0:
+			self.configDict['eventSash'] = self.hPane.sashpos(0)
 		geometryStr = str(self.root.winfo_width()) + "x" + str(self.root.winfo_height())
 		self.configDict['appWindowGeometry'] = geometryStr
 		

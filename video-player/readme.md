@@ -121,18 +121,39 @@ Pillow==5.3.0
 
  - Highlight most recent annotation in list as video is played.
  - Finish sorting annotation columns when clicked. Need to insert str(), int(), float() to do this.
- - Add note to video file by putting it in event list header. 
+ - Add note to video file by putting it in event list header. Finish 'right-click' popup menu in video list.
  - Running video faster/slower using +/- increments frame interval, it should increment frames per second (+/- 5 fps). This way user can get back to original fps. 
+ - Add option to warn when event frame start/stop is out of order, e.g. frameStart>frameStop.
+ - During chunk editing, hijack ALL video controls (frame slider, play, >, >>, <, <<) to only allow scrolling through frames in current chunk.
+ - Add checkbox to activate/inactivate chunk editing.
+ - Need some way to 1) categorize/file each event into its chunk 2) detect events falling outside a chunk.
+ - [big idea] Make a visual bar for each video file showing: duration (black) overlaid .with position of chunks (gray), and position of events (bright colors). 
+ - [bug] Make sure chunk navigation is working: >, <, go to.
+ - [bug] Make sure toggle of video file and event list do not trash interface on next run. Need to add code to HIDE video and event list, currently setting sashpos==0 (remove this).
+
 
  - [done] Implement saving/loading options via JSON file. Include window geometry, show/hide, (MAYBE) mapping of annotation event numbers to names.
- - [done] toggle 'play' button to reflect state e.g. play and pause
- - [done] Add information about video file to saved event list .txt file, e.g. (path=xxx, numframes=yyy, fps=zzz)
+ - [done] Toggle 'play' button to reflect state e.g. play and pause.
+ - [done] Add option to hide video controls like we hide video file list and event list.
+ - [done] Add information about video file to saved event list .txt file, e.g. (path=xxx, numframes=yyy, fps=zzz).
  - [done] Expand code to open a folder of video files. Right now it is one hard-coded video file.
  - [done] Add standard video control buttons like play/pause/forward/backward/large-forward/large-backward.
  - [done] Finish setting annotation notes with keyboard 'n'.
  - [done] Write recipe for installation into Python virtual environment.
  - [done] Design system where annotations can have start/stop frames or start frame and number of frames (duration). Right now annotations only have single (start) frame.
 
+## Blinding algorithm
+
+ - **video file duration (30 min)**
+ - **pieceDur (10 min)** gives us numPieces = dur / pieceDur
+ - **totalNumChunks (30)** is total number of chunks for one video
+ - **chunkDur (10 sec)** is duration of each chunk
+ 1. split video into a large number of chunks numChunks = (dur/chunkDur)
+ 2. partition video into a number of 'pieces' numPieces = (dur/pieceDur)
+ 3. chunksPerPiece = totalNumChunks/numPieces
+ 4. for each 'piece', randomly choose chunksPerPiece without replacement. Can do this by stepping through all chunks and only considering chunks with a piece using chunksPerPiece.
+ 
+ - Add 'pieceIndex' to each chunk in output chunk list
  
 ## Learning Tkinter
 

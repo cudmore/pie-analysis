@@ -37,9 +37,9 @@ class bMenus:
 		windowmenu = tkinter.Menu(menubar, tearoff=0)
 		windowmenu.add_command(label="Toggle Video Files", command=self.togglevideofiles)
 		windowmenu.add_command(label="Toggle Events", command=self.toggleevents)
+		windowmenu.add_command(label="Toggle Video Feedback", command=self.togglevideofeedback)
 		windowmenu.add_separator()
 		windowmenu.add_command(label="Toggle Random Chunks", command=self.togglerandomchunks)
-		windowmenu.add_command(label="Toggle Video Feedback", command=self.togglevideofeedback)
 		
 		menubar.add_cascade(menu=filemenu, label='File')
 		menubar.add_cascade(menu=windowmenu, label='Window')
