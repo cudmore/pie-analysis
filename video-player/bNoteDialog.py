@@ -19,7 +19,7 @@ class bNoteDialog:
 			print('bNoteDialog() please select an event')
 			return None
 		columns = self.parentApp.eventTree['columns']				
-		noteColIdx = columns.index('note') # assuming 'frameStart' exists
+		noteColIdx = columns.index('note') # assuming 'note' exists
 		values = self.parentApp.eventTree.item(self.item, "values")
 		self.index = int(values[0]) # assuming [0] is index
 		noteStr = values[noteColIdx]
@@ -37,27 +37,20 @@ class bNoteDialog:
 		
 		tkinter.Label(self.top, text="Note").pack()
 
-		
 		#
-		print('1')
 		self.e = tkinter.Entry(self.top)
 		#self.e.delete(0, "end")
 		self.e.insert(0, noteStr)
 		
-		print('2')
 		self.e.bind('<Key-Return>', self.okKeyboard_Callback)
 		self.e.focus_set()
 		self.e.pack(padx=5)
 
-		print('3')
 		cancelButton = tkinter.Button(self.top, text="Cancel", command=self.cancelButton_Callback)
 		cancelButton.pack(side="left", pady=5)
 		
-		print('4')
 		okButton = tkinter.Button(self.top, text="OK", command=self.okButton_Callback)
 		okButton.pack(side="left", pady=5)
-
-		print('5')
 
 	def cancelButton_Callback(self):
 		print('cancelButton_Callback()')
@@ -85,7 +78,8 @@ class bNoteDialog:
 		#item = self.eventTree.focus()
 		self.parentApp.eventTree.item(self.item, values=event.asTuple())
 
-		print('bNoteDialog.okButton_Callback() is calling destroy')
+		#print('bNoteDialog.okButton_Callback() is calling destroy')
 		self.top.destroy() # destroy *this, the modal
+		
 	def _setNote(txt):
 		item = self.parentApp.eventTree.focus()

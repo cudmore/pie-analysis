@@ -99,10 +99,8 @@ class bVideoFile:
 			with open(eventFilePath) as f:
 				header = f.readline().strip()
 				for n in header.split(','):
-					print('n:',n)
 					if len(n) > 0:
 						name, value = n.split('=')
-						print(name, value)
 						if name == 'videoFileNote':
 							self.dict['note'] = value
 						if name == 'numEvents':

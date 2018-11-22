@@ -112,16 +112,21 @@ Pillow==5.3.0
 ```
 
 	
+## Known bugs
+
+ - Has some problems when it reaches end of file.
+ - Resizing window will sometimes cause a crash
+ 
 ## To Do
 
  - Highlight most recent annotation in list as video is played.
- - Finish sorting annotation columns when clicked. Need to insert str(), int(float() to do this.
- - Implement saving/loading options via JSON file. Include window geometry, show/hide, (MAYBE) mapping of annotation event numbers to names.
+ - Finish sorting annotation columns when clicked. Need to insert str(), int(), float() to do this.
  - Add note to video file by putting it in event list header. 
  - Running video faster/slower using +/- increments frame interval, it should increment frames per second (+/- 5 fps). This way user can get back to original fps. 
- - toggle 'play' button to reflect state
- - Add information about video file to saved event list .txt file, e.g. (path=xxx, numframes=yyy, fps=zzz)
- 
+
+ - [done] Implement saving/loading options via JSON file. Include window geometry, show/hide, (MAYBE) mapping of annotation event numbers to names.
+ - [done] toggle 'play' button to reflect state e.g. play and pause
+ - [done] Add information about video file to saved event list .txt file, e.g. (path=xxx, numframes=yyy, fps=zzz)
  - [done] Expand code to open a folder of video files. Right now it is one hard-coded video file.
  - [done] Add standard video control buttons like play/pause/forward/backward/large-forward/large-backward.
  - [done] Finish setting annotation notes with keyboard 'n'.

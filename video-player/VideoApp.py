@@ -8,7 +8,7 @@ Create a video editing interface using tkinter
 import os, time
 import threading
 import json
-from collections import OrderedDict 
+#from collections import OrderedDict 
 
 import numpy as np
 
@@ -36,6 +36,11 @@ class VideoApp:
 		if len(path) < 1:
 			path = tkinter.filedialog.askdirectory()
 		
+		if not os.path.isdir(path):
+			return
+		
+		self.path = path
+		
 		self.videoList = bVideoList.bVideoList(path)		
 		self.populateVideoFiles(doInit=False)
 	
@@ -48,22 +53,35 @@ class VideoApp:
 		# fire up a video stream
 		self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
 	
-	def __init__(self, path):
+	def __init__(self, path=''):
 		"""
 		TKInter application to create interface for loading, viewing, and annotating video
 		
 		path: path to folder with video files
 		"""
 		
+		self.path = path
 		self.vs = None # FileVideoStream
 		self.frame = None # the current frame, read from FileVideoStream
-		#self.scaledImage = None
-		#self.currentWidth = 640
-		#self.currentHeight = 480
+
+		# keep track of current with and only scale in VideoLoop() when neccessary
+		self.currentWidth = 640
+		self.currentHeight = 480
  		
 		self.myCurrentFrame = None
 		self.pausedAtFrame = None
 
+		self.configDict = {}
+		# load config file
+		self.optionsFile = 'options.json'
+		if os.path.isfile(self.optionsFile):
+			with open(self.optionsFile) as f:
+				self.configDict = json.load(f)
+		else:
+			self.optionsDefaults()
+		if os.path.isdir(self.configDict['lastPath']):
+			self.path = self.configDict['lastPath']
+		
 		self.videoList = bVideoList.bVideoList(path)		
 
 		# initialize with first video in path
@@ -75,21 +93,9 @@ class VideoApp:
 		
 		self.myFrameInterval = 30 # ms per frame
 		self.myFramesPerSecond = round(1 / self.myFrameInterval,3) * 1000
-		
-		self.configDict = OrderedDict()
-		self.configDict['showVideoFiles'] = True
-		self.configDict['showEvents'] = True
-		self.configDict['videoFileSash'] = 200 # pixels
-		self.configDict['eventSash'] = 400 # pixels
-		self.configDict['showRandomChunks'] = True
-		self.configDict['showVideoFeedback'] = True
-		self.configDict['smallSecondsStep'] = 10 # seconds
-		self.configDict['largeSecondsStep'] = 60 # seconds
-		self.configDict['lastPath'] = path
-		
-		###
+				
+		#
 		# tkinter interface
-		###
 		self.root = tkinter.Tk()
 		self.root.title('PiE Video Analysis')
 		
@@ -100,6 +106,8 @@ class VideoApp:
 		self.root.unbind_class("Button", "<Key-space>")
 
 		self.root.bind("<Key>", self.keyPress)
+
+		self.root.geometry(self.configDict['appWindowGeometry']) # home2
 
 		self.buildInterface()
 
@@ -117,9 +125,23 @@ class VideoApp:
 		
 		# set a callback to handle when the window is closed
 		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
-		
+
+		self.root.bind('<Command-q>', self.onClose)		
+
 		self.root.mainloop()
 		
+	def optionsDefaults(self):
+		self.configDict['appWindowGeometry'] = "1100x700"
+		self.configDict['showVideoFiles'] = True
+		self.configDict['showEvents'] = True
+		self.configDict['videoFileSash'] = 200 # pixels
+		self.configDict['eventSash'] = 400 # pixels
+		self.configDict['showRandomChunks'] = True
+		self.configDict['showVideoFeedback'] = True
+		self.configDict['smallSecondsStep'] = 10 # seconds
+		self.configDict['largeSecondsStep'] = 60 # seconds
+		self.configDict['lastPath'] = self.path
+
 	###################################################################################
 	def toggleInterface(self, this):
 		"""
@@ -312,8 +334,8 @@ class VideoApp:
 		video_r_button.grid(row=0, column=1)
 		#video_r_button.bind("<Key>", self.keyPress)
 
-		video_play_button = ttk.Button(self.video_control_frame, width=3, text="Play", command=lambda: self.doCommand('playpause'))
-		video_play_button.grid(row=0, column=2)
+		self.video_play_button = ttk.Button(self.video_control_frame, width=4, text="Play", command=lambda: self.doCommand('playpause'))
+		self.video_play_button.grid(row=0, column=2)
 		#video_play_button.bind("<Key>", self.keyPress)
 	
 		video_f_button = ttk.Button(self.video_control_frame, width=1, text=">", command=lambda: self.doCommand('forward'))
@@ -337,7 +359,7 @@ class VideoApp:
 
 		# do this at end to get window panels to size correctly
 		#self.root.geometry("1285x815") # home
-		self.root.geometry("1100x700") # home2
+		#self.root.geometry("1100x700") # home2
 		#self.root.geometry("1810x1198") # work
 
 		self.root.update()
@@ -682,7 +704,10 @@ class VideoApp:
 		
 		if cmd == 'playpause':
 			self.vs.playPause()
-				
+			if self.vs.paused:
+				self.video_play_button['text'] = 'Play'
+			else:
+				self.video_play_button['text'] = 'Pause'
 		if cmd == 'forward':
 			 newSeconds = myCurrentSeconds + self.configDict['smallSecondsStep']
 			 self.setSeconds(newSeconds)
@@ -698,11 +723,9 @@ class VideoApp:
 			 
 	def keyPress(self, event):
 		print('=== VideoApp.keyPress() pressed:', repr(event.char), 'self.myCurrentFrame:', self.myCurrentFrame)
-		"""
 		print('event.keysym:', event.keysym)
 		print('event.keysym_num:', event.keysym_num)
 		print('event.state:', event.state)
-		"""
 		
 		theKey = event.char
 
@@ -904,9 +927,6 @@ class VideoApp:
 			#print('ERROR: VideoApp2.videoLoop() got None self.frame')
 			pass
 		else:
-			## resize
-			#tmpWidth = self.videoLabel.winfo_width()
-			#tmpHeight = self.videoLabel.winfo_height()
 
 			buttonHeight = 32
 			
@@ -921,57 +941,52 @@ class VideoApp:
 				tmpHeight = height - buttonHeight
 				tmpWidth = int(tmpHeight / self.vs.streamParams['aspectRatio'])
 
-			#tmpWidth = self.currentWidth
-			#tmpHeight = self.currentHeight
-			#print('   tmpWidth:', tmpWidth, 'tmpHeight:', tmpHeight)
-			tmpImage = None
-			try:
-				tmpImage = self.frame
-				#tmpImage = cv2.resize(self.frame, (tmpWidth, tmpHeight))
-			except:
-				#print('exception: in videoLoop() ... cv2.resize()')
-				pass
+			tmpImage = self.frame
+			
+			tmpImage = cv2.resize(self.frame, (tmpWidth, tmpHeight))
 				
 			if tmpImage is not None:
 				tmpImage = cv2.cvtColor(tmpImage, cv2.COLOR_BGR2RGB)
 				tmpImage = Image.fromarray(tmpImage)
-			
-				tmpImage = tmpImage.resize((tmpWidth, tmpHeight), Image.ANTIALIAS)
-				#tmpImage = tmpImage.resize((width, height), Image.ANTIALIAS)
-				
+				#tmpImage = tmpImage.resize((tmpWidth, tmpHeight), Image.ANTIALIAS)
 				tmpImage = ImageTk.PhotoImage(tmpImage)
 	
-				try:
-					self.videoLabel.configure(image=tmpImage)
-					self.videoLabel.image = tmpImage
-				except:
-					print('exception: videoLoop() configure self.videoLabel')
+				self.videoLabel.configure(image=tmpImage)
+				self.videoLabel.image = tmpImage
 			
 			self.videoLabel.place(x=0, y=0, width=tmpWidth, height=tmpHeight)
 			self.video_control_frame.place(x=0, y=tmpHeight + buttonHeight, width=tmpWidth)
 			
 			#
 			# update feedback labels
-			if 1:
-				self.currentFrameLabel['text'] = 'Frame:' + str(self.myCurrentFrame)
-				self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
-				self.currentFramePerScondLabel['text'] ='fps:' + str(self.myFramesPerSecond)
-				self.currentSecondsLabel['text'] = 'Sec:' + str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
-				self.video_frame_slider['value'] = self.myCurrentFrame
+			self.currentFrameLabel['text'] = 'Frame:' + str(self.myCurrentFrame)
+			self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
+			self.currentFramePerScondLabel['text'] ='fps:' + str(self.myFramesPerSecond)
+			self.currentSecondsLabel['text'] = 'Sec:' + str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
+			self.video_frame_slider['value'] = self.myCurrentFrame
 
 		# leave this here -- CRITICAL
-		#self.videoLoopID = self.videoLabel.after(self.myFrameInterval, self.videoLoop)
-		#self.videoLoopID = self.content_frame.after(self.myFrameInterval, self.videoLoop)
 		self.videoLoopID = self.root.after(self.myFrameInterval, self.videoLoop)
 		
-	def onClose(self):
+	def saveOptions(self):
+		print('saveOptions()')
+
+		self.configDict['videoFileSash'] = self.vPane.sashpos(0)
+		self.configDict['eventSash'] = self.hPane.sashpos(0)
+		geometryStr = str(self.root.winfo_width()) + "x" + str(self.root.winfo_height())
+		self.configDict['appWindowGeometry'] = geometryStr
+		
+		with open(self.optionsFile, 'w') as outfile:
+			json.dump(self.configDict, outfile, indent=4, sort_keys=True)
+	
+	def onClose(self, event=None):
 
 		# set the stop event, cleanup the camera, and allow the rest of
 		# the quit process to continue
-		print("onClose()")
+		print("VideoApp.onClose()")
 		self.isRunning = False
-		#self.stopEvent.set()
-		#time.sleep(0.2)
 		self.vs.stop()
-		#time.sleep(0.2)
+		
+		self.saveOptions()
+		
 		self.root.quit()
