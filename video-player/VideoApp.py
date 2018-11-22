@@ -5,7 +5,7 @@
 Create a video editing interface using tkinter
 """
 
-import os, time
+import os, time, math
 import threading
 import json
 #from collections import OrderedDict 
@@ -92,7 +92,7 @@ class VideoApp:
 		self.eventList = bEventList.bEventList(firstVideoPath)
 		
 		self.myFrameInterval = 30 # ms per frame
-		self.myFramesPerSecond = round(1 / self.myFrameInterval,3) * 1000
+		self.myFramesPerSecond = round(1 / self.myFrameInterval,3) * 1000 # frames/second
 				
 		#
 		# tkinter interface
@@ -140,6 +140,7 @@ class VideoApp:
 		self.configDict['showVideoFeedback'] = True
 		self.configDict['smallSecondsStep'] = 10 # seconds
 		self.configDict['largeSecondsStep'] = 60 # seconds
+		self.configDict['fpsIncrement'] = 5
 		self.configDict['lastPath'] = self.path
 
 	###################################################################################
@@ -764,16 +765,17 @@ class VideoApp:
 			
 		# slower (increase frame interval)
 		if theKey in ['-', '_']:
-			if self.myFrameInterval == 1:
-				self.myFrameInterval = 0
-			newFrameInterval = self.myFrameInterval + 10
-			self.setFramesPerSecond(newFrameInterval)
+			newFramesPerSecond = self.myFramesPerSecond - self.configDict['fpsIncrement']
+			# todo: make sure we can get back to original frames per seconds !!!
+			if newFramesPerSecond<1:
+				newFramesPerSecond += self.configDict['fpsIncrement']
+			self.setFramesPerSecond(newFramesPerSecond)
 		# faster, decrease frame interval
 		if theKey in ['+', '=']:
-			newFrameInterval = self.myFrameInterval - 10
-			if newFrameInterval <= 0:
-				newFrameInterval = 1
-			self.setFramesPerSecond(newFrameInterval)
+			newFramesPerSecond = self.myFramesPerSecond + self.configDict['fpsIncrement']
+			if newFramesPerSecond>90:
+				newFramesPerSecond -= self.configDict['fpsIncrement']
+			self.setFramesPerSecond(newFramesPerSecond)
 			
 		if theKey == '\uf702' and event.state==97:
 			# shift + left
@@ -897,19 +899,20 @@ class VideoApp:
 		# scroll to bottom of event tree
 		self.eventTree.yview_moveto(1) # 1 is fractional
 		
-	def setFramesPerSecond(self, frameInterval):
+	def setFramesPerSecond(self, newFramesPerSecond):
 		"""
-		frameInterval: the interval (sec) between frames
+		newFramesPerSecond: frames/second
 		"""
-		print('setFramesPerSecond() frameInterval:', frameInterval)
+		print('setFramesPerSecond()')
 		# make sure I cancel using the same widget at end of videoloop()
 		# cancel existing after()
 		
 		print('   shutting down video loop')
 		self.root.after_cancel(self.videoLoopID)
 		
-		self.myFrameInterval = frameInterval
-		self.myFramesPerSecond = round(1 / self.myFrameInterval,3) * 1000
+		self.myFrameInterval = math.floor(1000 / newFramesPerSecond)
+		self.myFramesPerSecond = newFramesPerSecond #round(1 / self.myFrameInterval,3) * 1000
+		print('self.myFrameInterval:', self.myFrameInterval, 'self.myFramesPerSecond:', self.myFramesPerSecond)
 		print('   starting video loop with self.myFrameInterval:', self.myFrameInterval)
 		self.videoLoop()
 		
