@@ -511,16 +511,19 @@ class VideoApp:
 		
 	def hijackInterface(self, chunk=None):
 		if chunk is None:
-			self.video_frame_slider['from'] = 0
+			print('chunk is none')
+			self.video_frame_slider['from_'] = 0
 			self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
+			#self.video_frame_slider['value'] = startFrame
 		else:
 			print('hijackInterface() chunk:', chunk)
 			startFrame = chunk['startFrame']
 			stopFrame = chunk['stopFrame']
 			numFrames = stopFrame - startFrame + 1
-			self.video_frame_slider['from'] = startFrame
+			#print(type(startFrame), type(stopFrame), type(numFrames))
+			self.video_frame_slider['from_'] = startFrame
 			self.video_frame_slider['to'] = stopFrame
-			self.video_frame_slider['value'] = startFrame
+			#self.video_frame_slider.value = startFrame
 			
 	def treeview_sort_column(self, tv, col, reverse):
 		print('treeview_sort_column()', 'tv:', tv, 'col:', col, 'reverse:', reverse)
@@ -710,7 +713,8 @@ class VideoApp:
 		
 	def frameSlider_callback(self, frameNumber):
 		frameNumber = int(float(frameNumber))
-		#print('VideoApp.frameSlider_callback()', frameNumber)
+		print('VideoApp.frameSlider_callback()', frameNumber)
+		print('   from:', self.video_frame_slider['from'], 'to:', self.video_frame_slider['to'])
 		self.setFrame(frameNumber)
 
 	def doCommand(self, cmd):
@@ -825,7 +829,9 @@ class VideoApp:
 	def setFrame(self, theFrame):
 		if self.vs.setFrame(theFrame):
 			self.myCurrentFrame = theFrame
-
+		else:
+			print('VideoApp.setFrame() failed')
+			
 	def setStartFrame(self, frame):
 		print('setStartFrame()')
 
