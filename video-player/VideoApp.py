@@ -502,11 +502,11 @@ class VideoApp:
 		self.populateEvents()
 		
 		# set feedback frame
-		self.numFrameLabel['text'] = 'of ' + str(self.vs.streamParams['numFrames'])
-		self.numSecondsLabel['text'] = 'of ' + str(self.vs.streamParams['numSeconds'])
+		self.numFrameLabel['text'] = 'of ' + str(self.vs.getParam('numFrames'))
+		self.numSecondsLabel['text'] = 'of ' + str(self.vs.getParam('numSeconds'))
 		
 		# set frame slider
-		self.video_frame_slider['to'] = self.vs.streamParams['numFrames']
+		self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
 		
 		# select in video file tree view
 		self._selectTreeViewRow(self.videoFileTree, 'path', videoPath)
@@ -541,7 +541,7 @@ class VideoApp:
 		print('   event.widget:', event.widget)
 		print('   event.type:', event.type)
 		"""
-		aspect_ratio = self.vs.streamParams['aspectRatio']
+		aspect_ratio = self.vs.getParam('aspectRatio')
 		buttonHeight = 36
 		
 		#desired_width = event.width - buttonHeight
@@ -699,7 +699,7 @@ class VideoApp:
 		
 	def frameSlider_callback(self, frameNumber):
 		frameNumber = int(float(frameNumber))
-		print('VideoApp.frameSlider_callback()', frameNumber)
+		#print('VideoApp.frameSlider_callback()', frameNumber)
 		self.setFrame(frameNumber)
 
 	def doCommand(self, cmd):
@@ -938,7 +938,7 @@ class VideoApp:
 				self.pausedAtFrame = self.myCurrentFrame
 		else:
 			self.videoLabel.configure(text="")
-			if self.vs is not None:
+			if self.vs is not None and (self.myCurrentFrame != self.vs.getParam('numFrames')-1):
 				[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
 
 		if not self.vs.isOpened or self.vs is None or self.frame is None:
@@ -948,16 +948,18 @@ class VideoApp:
 
 			buttonHeight = 32
 			
+			aspectRatio = self.vs.getParam('aspectRatio')
+			
 			width = self.content_frame.winfo_width()
 			height = self.content_frame.winfo_height()
 			
 			tmpWidth = self.content_frame.winfo_width() - buttonHeight
 			#tmpHeight = self.content_frame.winfo_height()
-			tmpHeight = int(tmpWidth * self.vs.streamParams['aspectRatio'])
+			tmpHeight = int(tmpWidth * aspectRatio)
 
 			if tmpHeight > height:
 				tmpHeight = height - buttonHeight
-				tmpWidth = int(tmpHeight / self.vs.streamParams['aspectRatio'])
+				tmpWidth = int(tmpHeight / aspectRatio)
 
 			tmpImage = self.frame
 			
@@ -980,7 +982,7 @@ class VideoApp:
 			self.currentFrameLabel['text'] = 'Frame:' + str(self.myCurrentFrame)
 			self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
 			self.currentFramePerScondLabel['text'] ='fps:' + str(self.myFramesPerSecond)
-			self.currentSecondsLabel['text'] = 'Sec:' + str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
+			self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
 			self.video_frame_slider['value'] = self.myCurrentFrame
 
 		# leave this here -- CRITICAL

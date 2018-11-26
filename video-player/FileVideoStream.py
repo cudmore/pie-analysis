@@ -187,11 +187,16 @@ class FileVideoStream:
 			self.gotoFrame = newFrame
 		return True
 
+	def getParam(self, param):
+		return self.streamParams[param]
+		
 	def getFrameFromSeconds(self, seconds):
 		if not self.isOpened:
 			print('error: getFrameFromSeconds() file is not open')
 			return None
 		theFrame = int(float(seconds * self.streamParams['fps']))
+		if theFrame > self.streamParams['numFrames']:
+			theFrame = self.streamParams['numFrames'] - 1
 		return theFrame
 		
 	def getSecondsFromFrame(self, frame):
