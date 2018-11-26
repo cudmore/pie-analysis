@@ -117,6 +117,8 @@ class bChunkView:
 		
 		self.app.setFrame(startFrame)
 
+		self.app.hijackInterface(chunk)
+		
 		# update chunk interface
 		self.currentChunkLabel['text'] = str(chunkNumber)
 		

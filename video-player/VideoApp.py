@@ -379,8 +379,6 @@ class VideoApp:
 		#self.mySetAspect()
 		
 	###################################################################################
-		
-	###################################################################################
 	def populateVideoFiles(self, doInit=False):
 		
 		if doInit:
@@ -511,6 +509,19 @@ class VideoApp:
 		# select in video file tree view
 		self._selectTreeViewRow(self.videoFileTree, 'path', videoPath)
 		
+	def hijackInterface(self, chunk=None):
+		if chunk is None:
+			self.video_frame_slider['from'] = 0
+			self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
+		else:
+			print('hijackInterface() chunk:', chunk)
+			startFrame = chunk['startFrame']
+			stopFrame = chunk['stopFrame']
+			numFrames = stopFrame - startFrame + 1
+			self.video_frame_slider['from'] = startFrame
+			self.video_frame_slider['to'] = stopFrame
+			self.video_frame_slider['value'] = startFrame
+			
 	def treeview_sort_column(self, tv, col, reverse):
 		print('treeview_sort_column()', 'tv:', tv, 'col:', col, 'reverse:', reverse)
 		l = [(tv.set(k, col), k) for k in tv.get_children('')]
