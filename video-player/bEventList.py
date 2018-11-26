@@ -54,7 +54,7 @@ class bEventList:
 	def load(self):
 		"""Load list of events from text file"""
 		if os.path.isfile(self.textFilePath):
-			print('bEventList.load():', self.textFilePath)
+			#print('bEventList.load():', self.textFilePath)
 			with open(self.textFilePath, 'r') as file:
 				# header
 				commentLine = file.readline().strip()

@@ -93,9 +93,9 @@ class bVideoFile:
 		videoDirName = os.path.dirname(path)
 		eventFileName = videoFileName.replace('.mp4', '.txt')
 		eventFilePath = os.path.join(videoDirName, eventFileName)
-		print('eventFilePath:', eventFilePath)
+		#print('eventFilePath:', eventFilePath)
 		if os.path.isfile(eventFilePath):
-			print('bVideoFile() is parsing event header:', eventFilePath)
+			#print('bVideoFile() is parsing event header:', eventFilePath)
 			with open(eventFilePath) as f:
 				header = f.readline().strip()
 				for n in header.split(','):

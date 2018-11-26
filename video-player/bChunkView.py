@@ -53,9 +53,10 @@ class bChunkView:
 			pass	
 		elif askForFile:
 			filepath =  tkinter.filedialog.askopenfilename(initialdir = initialdir,title = "Select a random chunk file",filetypes = (("text files","*.txt"),("all files","*.*")))
-		print('filepath:', filepath)
+		print('   filepath:', filepath)
 		
 		if not os.path.isfile(filepath):
+			print('   did not find chunk file')
 			return
 		
 		#chunkFile = bRandomChunks(filename).open()

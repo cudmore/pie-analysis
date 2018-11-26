@@ -69,6 +69,7 @@ class VideoApp:
 		self.currentHeight = 480
  		
 		self.myCurrentFrame = None
+		self.myCurrentSeconds = None
 		self.pausedAtFrame = None
 
 		self.configDict = {}
@@ -140,7 +141,7 @@ class VideoApp:
 		self.configDict['showVideoFeedback'] = True
 		self.configDict['smallSecondsStep'] = 10 # seconds
 		self.configDict['largeSecondsStep'] = 60 # seconds
-		self.configDict['fpsIncrement'] = 5
+		self.configDict['fpsIncrement'] = 5 # seconds
 		self.configDict['lastPath'] = self.path
 
 	###################################################################################
@@ -416,10 +417,8 @@ class VideoApp:
 			# right-click popup
 			# see: https://stackoverflow.com/questions/12014210/tkinter-app-adding-a-right-click-context-menu
 			self.popup_menu = tkinter.Menu(self.videoFileTree, tearoff=0)
-			self.popup_menu.add_command(label="Delete",
-										command=self.delete_selected) #command=self.delete_selected
 			self.popup_menu.add_command(label="Set Note",
-										command=self.select_all) #command=self.select_all
+										command=self.setVideoFileNote)
 			self.videoFileTree.bind("<Button-2>", self.popup)
 			self.videoFileTree.bind("<Button-3>", self.popup) # Button-2 on Aqua
 		
@@ -440,13 +439,8 @@ class VideoApp:
 		finally:
 			self.popup_menu.grab_release()
 
-	def delete_selected(self):
-		print('delete_selected() not implemented')
-		#for i in self.curselection()[::-1]:
-		#	self.delete(i)
-
-	def select_all(self):
-		print('select_all() not implemented')
+	def setVideoFileNote(self):
+		print('setVideoFileNote() not implemented')
 		#self.selection_set(0, 'end')
 
 	###################################################################################
@@ -589,14 +583,15 @@ class VideoApp:
 		"""
 		theRow = self._getTreeViewRow(tv, col, isThis)
 		
-		# get the item
-		children = tv.get_children()
-		item = children[theRow]
-		#print('item:', item)
-		
-		# select the row
-		tv.focus(item) # select internally
-		tv.selection_set(item) # visually select
+		if theRow is not None:
+			# get the item
+			children = tv.get_children()
+			item = children[theRow]
+			#print('item:', item)
+			
+			# select the row
+			tv.focus(item) # select internally
+			tv.selection_set(item) # visually select
 		
 	def _setTreeViewCell(self, tv, row, col, toThis):
 		
@@ -629,13 +624,14 @@ class VideoApp:
 		#print('tv.get_children():', tv.get_children())
 		
 		rowIdx = 0
+		theRet = None
 		for child in tv.get_children():
 			values = tv.item(child)["values"] # values at current row
 			if values[colIdx] == isThis:
 				theRet = rowIdx
 				break
 			rowIdx += 1
-		return rowIdx
+		return theRet
 
 	def _getTreeVidewSelection(self, tv, col):
 		"""
@@ -708,32 +704,41 @@ class VideoApp:
 
 	def doCommand(self, cmd):
 
-		myCurrentSeconds = self.vs.getSecondsFromFrame(self.myCurrentFrame)
+		#myCurrentSeconds = self.vs.getSecondsFromFrame(self.myCurrentFrame)
 		
 		if cmd == 'playpause':
-			self.vs.playPause()
-			if self.vs.paused:
-				self.video_play_button['text'] = 'Play'
+			if not self.vs.isOpened:
+				print('playpause, video is not opened')
 			else:
-				self.video_play_button['text'] = 'Pause'
+				self.vs.playPause()
+				if self.vs.paused:
+					self.video_play_button['text'] = 'Play'
+				else:
+					self.video_play_button['text'] = 'Pause'
 		if cmd == 'forward':
-			 newSeconds = myCurrentSeconds + self.configDict['smallSecondsStep']
-			 self.setSeconds(newSeconds)
+			 if self.myCurrentSeconds is not None:
+			 	newSeconds = self.myCurrentSeconds + self.configDict['smallSecondsStep']
+			 	self.setSeconds(newSeconds)
 		if cmd == 'fast-forward':
-			 newSeconds = myCurrentSeconds + self.configDict['largeSecondsStep']
-			 self.setSeconds(newSeconds)
+			 if self.myCurrentSeconds is not None:
+				 newSeconds = self.myCurrentSeconds + self.configDict['largeSecondsStep']
+				 self.setSeconds(newSeconds)
 		if cmd == 'backward':
-			 newSeconds = myCurrentSeconds - self.configDict['smallSecondsStep']
-			 self.setSeconds(newSeconds)
+			 if self.myCurrentSeconds is not None:
+				 newSeconds = self.myCurrentSeconds - self.configDict['smallSecondsStep']
+				 self.setSeconds(newSeconds)
 		if cmd == 'fast-backward':
-			 newSeconds = myCurrentSeconds - self.configDict['largeSecondsStep']
-			 self.setSeconds(newSeconds)
+			 if self.myCurrentSeconds is not None:
+				 newSeconds = self.myCurrentSeconds - self.configDict['largeSecondsStep']
+				 self.setSeconds(newSeconds)
 			 
 	def keyPress(self, event):
-		print('=== VideoApp.keyPress() pressed:', repr(event.char), 'self.myCurrentFrame:', self.myCurrentFrame)
+		print('=== VideoApp.keyPress() pressed:', repr(event.char), 'event.state:', event.state, 'self.myCurrentFrame:', self.myCurrentFrame)
+		"""
 		print('event.keysym:', event.keysym)
 		print('event.keysym_num:', event.keysym_num)
 		print('event.state:', event.state)
+		"""
 		
 		theKey = event.char
 
@@ -745,8 +750,9 @@ class VideoApp:
 		# add event
 		validEventKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 		if theKey in validEventKeys:
-			print('keyPress() adding event')
-			self.addEvent(theKey, self.myCurrentFrame)
+			if self.myCurrentFrame is not None:
+				print('keyPress() adding event')
+				self.addEvent(theKey, self.myCurrentFrame)
 		
 		# set note of selected event
 		if theKey == 'n':
@@ -758,10 +764,12 @@ class VideoApp:
 
 		# set event start frame
 		if theKey == 'f':
-			self.setStartFrame(self.myCurrentFrame)
+			if self.myCurrentFrame is not None:
+				self.setStartFrame(self.myCurrentFrame)
 		# set stop frame
 		if theKey == 'l':
-			self.setEndFrame(self.myCurrentFrame)
+			if self.myCurrentFrame is not None:
+				self.setEndFrame(self.myCurrentFrame)
 			
 		# slower (increase frame interval)
 		if theKey in ['-', '_']:
@@ -804,9 +812,9 @@ class VideoApp:
 		self.setFrame(theFrame)
 		
 	def setFrame(self, theFrame):
-		self.myCurrentFrame = theFrame
-		self.vs.setFrame(self.myCurrentFrame)
-		
+		if self.vs.setFrame(theFrame):
+			self.myCurrentFrame = theFrame
+
 	def setStartFrame(self, frame):
 		print('setStartFrame()')
 
@@ -924,16 +932,16 @@ class VideoApp:
 				#print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.myCurrentFrame:', self.myCurrentFrame)
 				try:
 					#print('VideoApp2.videoLoop() CALLING self.vs.read()')
-					[self.frame, self.myCurrentFrame] = self.vs.read()
+					[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
 				except:
 					print('zzz qqq')
 				self.pausedAtFrame = self.myCurrentFrame
 		else:
 			self.videoLabel.configure(text="")
 			if self.vs is not None:
-				[self.frame, self.myCurrentFrame] = self.vs.read()
+				[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
 
-		if self.vs is None or self.frame is None:
+		if not self.vs.isOpened or self.vs is None or self.frame is None:
 			#print('ERROR: VideoApp2.videoLoop() got None self.frame')
 			pass
 		else:

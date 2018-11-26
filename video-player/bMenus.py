@@ -32,7 +32,7 @@ class bMenus:
 		filemenu.add_command(label="Save Options", command=self.app.saveOptions)
 		filemenu.add_separator()
 		#filemenu.add_command(label="Quit", command=self.root.quit)
-		filemenu.add_command(label="Quit", command=self.app.onClose)
+		filemenu.add_command(label="Quit", command=self.app.onClose) #, accelerator="Command-P")
 
 		windowmenu = tkinter.Menu(menubar, tearoff=0)
 		windowmenu.add_command(label="Toggle Video Files", command=self.togglevideofiles)

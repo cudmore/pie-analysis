@@ -13,42 +13,57 @@ import cv2
 from PIL import Image
 
 ##################################################################################
+"""def check_open(func):
+	def inner(self, *args, **kwargs):
+		if self.stream.isOpened():
+			return func(self, *args, **kwargs)
+		else:
+			raise ValueError
+	return inner
+"""
+
 class FileVideoStream:
 	def __init__(self, path, paused=False, gotoFrame=None, queueSize=256):
+		print('FileVideoStream() path:', path, 'paused:', paused, 'gotoFrame:', gotoFrame, 'queueSize:', queueSize)
+		
 		self.stream = cv2.VideoCapture(path)
-		self.stopped = False
-
+			
 		self.streamParams = {}
-		self.streamParams['path'] = path
-		self.streamParams['fileName'] = os.path.basename(path)
-		self.streamParams['width'] = self.stream.get(cv2.CAP_PROP_FRAME_WIDTH)
-		self.streamParams['height'] = self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT)
-		self.streamParams['aspectRatio'] = round(self.streamParams['height'] / self.streamParams['width'],2)
-		self.streamParams['fps'] = self.stream.get(cv2.CAP_PROP_FPS)
-		self.streamParams['numFrames'] = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
-		self.streamParams['numSeconds'] = round(self.streamParams['numFrames'] / self.streamParams['fps'],2)
+		if not self.isOpened:
+			#print('   DID NOT OPEN')
+			self.streamParams['path'] = ''
+			self.streamParams['fileName'] = ''
+			self.streamParams['width'] = None
+			self.streamParams['height'] = None
+			self.streamParams['aspectRatio'] = None
+			self.streamParams['fps'] = None
+			self.streamParams['numFrames'] = None
+			self.streamParams['numSeconds'] = None
+		else:
+			self.streamParams['path'] = path
+			self.streamParams['fileName'] = os.path.basename(path)
+			self.streamParams['width'] = self.stream.get(cv2.CAP_PROP_FRAME_WIDTH)
+			self.streamParams['height'] = self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT)
+			self.streamParams['aspectRatio'] = round(self.streamParams['height'] / self.streamParams['width'],2)
+			self.streamParams['fps'] = self.stream.get(cv2.CAP_PROP_FPS)
+			self.streamParams['numFrames'] = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
+			self.streamParams['numSeconds'] = round(self.streamParams['numFrames'] / self.streamParams['fps'],2)
 		
-		"""
-		print('path:', path)
-		print('width:', self.streamParams['width'])
-		print('height:', self.streamParams['height'])
-		print('aspectRatio:', self.streamParams['aspectRatio'])
-		print('fps:', self.streamParams['fps'])
-		print('numFrames:', self.streamParams['numFrames'])
-		print('queueSize:', queueSize)
-		"""
-		
+		self.stopped = False
 		self.gotoFrame = gotoFrame #None
 		self.paused = paused #False
 		self.currentFrame = 0
 		self.milliseconds = 0
 		self.seconds = 0
  		
-		# initialize the queue used to store frames read from
-		# the video file
+		# initialize the queue used to store frames read from the video file
 		self.Q = Queue(maxsize=queueSize)
-		#self.Q = Queue(maxsize=self.streamParams['numFrames'])
 
+	
+	@property
+	def isOpened(self):
+		return self.stream.isOpened()
+		
 	# start thread (call this after constructor)
 	def start(self):
 		# start a thread to read frames from the file video stream
@@ -64,10 +79,6 @@ class FileVideoStream:
 		
 			time.sleep(0.001)
 			
-			# stop the thread
-			#if self.stopped:
-			#	return
- 
 			if self.gotoFrame is not None:
 				#print('FileVideoStream.update() gotoFrame:', self.gotoFrame, 'self.paused:', self.paused)
 				self.stream.set(cv2.CAP_PROP_POS_FRAMES, self.gotoFrame)
@@ -82,7 +93,7 @@ class FileVideoStream:
 					self.currentFrame = int(self.stream.get(cv2.CAP_PROP_POS_FRAMES))
 					self.milliseconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC),2)
 					self.seconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC)/1000,2)
-					self.Q.put([frame, self.currentFrame])
+					self.Q.put([frame, self.currentFrame, self.seconds])
 					#print('FileVideoStream.update() self.Q.put(frame) done')
 				else:
 					#print('FileVideoStream.update() gotoFrame is clearing queue when playing')
@@ -109,7 +120,7 @@ class FileVideoStream:
 					# reached the end of the video file
 					if grabbed:
 						# add the frame to the queue
-						self.Q.put([frame, self.currentFrame])
+						self.Q.put([frame, self.currentFrame, self.seconds])
 					else:
 						#self.stop()
 						#return
@@ -130,7 +141,7 @@ class FileVideoStream:
 			#ret = self.Q.get()
 		except:
 			print('my exception in FileVideoStream.read()')
-			ret = [None, None]
+			ret = [None, None, None]
 		#print('FileVideoStream.read() done')
 		return ret #self.Q.get(block=True, timeout=2.0)
 		
@@ -158,22 +169,35 @@ class FileVideoStream:
 		#self.pausedAtFrame = self.currentFrame
 		print('FileVideoStream.playPause()', 'pause' if self.paused else 'play')
 		
+	#@check_open
 	def setFrame(self, newFrame):
 		#print('FileVideoStream.setFrame()', newFrame)
+		if not self.isOpened:
+			print('error: setFrame() file is not open')
+			return False
+		
 		newFrame = int(float(newFrame))
-		if newFrame<0 or newFrame>self.streamParams['numFrames']-1:
+		if newFrame<0:
 			# error
-			print('FileVideoStream.setFrame() error:', newFrame)
+			print('FileVideoStream.setFrame() error, newFrame:', newFrame)
+		elif newFrame>self.streamParams['numFrames']-1:
+			print('FileVideoStream.setFrame() error, newFrame:', newFrame, 'is beyond end of video frame:', self.streamParams['numFrames']-1)
 		else:
 			#print('FileVideoStream.setFrame() newFrame:', newFrame)
 			self.gotoFrame = newFrame
 		return True
 
 	def getFrameFromSeconds(self, seconds):
+		if not self.isOpened:
+			print('error: getFrameFromSeconds() file is not open')
+			return None
 		theFrame = int(float(seconds * self.streamParams['fps']))
 		return theFrame
 		
 	def getSecondsFromFrame(self, frame):
+		if not self.isOpened:
+			print('error: getSecondsFromFrame() file is not open')
+			return None
 		theSeconds = round(frame / self.streamParams['fps'],2)
 		return theSeconds
 		
