@@ -523,6 +523,8 @@ class VideoApp:
 			#print(type(startFrame), type(stopFrame), type(numFrames))
 			self.video_frame_slider['from_'] = startFrame
 			self.video_frame_slider['to'] = stopFrame
+			#self.video_frame_slider['from_'] = 100
+			#self.video_frame_slider['to'] = 5000
 			#self.video_frame_slider.value = startFrame
 			
 	def treeview_sort_column(self, tv, col, reverse):
