@@ -12,7 +12,10 @@ from collections import OrderedDict
 
 import FileVideoStream
 
-gEventColumns = ('index', 'path', 'cseconds', 'type', 'frameStart', 'frameStop', 'note')
+gEventColumns = ('index', 'path', 'cseconds', 'cDate', 'cTime', 
+				'typeNum', 'typeStr', 'frameStart', 'frameStop', 
+				'numFrames', 'sStart', 'sStop', 'numSeconds'
+				'chunkIndex', 'note')
 
 class bEventList:
 	def __init__(self,videoFilePath):
@@ -66,7 +69,7 @@ class bEventList:
 					if eventLine == '\n':
 						pass
 					#print('   eventLine:', eventLine)
-					event = bEvent()
+					event = bEvent(self)
 					event.fromFile(headerLine, eventLine)
 					self.eventList.append(event)
 		
@@ -106,7 +109,7 @@ class bEventList:
 		frame: frame number into video
 		"""
 		idx = len(self.eventList)
-		event = bEvent(idx, self.videoFilePath, type, frame)
+		event = bEvent(self, idx, self.videoFilePath, type, frame)
 		self.eventList.append(event)
 		
 		if autoSave:
@@ -115,7 +118,7 @@ class bEventList:
 		return event
 
 class bEvent:
-	def __init__(self, index='', path='', type='', frame=''):
+	def __init__(self, parentList, index='', path='', type='', frame=''):
 		"""
 		path: (str) path to video file
 		type: (int)
@@ -123,6 +126,8 @@ class bEvent:
 		ms: (int)
 		note: (str)
 		"""
+		self.parentList = parentList # to get video parameters
+		
 		# gEventColumns = ('index', 'path', 'cseconds', 'type', 'frameStart', 'frameStop', 'note')
 		self.eventColumns = gEventColumns
 		self.dict = OrderedDict()
@@ -131,8 +136,11 @@ class bEvent:
 		self.dict['index'] = index
 		self.dict['path'] = path
 		self.dict['cseconds'] = time.time()
-		self.dict['type'] = type
+		self.dict['typeNum'] = type
 		self.dict['frameStart'] = frame
+		
+		# need access to the FileVideoStream
+		#secondsStart = self.parentList.app.getSecondsFromFrame(frame)
 
 		"""
 		self.streamParams['path'] = path
