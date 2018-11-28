@@ -396,11 +396,11 @@ class VideoApp:
 		#video_ff_button.bind("<Key>", self.keyPress)
 	
 		#self.video_frame_slider = ttk.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback)
-		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback, showvalue=False)
+		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback, showvalue=False, repeatdelay=50)
 		self.video_frame_slider.grid(row=0, column=5, sticky="ew")
 		self.buttonDownInSlider = False
-		self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback(True))
-		self.video_frame_slider.bind("<ButtonRelease-1>", self.buttonDownInSlider_callback(True))
+		#self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback(True))
+		#self.video_frame_slider.bind("<ButtonRelease-1>", self.buttonDownInSlider_callback(True))
 		
 		#
 		# set aspect of video frame
@@ -416,10 +416,12 @@ class VideoApp:
 		#self.videoLabel.bind("<Configure>", self.mySetAspect)
 		#self.mySetAspect()
 		
+	"""
 	def buttonDownInSlider_callback(self,val):
 		print('buttonDownInSlider() val:', val)
 		self.buttonDownInSlider = val
-		
+	"""
+	
 	###################################################################################
 
 	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
@@ -476,7 +478,7 @@ class VideoApp:
 			#self.video_frame_slider['from_'] = startFrame
 			#self.video_frame_slider['to'] = stopFrame
 
-			self.video_frame_slider.set(startFrame)
+			#self.video_frame_slider.set(startFrame)
 			self.video_frame_slider['from_'] = startFrame
 			self.video_frame_slider['to'] = stopFrame
 			

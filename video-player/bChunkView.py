@@ -31,7 +31,8 @@ class bChunkView:
 		self.nextChunkButton = ttk.Button(self.random_chunks_frame, width=1, text=">", command=self.chunk_next)
 		self.nextChunkButton.grid(row=0, column=4)
 		#self.nextChunkButton.bind("<Key>", self.app.keyPress)
-
+		#self.nextChunkButton.takefocus = 0
+		
 		self.gotoChunkButton = ttk.Button(self.random_chunks_frame, width=4, text="Go To", command=self.chunk_goto2)
 		self.gotoChunkButton.grid(row=0, column=5)
 
