@@ -1,0 +1,245 @@
+	def old_populateVideoFiles(self, doInit=False):
+		
+		if doInit:
+			videoFileColumns = self.videoList.getColumns()
+			
+			# configure columns
+			self.videoFileTree['columns'] = videoFileColumns
+			hideColumns = ['path'] # hide some columns
+			displaycolumns = [] # build a list of columns not in hideColumns
+			for column in videoFileColumns:
+				self.videoFileTree.column(column, width=10)
+				self.videoFileTree.heading(column, text=column, command=lambda c=column: self.treeview_sort_column(self.videoFileTree, c, False))
+				if column not in hideColumns:
+					displaycolumns.append(column)
+			self.videoFileTree.column('index', width=5)
+			
+			# set some column widths, width is in pixels?
+			#gVideoFileColumns = ('index', 'path', 'file', 'width', 'height', 'frames', 'fps', 'seconds', 'numevents', 'note')
+			defaultWidth = 80
+			self.videoFileTree.column('index', minwidth=50, width=50, stretch="no")
+			self.videoFileTree.column('file', width=150)
+			self.videoFileTree.column('width', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.videoFileTree.column('height', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.videoFileTree.column('frames', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.videoFileTree.column('fps', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.videoFileTree.column('seconds', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.videoFileTree.column('numevents', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			
+			# hide some columns
+			self.videoFileTree["displaycolumns"] = displaycolumns
+			
+			self.videoFileTree.bind("<ButtonRelease-1>", self.video_tree_single_click)
+
+			# right-click popup
+			# see: https://stackoverflow.com/questions/12014210/tkinter-app-adding-a-right-click-context-menu
+			self.popup_menu = tkinter.Menu(self.videoFileTree, tearoff=0)
+			self.popup_menu.add_command(label="Set Note",
+										command=self.setVideoFileNote)
+			self.videoFileTree.bind("<Button-2>", self.popup)
+			self.videoFileTree.bind("<Button-3>", self.popup) # Button-2 on Aqua
+		
+		# first delete entries
+		for i in self.videoFileTree.get_children():
+			self.videoFileTree.delete(i)
+
+		for idx, videoFile in enumerate(self.videoList.getList()):
+			position = "end"
+			self.videoFileTree.insert("" , position, text=str(idx+1), values=videoFile.asTuple())
+
+	
+	# right click interface
+	def old_popup(self, event):
+		print('popup()')
+		try:
+			self.popup_menu.tk_popup(event.x_root, event.y_root) #, 0)
+		finally:
+			self.popup_menu.grab_release()
+
+	def old_setVideoFileNote(self):
+		print('setVideoFileNote() not implemented')
+		#self.selection_set(0, 'end')
+
+	###################################################################################
+	def old_populateEvents(self, doInit=False):
+		eventColumns = self.eventList.getColumns()
+		
+		if doInit:
+			# configure columns
+			self.eventTree['columns'] = eventColumns
+			"""
+			gEventColumns = ('index', 'path', 'cseconds', 'cDate', 'cTime', 
+							'typeNum', 'typeStr', 'frameStart', 'frameStop', 
+							'numFrames', 'sStart', 'sStop', 'numSeconds'
+							'chunkIndex', 'note')
+			"""
+			displaycolumns_ = ['index', 'typeNum', 'frameStart', 'frameStop', 'chunkIndex', 'note'] # hide some columns
+			displaycolumns = [] # build a list of columns not in hideColumns
+			for column in eventColumns:
+				self.eventTree.column(column, width=20)
+				self.eventTree.heading(column, text=column, command=lambda c=column: self.treeview_sort_column(self.eventTree, c, False))
+				if column in displaycolumns_:
+					displaycolumns.append(column)
+	
+			# set some column widths, width is in pixels?
+			self.eventTree.column('index', minwidth=50, width=50, stretch="no")
+			self.eventTree.column('typeNum', minwidth=50, width=50, stretch="no")
+
+			# hide some columns
+			self.eventTree["displaycolumns"] = displaycolumns
+
+			self.eventTree.bind('<<TreeviewSelect>>', self.event_tree_single_selected)
+
+		# first delete entries
+		for i in self.eventTree.get_children():
+			self.eventTree.delete(i)
+
+		# todo: make bEventList iterable
+		for idx, event in enumerate(self.eventList.eventList):
+			position = "end"
+			self.eventTree.insert("" , position, text=str(idx+1), values=event.asTuple())
+
+
+	# treeview util
+	def old_selectTreeViewRow(self, tv, col, isThis):
+		"""
+		Given a treeview (tv), a column name (col) and a value (isThis)
+		Visually select the row in tree view that has column mathcing isThis
+		
+		tv: treeview
+		col: (str) column name
+		isThis: (str) value of a cell in column (col)
+		"""
+		theRow = self._getTreeViewRow(tv, col, isThis)
+		
+		if theRow is not None:
+			# get the item
+			children = tv.get_children()
+			item = children[theRow]
+			#print('item:', item)
+			
+			# select the row
+			tv.focus(item) # select internally
+			tv.selection_set(item) # visually select
+		
+	def old_setTreeViewCell(self, tv, row, col, toThis):
+		
+		print('_setTreeViewCell() tv:', tv, 'row:', row, 'col:', col, 'toThis:', toThis)
+		
+		# get the item at row
+		item = self.eventTree.get_children()[row]
+		
+		# get the tree view columns and find the col we are looking for
+		columns = tv['columns']				
+		colIdx = columns.index(col) # assuming 'frameStart' exists
+	
+		values = tv.item(item, "values") # tuple of all values in tv row
+		
+		# set
+		values[colIdx] = str(toThis) # for now, keep everything as a string
+		
+		# put it back into tree
+		tv.item(item, vlaues=values)
+		
+	def old_getTreeViewRow(self, tv, col, isThis):
+		"""
+		Given a treeview, a col name and a value (isThis)
+		Return the row index of the column col mathing isThis
+		"""
+		# get the tree view columns and find the col we are looking for
+		columns = tv['columns']				
+		colIdx = columns.index(col) # assuming 'frameStart' exists
+
+		#print('tv.get_children():', tv.get_children())
+		
+		rowIdx = 0
+		theRet = None
+		for child in tv.get_children():
+			values = tv.item(child)["values"] # values at current row
+			if values[colIdx] == isThis:
+				theRet = rowIdx
+				break
+			rowIdx += 1
+		return theRet
+
+	def old_getTreeViewSelection(self, tv, col):
+		"""
+		Get value of selected column
+			tv: treeview
+			col: (str) column name
+		"""
+		item = tv.focus()
+		if item == '':
+			print('_getTreeViewSelection() did not find a selection in treeview  tv:', tv)
+			return None, None
+		columns = tv['columns']				
+		colIdx = columns.index(col) # assuming 'frameStart' exists
+		values = tv.item(item, "values") # tuple of a values in tv row
+		theRet = values[colIdx]
+		return theRet, item
+		
+
+	def old_video_tree_single_selected(self, event):
+		print('=== video_tree_single_selected()')
+		self.video_tree_single_click(event)
+
+	def old_video_tree_single_click(self, event):
+		""" display events """
+		print('=== video_tree_single_click()')		
+		
+		# get video file path
+		path, item = self._getTreeViewSelection(self.videoFileTree, 'path')
+		print('   path:', path)
+
+		# switch video stream
+		self.switchvideo(path, paused=True, gotoFrame=0)
+		
+		"""
+		# switch event list
+		self.eventList = bEventList.bEventList(path)
+		
+		# populate event list tree
+		self.populateEvents()
+		
+		# set feedback frame
+		self.numFrameLabel['text'] = 'of ' + str(self.vs.streamParams['numFrames'])
+		self.numSecondsLabel['text'] = 'of ' + str(self.vs.streamParams['numSeconds'])
+		
+		# set frame slider
+		self.video_frame_slider['to'] = self.vs.streamParams['numFrames']
+		"""
+		
+	def old_event_tree_single_selected(self, event):
+		print('=== event_tree_single_selected()')
+		self.event_tree_single_click(event)
+		
+	def old_event_tree_single_click(self, event):
+		"""
+		On single click in event list tree --> Set the video to a frame
+		event: <ButtonRelease event state=Button1 num=1 x=227 y=64>
+		"""
+		print('=== event_tree_single_click()')
+		frameStart, item = self._getTreeViewSelection(self.eventTree, 'frameStart')
+		frameStart = float(frameStart) # need first because frameNumber (str) can be 100.00000000001
+		frameStart = int(frameStart)
+		print('   event_tree_single_click() is progressing to frameStart:', frameStart)
+		#self.vs.setFrame(frameStart) # set the video frame
+		self.setFrame(frameStart) # set the video frame
+		
+	def old_treeview_sort_column(self, tv, col, reverse):
+		print('treeview_sort_column()', 'tv:', tv, 'col:', col, 'reverse:', reverse)
+		l = [(tv.set(k, col), k) for k in tv.get_children('')]
+		
+		print('   l:', l)
+		
+		#newlist = sorted(list_to_be_sorted, key=lambda k: k['name'])
+		
+		l.sort(reverse=reverse)
+
+		# rearrange items in sorted positions
+		for index, (val, k) in enumerate(l):
+			tv.move(k, '', index)
+
+		# reverse sort next time
+		tv.heading(col, command=lambda:self.treeview_sort_column(tv, col, not reverse))
+				   
