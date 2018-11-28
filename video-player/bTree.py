@@ -9,6 +9,7 @@ import tkinter
 from tkinter import ttk
 
 import bEventList
+import bNoteDialog
 
 ###################################################################################
 class bTree(ttk.Frame):
@@ -89,7 +90,7 @@ class bTree(ttk.Frame):
 		Given a treeview, a col name and a value (isThis)
 		Return the row index of the column col mathing isThis
 		"""
-		print('_getTreeViewRow col:', col, 'isThis:', isThis)
+		#print('_getTreeViewRow col:', col, 'isThis:', isThis)
 		# get the tree view columns and find the col we are looking for
 		columns = self.treeview['columns']				
 		try:
@@ -121,7 +122,7 @@ class bEventTree(bTree):
 		self.populateEvents(videoFilePath, doInit=True)
 		
 	def populateEvents(self, videoFilePath, doInit=False):
-		print('bEventTree.populateEvents()')
+		print('bEventTree.populateEvents() videoFilePath:', videoFilePath)
 		
 		# not sure if previous version of self.eventList will be deleted?
 		self.eventList = bEventList.bEventList(videoFilePath)
@@ -246,6 +247,9 @@ class bEventTree(bTree):
 		
 		print('original note is noteStr:', noteStr)
 
+		myDialog = bNoteDialog.bNoteDialog(self, noteStr, self.editNote_Callback)
+		
+		"""
 		# to make modal
 		#self.grab_set()
 		# see: http://effbot.org/tkinterbook/tkinter-dialog-windows.htm
@@ -272,7 +276,24 @@ class bEventTree(bTree):
 		
 		okButton = tkinter.Button(self.top, text="OK", command=self.editNote_okButton_Callback)
 		okButton.pack(side="left", pady=5)
+		"""
+		
+	def editNote_Callback(self, event, newNoteStr):
+		print('bTree.editNote_Callback() event:', event, 'newNoteStr:', newNoteStr)
+	
+		# set in our eventList
+		self.eventList.eventList[self.myEditNoteIndex].dict['note'] = newNoteStr
+		self.eventList.save()
+		
+		# get the event we just set
+		event = self.eventList.eventList[self.myEditNoteIndex]
+		
+		# update the tree
+		# todo: get this 'item' when we open dialog and use self.item
+		#item = self.eventTree.focus()
+		self.treeview.item(self.item, values=event.asTuple())
 
+	"""
 	def editNote_cancelButton_Callback(self):
 		print('cancelButton_Callback()')
 		self.top.destroy()
@@ -301,7 +322,8 @@ class bEventTree(bTree):
 
 		#print('bNoteDialog.okButton_Callback() is calling destroy')
 		self.top.destroy() # destroy *this, the modal
-
+	"""
+	
 ###################################################################################
 class bVideoFileTree(bTree):
 	def __init__(self, parent, parentApp, videoFileList, *args, **kwargs):

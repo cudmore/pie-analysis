@@ -33,29 +33,6 @@ import bTree # gives us bEventTree and (eventually) bVideoFileTree
 
 ##################################################################################
 class VideoApp:
-	def loadFolder(self, path=''):
-		if len(path) < 1:
-			path = tkinter.filedialog.askdirectory()
-		
-		if not os.path.isdir(path):
-			return
-		
-		self.path = path
-		
-		self.videoList = bVideoList.bVideoList(path)		
-		self.populateVideoFiles(doInit=False)
-	
-		# initialize with first video in path
-		firstVideoPath = self.videoList.videoFileList[0].dict['path']
-
-		self.eventList = bEventList.bEventList(firstVideoPath)
-		# bTree switch
-		#self.populateEvents(doInit=False)
-		self.eventTree.populateEvents(firstVideoPath)
-		
-		# fire up a video stream
-		self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
-	
 	def __init__(self, path=''):
 		"""
 		TKInter application to create interface for loading, viewing, and annotating video
@@ -75,6 +52,8 @@ class VideoApp:
 		self.myCurrentSeconds = None
 		self.pausedAtFrame = None
 
+		#self.myCurrentChunk = None
+		
 		self.configDict = {}
 		# load config file
 		self.optionsFile = 'options.json'
@@ -136,6 +115,29 @@ class VideoApp:
 
 		self.root.mainloop()
 		
+	def loadFolder(self, path=''):
+		if len(path) < 1:
+			path = tkinter.filedialog.askdirectory()
+		
+		if not os.path.isdir(path):
+			return
+		
+		self.path = path
+		
+		self.videoList = bVideoList.bVideoList(path)		
+		self.populateVideoFiles(doInit=False)
+	
+		# initialize with first video in path
+		firstVideoPath = self.videoList.videoFileList[0].dict['path']
+
+		#self.eventList = bEventList.bEventList(firstVideoPath)
+		# bTree switch
+		#self.populateEvents(doInit=False)
+		self.eventTree.populateEvents(firstVideoPath)
+		
+		# fire up a video stream
+		self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
+	
 	def optionsDefaults(self):
 		self.configDict['appWindowGeometry'] = "1100x700"
 		self.configDict['showVideoFiles'] = True
@@ -149,6 +151,19 @@ class VideoApp:
 		self.configDict['fpsIncrement'] = 5 # seconds
 		self.configDict['lastPath'] = self.path
 
+	def saveOptions(self):
+		print('saveOptions()')
+
+		if self.vPane.sashpos(0) > 0:
+			self.configDict['videoFileSash'] = self.vPane.sashpos(0)
+		if self.hPane.sashpos(0) > 0:
+			self.configDict['eventSash'] = self.hPane.sashpos(0)
+		geometryStr = str(self.root.winfo_width()) + "x" + str(self.root.winfo_height())
+		self.configDict['appWindowGeometry'] = geometryStr
+		
+		with open(self.optionsFile, 'w') as outfile:
+			json.dump(self.configDict, outfile, indent=4, sort_keys=True)
+	
 	###################################################################################
 	def toggleInterface(self, this):
 		"""
@@ -380,9 +395,13 @@ class VideoApp:
 		video_ff_button.grid(row=0, column=4)
 		#video_ff_button.bind("<Key>", self.keyPress)
 	
-		self.video_frame_slider = ttk.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback)
+		#self.video_frame_slider = ttk.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback)
+		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback, showvalue=False)
 		self.video_frame_slider.grid(row=0, column=5, sticky="ew")
-
+		self.buttonDownInSlider = False
+		self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback(True))
+		self.video_frame_slider.bind("<ButtonRelease-1>", self.buttonDownInSlider_callback(True))
+		
 		#
 		# set aspect of video frame
 		#self.set_aspect(self.lower_right_frame, self.content_frame, self.pad_frame, self.video_control_frame, aspect_ratio=myApectRatio) 
@@ -396,6 +415,10 @@ class VideoApp:
 
 		#self.videoLabel.bind("<Configure>", self.mySetAspect)
 		#self.mySetAspect()
+		
+	def buttonDownInSlider_callback(self,val):
+		print('buttonDownInSlider() val:', val)
+		self.buttonDownInSlider = val
 		
 	###################################################################################
 
@@ -431,30 +454,39 @@ class VideoApp:
 		self.numSecondsLabel['text'] = 'of ' + str(self.vs.getParam('numSeconds'))
 		
 		# set frame slider
+		self.video_frame_slider['from_'] = 0
 		self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
 		
 		# select in video file tree view
 		self.videoFileTree._selectTreeViewRow('path', videoPath)
 		
-	def hijackInterface(self, chunk=None):
-		if chunk is None:
-			print('chunk is none')
+	def hijackInterface(self, onoff):
+		print('hijackInterface() onoff:', onoff)
+		if onoff:
+			currentChunk = self.chunkView.getCurrentChunk()
+			startFrame = currentChunk['startFrame']
+			stopFrame = currentChunk['stopFrame']
+			numFrames = stopFrame - startFrame + 1
+			
+			print('   startFrame:', startFrame, 'stopFrame:', stopFrame, 'numFrames:', numFrames)
+			#print('   ', type(startFrame), type(stopFrame), type(numFrames))
+
+			# need to set value first, if outside start/stop then slider get stuck
+			#self.video_frame_slider['value'] = startFrame + 1
+			#self.video_frame_slider['from_'] = startFrame
+			#self.video_frame_slider['to'] = stopFrame
+
+			self.video_frame_slider.set(startFrame)
+			self.video_frame_slider['from_'] = startFrame
+			self.video_frame_slider['to'] = stopFrame
+			
+			# need to limit event tree to just events in this chunk!!!
+			# todo: write event tree filter(chunkIndex)
+		else:
+			#print('hijackInterface() chunk is none')
 			self.video_frame_slider['from_'] = 0
 			self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
 			#self.video_frame_slider['value'] = startFrame
-		else:
-			print('hijackInterface() chunk:', chunk)
-			startFrame = chunk['startFrame']
-			stopFrame = chunk['stopFrame']
-			numFrames = stopFrame - startFrame + 1
-			print(type(startFrame), type(stopFrame), type(numFrames))
-
-			# need to set value first, if outside start/stop then slider get stuck
-			self.video_frame_slider['value'] = startFrame + 1
-			self.video_frame_slider['from_'] = startFrame
-			self.video_frame_slider['to'] = stopFrame
-
-			# need to limit event tree to just events in this chunk!!!
 			
 	#def mySetAspect(self):
 	def mySetAspect(self, event):
@@ -497,10 +529,15 @@ class VideoApp:
 	# video file tree
 	def frameSlider_callback(self, frameNumber):
 		frameNumber = int(float(frameNumber))
-		print('VideoApp.frameSlider_callback()', frameNumber)
-		print('   from:', self.video_frame_slider['from'], 'to:', self.video_frame_slider['to'])
+		print('VideoApp.frameSlider_callback() frameNumber:', frameNumber, 'self.myCurrentFrame:', self.myCurrentFrame)
+		print('   from:', self.video_frame_slider['from'], 'to:', self.video_frame_slider['to']) #, 'value:', self.video_frame_slider['value'])
+		
+		#frameNumber = self.video_frame_slider['from'] + frameNumber
+		
 		self.setFrame(frameNumber)
 
+		time.sleep(0.01)
+		
 	def doCommand(self, cmd):
 
 		#myCurrentSeconds = self.vs.getSecondsFromFrame(self.myCurrentFrame)
@@ -618,49 +655,11 @@ class VideoApp:
 			
 	def setStartFrame(self, frame):
 		print('setStartFrame()')
-
 		self.eventTree.set('frameStart', frame)
-		"""
-		index, item = self._getTreeViewSelection(self.eventTree, 'index')
-		if index is None:
-			print('   warning: please select an event')
-			return None
-		index = int(index)
-		print('   modifying event index:', index)
-		
-		# set in our eventList
-		self.eventList.eventList[index].dict['frameStart'] = frame
-		self.eventList.save()
-		
-		# grab event we just set
-		event = self.eventList.eventList[index]
-
-		# update treeview with new event
-		self.eventTree.item(item, values=event.asTuple())
-		"""
 		
 	def setEndFrame(self, frame):
 		print('setEndFrame()')
-
 		self.eventTree.set('frameStop', frame)
-		"""
-		index, item = self._getTreeViewSelection(self.eventTree, 'index')
-		if index is None:
-			print('   warning: please select an event')
-			return None
-		index = int(index)
-		print('   modifying event index:', index)
-		
-		# set in our eventList
-		self.eventList.eventList[index].dict['frameStop'] = frame
-		self.eventList.save()
-		
-		# grab event we just set
-		event = self.eventList.eventList[index]
-
-		# update treeview with new event
-		self.eventTree.item(item, values=event.asTuple())		
-		"""
 		
 	def setNote(self):
 		"""
@@ -687,44 +686,12 @@ class VideoApp:
 		"""
 		Append a new event at the current frame
 		"""
+		# just in case
 		frame = int(float(frame))
-
-		# add new event to eventList
-		#newEvent = self.eventList.appendEvent(theKey, frame)
-		#self.eventList.save()
 		
 		# bTree switch
 		chunkIndex = None
 		self.eventTree.appendEvent(theKey, frame, chunkIndex=chunkIndex)
-		"""
-		# get a tuple (list) of item names in event tree view
-		children = self.eventTree.get_children()
-		numInList = len(children)
-
-		# append to end of list in tree view
-		position = "end"
-		numInList += 1
-		text = str(numInList)
-		#print('newEvent.asTuple():', newEvent.asTuple())
-		self.eventTree.insert("" , position, text=text, values=newEvent.asTuple())
-		"""
-		
-		#
-		# interface
-		
-		# todo: update 'numevents' in video file list
-		# need a simple way to get row of video file (in video file list) from event
-		#videoListRow = none
-		#self._setTreeViewCell(self.videoFileTree, videoListRow, 'numevents', self.eventList.numEvents)
-		
-		# bTree switch
-		# select new event in event list
-		"""
-		self._selectTreeViewRow(self.eventTree, 'index', newEvent.dict['index'])
-		
-		# scroll to bottom of event tree
-		self.eventTree.yview_moveto(1) # 1 is fractional
-		"""
 		
 	def setFramesPerSecond(self, newFramesPerSecond):
 		"""
@@ -813,24 +780,15 @@ class VideoApp:
 			self.currentFramePerScondLabel['text'] ='fps:' + str(self.myFramesPerSecond)
 			self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
 			
-			self.video_frame_slider['value'] = self.myCurrentFrame
+			#print('self.myCurrentFrame:', self.myCurrentFrame)
+			# for ttk
+			#self.video_frame_slider['value'] = self.myCurrentFrame
+			# for tkinter
+			self.video_frame_slider.set(self.myCurrentFrame)
 
 		# leave this here -- CRITICAL
 		self.videoLoopID = self.root.after(self.myFrameInterval, self.videoLoop)
 		
-	def saveOptions(self):
-		print('saveOptions()')
-
-		if self.vPane.sashpos(0) > 0:
-			self.configDict['videoFileSash'] = self.vPane.sashpos(0)
-		if self.hPane.sashpos(0) > 0:
-			self.configDict['eventSash'] = self.hPane.sashpos(0)
-		geometryStr = str(self.root.winfo_width()) + "x" + str(self.root.winfo_height())
-		self.configDict['appWindowGeometry'] = geometryStr
-		
-		with open(self.optionsFile, 'w') as outfile:
-			json.dump(self.configDict, outfile, indent=4, sort_keys=True)
-	
 	def onClose(self, event=None):
 
 		# set the stop event, cleanup the camera, and allow the rest of

@@ -9,28 +9,17 @@ class bNoteDialog:
 	"""
 	Opens a modal dialog to set the note of an event
 	"""
-	def __init__(self, parentApp):
-		self.parentApp = parentApp
+	def __init__(self, parentApp, noteStr, myCallback):
+		#self.noteStr = noteStr
+		self.myCallback = myCallback
 		
-		#
-		# grab the note of selected event
-		self.item = self.parentApp.eventTree.focus()
-		if self.item == '':
-			print('bNoteDialog() please select an event')
-			return None
-		columns = self.parentApp.eventTree['columns']				
-		noteColIdx = columns.index('note') # assuming 'note' exists
-		values = self.parentApp.eventTree.item(self.item, "values")
-		self.index = int(values[0]) # assuming [0] is index
-		noteStr = values[noteColIdx]
-		
-		print('original note is noteStr:', noteStr)
+		#print('original note is noteStr:', noteStr)
 
 		# to make modal
 		#self.grab_set()
 		# see: http://effbot.org/tkinterbook/tkinter-dialog-windows.htm
 		
-		self.top = tkinter.Toplevel(parentApp.root)
+		self.top = tkinter.Toplevel(parentApp)
 		
 		#top.focus_force() # added
 		#top.grab_set()
@@ -38,13 +27,14 @@ class bNoteDialog:
 		tkinter.Label(self.top, text="Note").pack()
 
 		#
-		self.e = tkinter.Entry(self.top)
-		#self.e.delete(0, "end")
-		self.e.insert(0, noteStr)
+		self.noteEntryWidget = tkinter.Entry(self.top)
+		#self.noteEntryWidget.delete(0, "end")
+		self.noteEntryWidget.insert(0, noteStr)
+		self.noteEntryWidget.select_range(0, "end")
 		
-		self.e.bind('<Key-Return>', self.okKeyboard_Callback)
-		self.e.focus_set()
-		self.e.pack(padx=5)
+		self.noteEntryWidget.bind('<Key-Return>', self.okKeyboard_Callback)
+		self.noteEntryWidget.focus_set()
+		self.noteEntryWidget.pack(padx=5)
 
 		cancelButton = tkinter.Button(self.top, text="Cancel", command=self.cancelButton_Callback)
 		cancelButton.pack(side="left", pady=5)
@@ -53,33 +43,20 @@ class bNoteDialog:
 		okButton.pack(side="left", pady=5)
 
 	def cancelButton_Callback(self):
-		print('cancelButton_Callback()')
+		#print('cancelButton_Callback()')
 		self.top.destroy()
 		
 	def okKeyboard_Callback(self, event):
-		print('okKeyboard_Callback()')
+		#print('okKeyboard_Callback()')
 		#print("value is:", self.e.get())
 		self.okButton_Callback()
 		
 	def okButton_Callback(self):
-		print('okButton_Callback()')
-		newNote = self.e.get()
-		print("new note is:", newNote)
+		#print('okButton_Callback()')
+		newNote = self.noteEntryWidget.get()
+		#print("   new note is:", newNote)
 		
-		# set in our eventList
-		self.parentApp.eventList.eventList[self.index].dict['note'] = newNote
-		self.parentApp.eventList.save()
+		self.myCallback('ok', newNote)
 		
-		# get the event we just set
-		event = self.parentApp.eventList.eventList[self.index]
-		
-		# update the tree
-		# todo: get this 'item' when we open dialog and use self.item
-		#item = self.eventTree.focus()
-		self.parentApp.eventTree.item(self.item, values=event.asTuple())
-
-		#print('bNoteDialog.okButton_Callback() is calling destroy')
 		self.top.destroy() # destroy *this, the modal
-		
-	def _setNote(txt):
-		item = self.parentApp.eventTree.focus()
+

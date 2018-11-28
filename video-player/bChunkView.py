@@ -40,10 +40,20 @@ class bChunkView:
 		self.gotoChunkEntry.grid(row=0, column=6)
 		self.gotoChunkEntry.insert(0, '0')
 
-		self.hijackControlsCheckbox = ttk.Checkbutton(self.random_chunks_frame, text='Limit Controls')
+		self.hijackControlsCheckbox_Value = tkinter.IntVar()
+		self.hijackControlsCheckbox = ttk.Checkbutton(self.random_chunks_frame, text='Limit Controls', 
+														command=self.checkbox_callback,
+														variable=self.hijackControlsCheckbox_Value)
 		self.hijackControlsCheckbox.grid(row=1, column=0)
 		
 		
+	def checkbox_callback(self):
+		print('checkbox_callback() self.hijackControlsCheckbox_Value.get():', self.hijackControlsCheckbox_Value.get())
+		if self.hijackControlsCheckbox_Value.get() == 1:
+			self.app.hijackInterface(True)
+		else:
+			self.app.hijackInterface(False)
+
 	def chunkInterface_populate(self, askForFile=False):
 		"""
 		Open a chunks file and populate interface
@@ -120,13 +130,22 @@ class bChunkView:
 		
 		self.app.switchvideo(path, paused=True, gotoFrame=startFrame)
 		
-		self.app.setFrame(startFrame)
+		#self.app.setFrame(startFrame)
 
-		self.app.hijackInterface(chunk)
+		self.app.hijackInterface(self.hijackControlsCheckbox_Value.get() == 1)
 		
 		# update chunk interface
 		self.currentChunkLabel['text'] = str(chunkNumber)
+	
+	def isHijacking(self):
+		return self.hijackControlsCheckbox_Value.get() == 1
 		
+	def getCurrentChunk(self):
+		if self.currentChunk is not None:
+			return self.chunkData['chunks'][self.currentChunk]
+		else:
+			return None
+			
 	@property
 	def numChunks(self):
 		return len(self.chunkData['chunkOrder'])
