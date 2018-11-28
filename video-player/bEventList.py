@@ -18,7 +18,7 @@ gEventColumns = ('index', 'path', 'cseconds', 'cDate', 'cTime',
 				'chunkIndex', 'note')
 
 class bEventList:
-	def __init__(self,videoFilePath):
+	def __init__(self, videoFilePath):
 		
 		"""
 		# check that videoFilePath exists
@@ -103,13 +103,13 @@ class bEventList:
 	def getEvent(self, idx):
 		return self.eventList[idx]
 		
-	def appendEvent(self, type, frame, autoSave=False):
+	def appendEvent(self, type, frame, chunkIndex=None, autoSave=False):
 		"""
 		type: in (1,2,3,4,5)
 		frame: frame number into video
 		"""
 		idx = len(self.eventList)
-		event = bEvent(self, idx, self.videoFilePath, type, frame)
+		event = bEvent(self, idx, self.videoFilePath, type, frame, chunkIndex=chunkIndex)
 		self.eventList.append(event)
 		
 		if autoSave:
@@ -118,7 +118,7 @@ class bEventList:
 		return event
 
 class bEvent:
-	def __init__(self, parentList, index='', path='', type='', frame=''):
+	def __init__(self, parentList, index='', path='', type='', frame='', chunkIndex=None):
 		"""
 		path: (str) path to video file
 		type: (int)
@@ -138,6 +138,7 @@ class bEvent:
 		self.dict['cseconds'] = time.time()
 		self.dict['typeNum'] = type
 		self.dict['frameStart'] = frame
+		self.dict['chunkIndex'] = chunkIndex
 		
 		# need access to the FileVideoStream
 		#secondsStart = self.parentList.app.getSecondsFromFrame(frame)

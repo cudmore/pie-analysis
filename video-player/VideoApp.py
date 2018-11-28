@@ -51,7 +51,7 @@ class VideoApp:
 		self.eventList = bEventList.bEventList(firstVideoPath)
 		# bTree switch
 		#self.populateEvents(doInit=False)
-		self.eventTree.populateEvents(self.eventList, doInit=False)
+		self.eventTree.populateEvents(firstVideoPath)
 		
 		# fire up a video stream
 		self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
@@ -92,8 +92,10 @@ class VideoApp:
 		firstVideoPath = ''
 		if len(self.videoList.videoFileList) > 0:
 			firstVideoPath = self.videoList.videoFileList[0].dict['path']
-
+		
+		"""
 		self.eventList = bEventList.bEventList(firstVideoPath)
+		"""
 		
 		self.myFrameInterval = 30 # ms per frame
 		self.myFramesPerSecond = round(1 / self.myFrameInterval,3) * 1000 # frames/second
@@ -120,7 +122,7 @@ class VideoApp:
 		self.root.bind("<Key>", self.keyPress)
 
 		# fire up a video stream
-		# removed when adding loadFOlder
+		# removed when adding loadFolder
 		if len(firstVideoPath) > 0:
 			self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
 
@@ -202,7 +204,7 @@ class VideoApp:
 		self.vPane.add(upper_frame)
 
 		# bTree switch
-		self.videoFileTree = bTree.bVideoFileTree(upper_frame, self, self.videoList)
+		self.videoFileTree = bTree.bVideoFileTree(upper_frame, self, videoFileList='', show='headings')
 		self.videoFileTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		"""
 		self.videoFileTree = ttk.Treeview(upper_frame, show='headings')
@@ -246,7 +248,7 @@ class VideoApp:
 		self.hPane.add(lower_left_frame)
 		
 		# bTree switch
-		self.eventTree = bTree.bEventTree(lower_left_frame, self, self.eventList)
+		self.eventTree = bTree.bEventTree(lower_left_frame, self, videoFilePath='', show='headings')
 		self.eventTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		"""
 		self.eventTree = ttk.Treeview(lower_left_frame, show='headings')
@@ -264,7 +266,7 @@ class VideoApp:
 		"""
 		self.populateEvents(doInit=True)
 		"""
-		self.eventTree.populateEvents(self.eventList, doInit=True)
+		#self.eventTree.populateEvents(self.eventList, doInit=True)
 		
 		#
 		# video
@@ -416,12 +418,13 @@ class VideoApp:
 		#child_id = self.videoFileTree.get_children()[0] #first
 
 		# switch event list
-		self.eventList = bEventList.bEventList(videoPath)
+		#self.eventList = bEventList.bEventList(videoPath)
 		
 		# bTree switch
 		# populate event list tree
 		#self.populateEvents()
-		self.eventTree.populateEvents(self.eventList)
+		#self.eventTree.populateEvents(self.eventList)
+		self.eventTree.populateEvents(videoPath)
 		
 		# set feedback frame
 		self.numFrameLabel['text'] = 'of ' + str(self.vs.getParam('numFrames'))
@@ -616,6 +619,8 @@ class VideoApp:
 	def setStartFrame(self, frame):
 		print('setStartFrame()')
 
+		self.eventTree.set('frameStart', frame)
+		"""
 		index, item = self._getTreeViewSelection(self.eventTree, 'index')
 		if index is None:
 			print('   warning: please select an event')
@@ -632,10 +637,13 @@ class VideoApp:
 
 		# update treeview with new event
 		self.eventTree.item(item, values=event.asTuple())
-
+		"""
+		
 	def setEndFrame(self, frame):
 		print('setEndFrame()')
 
+		self.eventTree.set('frameStop', frame)
+		"""
 		index, item = self._getTreeViewSelection(self.eventTree, 'index')
 		if index is None:
 			print('   warning: please select an event')
@@ -652,6 +660,7 @@ class VideoApp:
 
 		# update treeview with new event
 		self.eventTree.item(item, values=event.asTuple())		
+		"""
 		
 	def setNote(self):
 		"""
@@ -681,11 +690,12 @@ class VideoApp:
 		frame = int(float(frame))
 
 		# add new event to eventList
-		newEvent = self.eventList.appendEvent(theKey, frame)
-		self.eventList.save()
+		#newEvent = self.eventList.appendEvent(theKey, frame)
+		#self.eventList.save()
 		
 		# bTree switch
-		self.eventTree.appendEvent(newEvent)
+		chunkIndex = None
+		self.eventTree.appendEvent(theKey, frame, chunkIndex=chunkIndex)
 		"""
 		# get a tuple (list) of item names in event tree view
 		children = self.eventTree.get_children()
@@ -784,7 +794,17 @@ class VideoApp:
 				self.videoLabel.image = tmpImage
 			
 			self.videoLabel.place(x=0, y=0, width=tmpWidth, height=tmpHeight)
-			self.video_control_frame.place(x=0, y=tmpHeight + buttonHeight, width=tmpWidth)
+			
+			if self.configDict['showRandomChunks']:
+				chunksHeight = self.random_chunks_frame.winfo_height()
+			else:
+				chunksHeight = 0
+			if self.configDict['showVideoFeedback']:
+				feedbackHeight = self.video_feedback_frame.winfo_height()
+			else:
+				feedbackHeight = 0
+			yPos = tmpHeight + chunksHeight + feedbackHeight + 2 #+ buttonHeight
+			self.video_control_frame.place(x=0, y=yPos, width=tmpWidth)
 			
 			#
 			# update feedback labels

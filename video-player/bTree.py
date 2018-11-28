@@ -20,6 +20,9 @@ class bTree(ttk.Frame):
 		
 		myPadding = 5
 
+		self.grid_rowconfigure(0, weight=1)
+		self.grid_columnconfigure(0, weight=1)
+
 		self.treeview = ttk.Treeview(self, *args, **kwargs)
 		self.treeview.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 
@@ -86,34 +89,42 @@ class bTree(ttk.Frame):
 		Given a treeview, a col name and a value (isThis)
 		Return the row index of the column col mathing isThis
 		"""
+		print('_getTreeViewRow col:', col, 'isThis:', isThis)
 		# get the tree view columns and find the col we are looking for
 		columns = self.treeview['columns']				
-		colIdx = columns.index(col) # assuming 'frameStart' exists
-
+		try:
+			colIdx = columns.index(col) # assuming 'frameStart' exists
+		except (ValueError):
+			colIdx = None
+			
 		#print('tv.get_children():', tv.get_children())
 		
-		rowIdx = 0
 		theRet = None
-		for child in self.treeview.get_children():
-			values = self.treeview.item(child)["values"] # values at current row
-			if values[colIdx] == isThis:
-				theRet = rowIdx
-				break
-			rowIdx += 1
+		if colIdx is not None:
+			rowIdx = 0
+			for child in self.treeview.get_children():
+				values = self.treeview.item(child)["values"] # values at current row
+				if values[colIdx] == isThis:
+					theRet = rowIdx
+					break
+				rowIdx += 1
 		return theRet
 		
 
 ###################################################################################
 class bEventTree(bTree):
-	def __init__(self, parent, parentApp, eventList, *args, **kwargs):
+	def __init__(self, parent, parentApp, videoFilePath='', *args, **kwargs):
 		bTree.__init__(self, parent, parentApp, *args, **kwargs)
 		
-		self.eventList = eventList # bEventList object
+		#self.eventList = bEventList.bEventList(videoFilePath)
+		self.eventList = None
+		self.populateEvents(videoFilePath, doInit=True)
 		
-	def populateEvents(self, eventList, doInit=False):
+	def populateEvents(self, videoFilePath, doInit=False):
 		print('bEventTree.populateEvents()')
 		
-		self.eventList = eventList
+		# not sure if previous version of self.eventList will be deleted?
+		self.eventList = bEventList.bEventList(videoFilePath)
 		
 		eventColumns = self.eventList.getColumns()
 		
@@ -139,7 +150,7 @@ class bEventTree(bTree):
 			self.treeview.column('typeNum', minwidth=50, width=50, stretch="no")
 
 			# hide some columns
-			print('bEventTree.populateEvent() displaycolumns:', displaycolumns)
+			#print('bEventTree.populateEvent() displaycolumns:', displaycolumns)
 			self.treeview["displaycolumns"] = displaycolumns
 
 			self.treeview.bind('<<TreeviewSelect>>', self.single_click)
@@ -166,7 +177,12 @@ class bEventTree(bTree):
 		#self.vs.setFrame(frameStart) # set the video frame
 		self.myParentApp.setFrame(frameStart) # set the video frame
 		
-	def appendEvent(self, newEvent):
+	def appendEvent(self, type, frame, chunkIndex=None):
+		
+		newEvent = self.eventList.appendEvent(type, frame, chunkIndex=chunkIndex)
+		self.eventList.save()
+
+		# interface
 		# get a tuple (list) of item names in event tree view
 		children = self.treeview.get_children()
 		numInList = len(children)
@@ -180,9 +196,36 @@ class bEventTree(bTree):
 
 		# interface
 		# visually select row
-		self.treeview._selectTreeViewRow('index', newEvent.dict['index'])		
+		self._selectTreeViewRow('index', newEvent.dict['index'])		
 		# scroll to bottom of event tree
 		self.treeview.yview_moveto(1) # 1 is fractional
+
+	def set(self, col, val):
+		"""
+		Set a value in selected row of tree
+		
+		Parameters:
+			col: column name in (frameStart, frameStop)
+			val: thevalue to set to
+		"""
+		print('bEventTree().set() col:', col, 'val:', val)
+
+		index, item = self._getTreeViewSelection('index')
+		if index is None:
+			print('   warning: please select an event')
+			return None
+		index = int(index)
+		print('   modifying event index:', index)
+		
+		# set in our eventList
+		self.eventList.eventList[index].dict[col] = val
+		self.eventList.save()
+		
+		# grab event we just set
+		event = self.eventList.eventList[index]
+
+		# update treeview with new event
+		self.treeview.item(item, values=event.asTuple())
 
 	def editNote(self):
 
@@ -196,7 +239,9 @@ class bEventTree(bTree):
 		columns = self.treeview['columns']				
 		noteColIdx = columns.index('note') # assuming 'note' exists
 		values = self.treeview.item(self.item, "values")
-		self.index = int(values[0]) # assuming [0] is index
+
+		self.myEditNoteIndex = int(values[0]) # assuming [0] is index
+
 		noteStr = values[noteColIdx]
 		
 		print('original note is noteStr:', noteStr)
@@ -213,13 +258,14 @@ class bEventTree(bTree):
 		tkinter.Label(self.top, text="Note").pack()
 
 		#
-		self.e = tkinter.Entry(self.top)
-		#self.e.delete(0, "end")
-		self.e.insert(0, noteStr)
+		self.noteEntryWidget = tkinter.Entry(self.top)
+		#self.noteEntryWidget.delete(0, "end")
+		self.noteEntryWidget.insert(0, noteStr)
+		self.noteEntryWidget.select_range(0, "end")
 		
-		self.e.bind('<Key-Return>', self.editNote_okKeyboard_Callback)
-		self.e.focus_set()
-		self.e.pack(padx=5)
+		self.noteEntryWidget.bind('<Key-Return>', self.editNote_okKeyboard_Callback)
+		self.noteEntryWidget.focus_set()
+		self.noteEntryWidget.pack(padx=5)
 
 		cancelButton = tkinter.Button(self.top, text="Cancel", command=self.editNote_cancelButton_Callback)
 		cancelButton.pack(side="left", pady=5)
@@ -233,25 +279,25 @@ class bEventTree(bTree):
 		
 	def editNote_okKeyboard_Callback(self, event):
 		print('okKeyboard_Callback()')
-		#print("value is:", self.e.get())
+		#print("value is:", self.noteEntryWidget.get())
 		self.editNote_okButton_Callback()
 		
 	def editNote_okButton_Callback(self):
 		print('okButton_Callback()')
-		newNote = self.e.get()
+		newNote = self.noteEntryWidget.get()
 		print("new note is:", newNote)
 		
 		# set in our eventList
-		self.parentApp.eventList.eventList[self.index].dict['note'] = newNote
-		self.parentApp.eventList.save()
+		self.eventList.eventList[self.myEditNoteIndex].dict['note'] = newNote
+		self.eventList.save()
 		
 		# get the event we just set
-		event = self.parentApp.eventList.eventList[self.index]
+		event = self.eventList.eventList[self.myEditNoteIndex]
 		
 		# update the tree
 		# todo: get this 'item' when we open dialog and use self.item
 		#item = self.eventTree.focus()
-		self.parentApp.eventTree.item(self.item, values=event.asTuple())
+		self.treeview.item(self.item, values=event.asTuple())
 
 		#print('bNoteDialog.okButton_Callback() is calling destroy')
 		self.top.destroy() # destroy *this, the modal
@@ -367,15 +413,14 @@ if __name__ == '__main__':
 
 	# load an event list
 	firstVideoPath = '/Users/cudmore/Dropbox/PiE/video/1-homecage-movie.mp4'
-	eventList = bEventList.bEventList(firstVideoPath)
+	#eventList = bEventList.bEventList(firstVideoPath)
 	
 	# this will not work because we do not have VideoApp parent app
-	"""
-	et = bEventTree(root, parentApp, eventList)
+	parentApp = None
+	et = bEventTree(root, parentApp, firstVideoPath)
 	et.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 	
-	et.populateEvents(eventList, doInit=True)
-	"""
+	#et.populateEvents(eventList, doInit=True)
 	
 	root.mainloop()
 	
