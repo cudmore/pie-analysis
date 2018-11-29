@@ -909,7 +909,9 @@ class VideoApp:
 			#self.video_frame_slider.set(self.myCurrentFrame)
 			if not self.buttonDownInSlider:
 				self.frameSliderVar.set(self.myCurrentFrame)
-			
+			else:
+				print('xxx self.buttonDownInSlider:', self.buttonDownInSlider)
+				
 		# leave this here -- CRITICAL
 		self.videoLoopID = self.root.after(self.myFrameInterval, self.videoLoop)
 		

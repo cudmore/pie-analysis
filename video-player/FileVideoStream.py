@@ -66,7 +66,7 @@ class FileVideoStream:
 		"""
 		
 	def switchStream(self, path, paused=False, gotoFrame=None):
-		print('switchStream() path:', path, 'paused:', paused, 'gotoFrame:', gotoFrame)
+		print('=== switchStream() path:', path, 'paused:', paused, 'gotoFrame:', gotoFrame)
 
 		self.switchingStream = True
 		
@@ -135,26 +135,38 @@ class FileVideoStream:
 			time.sleep(0.001)
 			
 			if self.switchingStream:
+				#print('   self.switchingStream:', self.switchingStream)
 				continue
 			
 			if self.gotoFrame is not None:
-				print('FileVideoStream.update() gotoFrame:', self.gotoFrame, 'self.paused:', self.paused)
+				print('~~~ FileVideoStream.update() gotoFrame:', self.gotoFrame, 'self.paused:', self.paused)
 				self.stream.set(cv2.CAP_PROP_POS_FRAMES, self.gotoFrame)
 				if self.paused:
+					print('   going to frame when paused')
+					print("   self.streamParams['path']:", self.streamParams['path'])
+					self.currentFrame = int(self.stream.get(cv2.CAP_PROP_POS_FRAMES))
+					self.milliseconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC),2)
+					self.seconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC)/1000,2)
+					print('   self.currentFrame:', self.currentFrame)
 					try:
 						#print('FileVideoStream.update() gotoFrame is clearing queue when paused')
 						with self.Q.mutex:
 							self.Q.queue.clear()
 						(grabbed, frame) = self.stream.read()
+						print('   grabbed:', grabbed)
 					except:
 						print('xxx yyy')
+					"""
 					self.currentFrame = int(self.stream.get(cv2.CAP_PROP_POS_FRAMES))
 					self.milliseconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC),2)
 					self.seconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC)/1000,2)
+					print('   self.currentFrame:', self.currentFrame)
+					"""
 					self.Q.put([frame, self.currentFrame, self.seconds])
 					#print('FileVideoStream.update() self.Q.put(frame) done')
 				else:
 					#print('FileVideoStream.update() gotoFrame is clearing queue when playing')
+					print('   going to frame when playing')
 					with self.Q.mutex:
 						self.Q.queue.clear()
 				self.gotoFrame = None
@@ -164,12 +176,18 @@ class FileVideoStream:
 				pass
 			else:
 				if not self.Q.full():
-					# read the next frame from the file
-					(grabbed, frame) = self.stream.read()
-
 					self.currentFrame = int(self.stream.get(cv2.CAP_PROP_POS_FRAMES))
 					self.milliseconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC),2)
 					self.seconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC)/1000,2)
+
+					# read the next frame from the file
+					(grabbed, frame) = self.stream.read()
+
+					"""
+					self.currentFrame = int(self.stream.get(cv2.CAP_PROP_POS_FRAMES))
+					self.milliseconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC),2)
+					self.seconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC)/1000,2)
+					"""
 					
 					# if the `grabbed` boolean is `False`, then we have
 					# reached the end of the video file
