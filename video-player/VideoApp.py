@@ -527,11 +527,11 @@ class VideoApp:
 			self.frameSliderVar.set(startFrame)
 			
 			# WHAT THE FUCK IS GOING ON ??????????
-			self.buttonDownInSlider = True
+			#self.buttonDownInSlider = True
 			
 			self.setFrame(startFrame)
 			
-			self.buttonDownInSlider = False
+			#self.buttonDownInSlider = False
 			
 			# need to limit event tree to just events in this chunk!!!
 			# todo: write event tree filter(chunkIndex)
