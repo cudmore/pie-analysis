@@ -1,7 +1,7 @@
 # Author: Robert Cudmore
 # Date: 20181120
 
-import os, json
+import os, time, json
 import tkinter
 from tkinter import ttk
 
@@ -168,7 +168,10 @@ class bChunkView:
 		print('   startFrame:', startFrame)
 		print('   stopFrame:', stopFrame)
 		
+		print('   calling self.app.switchvideo() gotoFrame:', startFrame)
 		self.app.switchvideo(path, paused=True, gotoFrame=startFrame)
+		
+		#time.sleep(0.05)
 		
 		#self.app.setFrame(startFrame)
 

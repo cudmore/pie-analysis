@@ -122,13 +122,13 @@ class bEventTree(bTree):
 		self.populateEvents(videoFilePath, doInit=True)
 		
 	def populateEvents(self, videoFilePath, doInit=False):
-		print('bEventTree.populateEvents() videoFilePath:', videoFilePath)
+		#print('bEventTree.populateEvents() videoFilePath:', videoFilePath)
 		
 		# not sure if previous version of self.eventList will be deleted?
 		self.eventList = bEventList.bEventList(self.myParentApp, videoFilePath)
 		
 		eventColumns = self.eventList.getColumns()
-		print('eventColumns:', eventColumns)
+		#print('   eventColumns:', eventColumns)
 		
 		if doInit:
 			# configure columns
@@ -178,7 +178,8 @@ class bEventTree(bTree):
 		# todo: make bEventList iterable
 		for idx, event in enumerate(self.eventList.eventList):
 			currentChunkIndex = self.eventList.get(idx, 'chunkIndex')
-			if currentChunkIndex != 'None':
+			#print('filter() idx:', idx, 'currentChunkIndex:', currentChunkIndex, type(currentChunkIndex))
+			if currentChunkIndex is not None and currentChunkIndex != 'None':
 				currentChunkIndex = int(float(currentChunkIndex))
 			#print('currentChunkIndex:', type(currentChunkIndex), 'chunkIdx:', type(chunkIdx))
 			if chunkIdx is None or currentChunkIndex == chunkIdx:

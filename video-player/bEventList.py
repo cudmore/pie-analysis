@@ -10,7 +10,7 @@ import os, time
 import numpy as np
 from collections import OrderedDict 
 
-import FileVideoStream
+#import FileVideoStream
 
 gEventColumns = ('index', 'path', 'cSeconds', 'cDate', 'cTime', 
 				'typeNum', 'typeStr', 'frameStart', 'frameStop', 
@@ -27,6 +27,8 @@ class bEventList:
 			return 0
 		"""
 			
+		print('bEventList() videoFilePath:', videoFilePath)
+		
 		self.parentApp = parentApp
 		self.videoFilePath = videoFilePath
 
@@ -42,9 +44,9 @@ class bEventList:
 			textFileName = videoFileName.split('.')[0] + '.txt'
 			self.textFilePath = os.path.join(videoDirName, textFileName)
 		
-			vs = FileVideoStream.FileVideoStream(videoFilePath)
-			self.streamParams = vs.streamParams
-
+			#vs = FileVideoStream.FileVideoStream(videoFilePath)
+			#self.streamParams = vs.streamParams
+			self.streamParams = self.parentApp.vs.streamParams
 			self.load()
 
 		

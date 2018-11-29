@@ -43,7 +43,7 @@ class VideoApp:
 		self.path = path
 		self.vs = None # FileVideoStream
 		self.frame = None # the current frame, read from FileVideoStream
-
+		
 		# keep track of current with and only scale in VideoLoop() when neccessary
 		self.currentWidth = 640
 		self.currentHeight = 480
@@ -394,23 +394,23 @@ class VideoApp:
 
 		video_fr_button = ttk.Button(self.video_control_frame, width=1, text="<<", command=lambda: self.doCommand('fast-backward'))
 		video_fr_button.grid(row=0, column=0)
-		video_fr_button.bind("<Key>", self.ignore)
+		video_fr_button.bind("<Key>", self._ignore)
 
 		video_r_button = ttk.Button(self.video_control_frame, width=1, text="<", command=lambda: self.doCommand('backward'))
 		video_r_button.grid(row=0, column=1)
-		video_r_button.bind("<Key>", self.ignore)
+		video_r_button.bind("<Key>", self._ignore)
 
 		self.video_play_button = ttk.Button(self.video_control_frame, width=4, text="Play", command=lambda: self.doCommand('playpause'))
 		self.video_play_button.grid(row=0, column=2)
-		self.video_play_button.bind("<Key>", self.ignore)
+		self.video_play_button.bind("<Key>", self._ignore)
 	
 		video_f_button = ttk.Button(self.video_control_frame, width=1, text=">", command=lambda: self.doCommand('forward'))
 		video_f_button.grid(row=0, column=3)
-		video_f_button.bind("<Key>", self.ignore)
+		video_f_button.bind("<Key>", self._ignore)
 	
 		video_ff_button = ttk.Button(self.video_control_frame, width=1, text=">>", command=lambda: self.doCommand('fast-forward'))
 		video_ff_button.grid(row=0, column=4)
-		video_ff_button.bind("<Key>", self.ignore)
+		video_ff_button.bind("<Key>", self._ignore)
 	
 		#self.video_frame_slider = ttk.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback)
 		self.frameSliderVar = tkinter.IntVar()
@@ -442,12 +442,12 @@ class VideoApp:
 		print('buttonMotionInSlider_callback() event:', event)
 	"""
 	
-	def ignore(self, event):
+	def _ignore(self, event):
 		"""
 		This function will take all key-presses (except \r) and pass to main app.
 		return "break" is critical to stop propogation of event
 		"""
-		print('ignore event.char:', event.char)
+		#print('ignore event.char:', event.char)
 		if event.char == '\r':
 			pass
 		else:
@@ -465,18 +465,50 @@ class VideoApp:
 	###################################################################################
 
 	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
-		print('=== switchvideo() videoPath:', videoPath)
+		print('=== switchvideo() videoPath:', videoPath, 'paused:', paused, 'gotoFrame:', gotoFrame)
+
+		"""
 		if self.vs is not None:
+			print('   self.vs.stop()')
 			self.vs.stop()
+		"""
 		
+		"""
+		print('   time.sleep(0.05)')
+		time.sleep(0.05)
+		"""
+		
+		# was this
+		"""
 		self.vs = FileVideoStream(videoPath, paused, gotoFrame) #.start()
 		self.vs.start()
+		"""
 		
+		if self.vs is None:
+			print('   switchvideo() is instantiating stream')
+			self.vs = FileVideoStream(videoPath, paused, gotoFrame) #.start()
+			#print('   self.vs.start()')
+			self.vs.start()
+			time.sleep(0.01)
+		else:
+			print('   switchvideo() is switching stream')
+			self.vs.switchStream(videoPath, paused, gotoFrame)
+			time.sleep(0.01)
+		
+		"""
+		print('   time.sleep(0.05)')
+		time.sleep(0.05)
+		"""
+		
+		"""
 		if gotoFrame is None:
+			print('   setting frame 0')
 			self.setFrame(0)
 		else:
+			print('   setting gotoFrame:', gotoFrame)
 			self.setFrame(gotoFrame)
-
+		"""
+		
 		# set the selection in video tree
 		# select the first video
 		#child_id = self.videoFileTree.get_children()[-1] #last
@@ -485,10 +517,9 @@ class VideoApp:
 		# switch event list
 		#self.eventList = bEventList.bEventList(videoPath)
 		
-		# bTree switch
-		# populate event list tree
-		#self.populateEvents()
-		#self.eventTree.populateEvents(self.eventList)
+		# select in video file tree view
+		self.videoFileTree._selectTreeViewRow('path', videoPath)
+
 		self.eventTree.populateEvents(videoPath)
 		
 		# set feedback frame
@@ -499,18 +530,16 @@ class VideoApp:
 		self.video_frame_slider['from_'] = 0
 		self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
 		
-		# select in video file tree view
-		self.videoFileTree._selectTreeViewRow('path', videoPath)
 		
 	def hijackInterface(self, onoff):
-		print('hijackInterface() onoff:', onoff)
+		print('=== hijackInterface() onoff:', onoff)
 		if onoff:
 			currentChunk = self.chunkView.getCurrentChunk()
 			chunkIndex = currentChunk['index']
 			startFrame = currentChunk['startFrame']
 			stopFrame = currentChunk['stopFrame']
 			
-			print('   startFrame:', startFrame, 'stopFrame:', stopFrame)
+			print('   currentChunk:', currentChunk, 'chunkIndex:', chunkIndex, 'startFrame:', startFrame, 'stopFrame:', stopFrame)
 			#print('   ', type(startFrame), type(stopFrame), type(numFrames))
 
 			# need to set value first, if outside start/stop then slider get stuck
@@ -524,7 +553,7 @@ class VideoApp:
 			#self.video_frame_slider.set(startFrame)
 			self.video_frame_slider['from_'] = startFrame
 			self.video_frame_slider['to'] = stopFrame
-			self.frameSliderVar.set(startFrame)
+			#self.frameSliderVar.set(startFrame)
 			
 			# WHAT THE FUCK IS GOING ON ??????????
 			#self.buttonDownInSlider = True
@@ -616,6 +645,9 @@ class VideoApp:
 				if newFrame > self.chunkLastFrame:
 					newSeconds = self.vs.getSecondsFromFrame(self.chunkLastFrame)
 					print('   forcing frame to chunkLastFrame', self.chunkLastFrame, 'newSeconds:', newSeconds)
+				if newFrame > self.vs.getParam('numFrames')-1:
+					newSeconds = self.vs.getSecondsFromFrame(self.vs.getParam('numFrames')-1)
+					print('   (1) forcing frame to newSeconds:', newSeconds)
 				self.setSeconds(newSeconds)
 		if cmd == 'fast-forward':
 			if self.myCurrentSeconds is not None:
@@ -625,6 +657,9 @@ class VideoApp:
 				if newFrame > self.chunkLastFrame:
 					newSeconds = self.vs.getSecondsFromFrame(self.chunkLastFrame)
 					print('   forcing frame to chunkLastFrame', self.chunkLastFrame, 'newSeconds:', newSeconds)
+				if newFrame > self.vs.getParam('numFrames')-1:
+					newSeconds = self.vs.getSecondsFromFrame(self.vs.getParam('numFrames')-1)
+					print('   (2) forcing frame to newSeconds:', newSeconds)
 				self.setSeconds(newSeconds)
 		if cmd == 'backward':
 			if self.myCurrentSeconds is not None:
@@ -634,6 +669,9 @@ class VideoApp:
 				if newFrame < self.chunkFirstFrame:
 					newSeconds = self.vs.getSecondsFromFrame(self.chunkFirstFrame)
 					print('   forcing frame to chunkFirstFrame', self.chunkFirstFrame, 'newSeconds:', newSeconds)
+				if newFrame < 0:
+					newSeconds = 0
+					print('   (3) forcing frame to newSeconds:', newSeconds)
 				self.setSeconds(newSeconds)
 		if cmd == 'fast-backward':
 			if self.myCurrentSeconds is not None:
@@ -643,6 +681,9 @@ class VideoApp:
 				if newFrame < self.chunkFirstFrame:
 					newSeconds = self.vs.getSecondsFromFrame(self.chunkFirstFrame)
 					print('   forcing frame to chunkFirstFrame', self.chunkFirstFrame, 'newSeconds:', newSeconds)
+				if newFrame < 0:
+					newSeconds = 0
+					print('   (4) forcing frame to newSeconds:', newSeconds)
 				self.setSeconds(newSeconds)
 			 
 	def keyPress(self, event):
@@ -802,9 +843,12 @@ class VideoApp:
 				self.pausedAtFrame = self.myCurrentFrame
 		else:
 			self.videoLabel.configure(text="")
-			if self.vs is not None and (self.myCurrentFrame != self.vs.getParam('numFrames')-1) and ( self.myCurrentFrame < self.chunkLastFrame):
-				[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
-
+			try:
+				if self.vs is not None and (self.myCurrentFrame != self.vs.getParam('numFrames')-1) and ( self.myCurrentFrame < self.chunkLastFrame):
+					[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
+			except:
+				print('****** my exception in videoLoop')
+				
 		if not self.vs.isOpened or self.vs is None or self.frame is None:
 			#print('ERROR: VideoApp2.videoLoop() got None self.frame')
 			pass
