@@ -242,4 +242,43 @@
 
 		# reverse sort next time
 		tv.heading(col, command=lambda:self.treeview_sort_column(tv, col, not reverse))
-				   
+
+	#def mySetAspect(self):
+	def old_mySetAspect(self, event):
+		print('~~~~~ mySetAspect() event:')
+		print('   event:', event)
+		"""
+		print('   event.widget:', event.widget)
+		print('   event.type:', event.type)
+		"""
+		aspect_ratio = self.vs.getParam('aspectRatio')
+		buttonHeight = 36
+		
+		#desired_width = event.width - buttonHeight
+		#desired_height = int(desired_width * aspect_ratio)
+		
+		#print(self.lower_right_frame.winfo_width(), self.lower_right_frame.winfo_height())
+		
+		#width = event.width
+		#height = event.height
+		width = self.videoLabel.winfo_width()
+		height = self.videoLabel.winfo_height()
+		desired_width = self.videoLabel.winfo_width() - buttonHeight
+		desired_height = int(desired_width * aspect_ratio)
+		
+		if desired_height > height:
+			desired_height = height - buttonHeight
+			desired_width = int(desired_height / aspect_ratio)
+		
+		print('   width:', width, 'height:', height)
+		print('   desired_width:', desired_width, 'desired_height:', desired_height)
+
+		#self.content_frame.place(in_=self.lower_right_frame, x=0, y=0, width=desired_width, height=desired_height)
+
+		#self.videoLabel.place(in_=self.content_frame, x=0, y=0, width=desired_width, height=desired_height)
+		#self.video_control_frame.place(x=0, y=desired_height + buttonHeight, width=desired_width)
+		
+		print('~~~~~ mySetAspect() done')
+		#self.root.after(100, self.mySetAspect)
+  		
+		   

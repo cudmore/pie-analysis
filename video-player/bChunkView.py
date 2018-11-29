@@ -129,8 +129,9 @@ class bChunkView:
 		
 	def chunk_start(self):
 		""" Go to first frame in chunk"""
-		actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
-		currentChunk = self.chunkData['chunks'][actualChunkNumber]
+		#actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
+		#currentChunk = self.chunkData['chunks'][actualChunkNumber]
+		currentChunk = self.getCurrentChunk()
 		startFrame = currentChunk['startFrame']
 		print('chunk_start()')
 		print('   index:', currentChunk['index'])
@@ -160,8 +161,9 @@ class bChunkView:
 			
 		self.currentChunk = chunkNumber
 		
-		actualChunkNumber = self.chunkData['chunkOrder'][chunkNumber]
-		chunk = self.chunkData['chunks'][actualChunkNumber]
+		#actualChunkNumber = self.chunkData['chunkOrder'][chunkNumber]
+		#chunk = self.chunkData['chunks'][actualChunkNumber]
+		chunk = self.getCurrentChunk()
 		
 		path = chunk['path']
 		startFrame = chunk['startFrame']
@@ -181,7 +183,7 @@ class bChunkView:
 		self.app.hijackInterface(self.hijackControlsCheckbox_Value.get() == 1)
 		
 		# update chunk interface
-		self.currentChunkLabel['text'] = str(chunkNumber)
+		self.currentChunkLabel['text'] = str(self.currentChunk)
 	
 	def isHijacking(self):
 		return self.hijackControlsCheckbox_Value.get() == 1

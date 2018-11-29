@@ -415,10 +415,14 @@ class VideoApp:
 		video_ff_button.bind("<Key>", self._ignore)
 	
 		#self.video_frame_slider = ttk.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback)
+		"""
 		self.frameSliderVar = tkinter.IntVar()
 		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", showvalue=False,
 													command=self.frameSlider_callback,
 													variable=self.frameSliderVar)
+		"""
+		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", showvalue=False,
+													command=self.frameSlider_callback)
 		self.video_frame_slider.grid(row=0, column=5, sticky="ew")
 		self.buttonDownInSlider = False
 		self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback)
@@ -474,7 +478,6 @@ class VideoApp:
 			startFrame = currentChunk['startFrame']
 			stopFrame = currentChunk['stopFrame']
 			
-			print('   currentChunk:', currentChunk, 'chunkIndex:', chunkIndex, 'startFrame:', startFrame, 'stopFrame:', stopFrame)
 			#print('   ', type(startFrame), type(stopFrame), type(numFrames))
 
 			# need to set value first, if outside start/stop then slider get stuck
@@ -488,11 +491,13 @@ class VideoApp:
 			#self.video_frame_slider.set(startFrame)
 			self.video_frame_slider['from_'] = startFrame
 			self.video_frame_slider['to'] = stopFrame
+			self.video_frame_slider.value = startFrame
 			#self.frameSliderVar.set(startFrame)
 			
 			# WHAT THE FUCK IS GOING ON ??????????
 			#self.buttonDownInSlider = True
 			
+			print('   hijackInterface calling self.setFrame() startFrame:', startFrame)
 			self.setFrame(startFrame)
 			
 			#self.buttonDownInSlider = False
@@ -509,56 +514,22 @@ class VideoApp:
 			#self.video_frame_slider['value'] = startFrame
 			self.eventTree.filter(None)
 			
-	#def mySetAspect(self):
-	def old_mySetAspect(self, event):
-		print('~~~~~ mySetAspect() event:')
-		print('   event:', event)
-		"""
-		print('   event.widget:', event.widget)
-		print('   event.type:', event.type)
-		"""
-		aspect_ratio = self.vs.getParam('aspectRatio')
-		buttonHeight = 36
-		
-		#desired_width = event.width - buttonHeight
-		#desired_height = int(desired_width * aspect_ratio)
-		
-		#print(self.lower_right_frame.winfo_width(), self.lower_right_frame.winfo_height())
-		
-		#width = event.width
-		#height = event.height
-		width = self.videoLabel.winfo_width()
-		height = self.videoLabel.winfo_height()
-		desired_width = self.videoLabel.winfo_width() - buttonHeight
-		desired_height = int(desired_width * aspect_ratio)
-		
-		if desired_height > height:
-			desired_height = height - buttonHeight
-			desired_width = int(desired_height / aspect_ratio)
-		
-		print('   width:', width, 'height:', height)
-		print('   desired_width:', desired_width, 'desired_height:', desired_height)
-
-		#self.content_frame.place(in_=self.lower_right_frame, x=0, y=0, width=desired_width, height=desired_height)
-
-		#self.videoLabel.place(in_=self.content_frame, x=0, y=0, width=desired_width, height=desired_height)
-		#self.video_control_frame.place(x=0, y=desired_height + buttonHeight, width=desired_width)
-		
-		print('~~~~~ mySetAspect() done')
-		#self.root.after(100, self.mySetAspect)
-  		
 	# video file tree
 	def frameSlider_callback(self, frameNumber):
-		frameNumber = int(float(frameNumber))
-		print('VideoApp.frameSlider_callback() frameNumber:', frameNumber, 'self.myCurrentFrame:', self.myCurrentFrame)
-		print('   from:', self.video_frame_slider['from'], 'to:', self.video_frame_slider['to']) #, 'value:', self.video_frame_slider['value'])
-		
-		#frameNumber = self.video_frame_slider['from'] + frameNumber
-		
-		self.setFrame(frameNumber)
-
-		#time.sleep(0.01)
-		
+		print('VideoApp.frameSlider_callback()')
+		if self.buttonDownInSlider:
+			frameNumber = int(float(frameNumber))
+			print('VideoApp.frameSlider_callback() frameNumber:', frameNumber, 'self.myCurrentFrame:', self.myCurrentFrame)
+			print('   from:', self.video_frame_slider['from'], 'to:', self.video_frame_slider['to'], 'value:', self.video_frame_slider.value)
+			
+			#frameNumber = self.video_frame_slider['from'] + frameNumber
+			
+			self.setFrame(frameNumber)
+	
+			#time.sleep(0.01)
+		else:
+			print('   skipped when not self.buttonDownInSlider')
+				
 	def doCommand(self, cmd):
 
 		#myCurrentSeconds = self.vs.getSecondsFromFrame(self.myCurrentFrame)
@@ -701,6 +672,7 @@ class VideoApp:
 		self.setFrame(theFrame)
 		
 	def setFrame(self, theFrame):
+		print('VideoApp.setFrame() theFrame:', theFrame)
 		if self.vs is not None and self.vs.setFrame(theFrame):
 			self.myCurrentFrame = theFrame
 		else:
@@ -918,9 +890,9 @@ class VideoApp:
 				# for ttk
 				#self.video_frame_slider['value'] = self.myCurrentFrame
 				# for tkinter
-				#self.video_frame_slider.value = self.myCurrentFrame
 				if not self.buttonDownInSlider:
-					self.frameSliderVar.set(self.myCurrentFrame)
+					#self.frameSliderVar.set(self.myCurrentFrame)
+					self.video_frame_slider.value = self.myCurrentFrame
 				else:
 					pass
 					#print('xxx self.buttonDownInSlider:', self.buttonDownInSlider)

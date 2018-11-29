@@ -140,20 +140,22 @@ class FileVideoStream:
 			
 			if self.gotoFrame is not None:
 				print('~~~ FileVideoStream.update() gotoFrame:', self.gotoFrame, 'self.paused:', self.paused)
+				print('   setting stream CAP_PROP_POS_FRAMES to self.gotoFrame:', self.gotoFrame)
 				self.stream.set(cv2.CAP_PROP_POS_FRAMES, self.gotoFrame)
+				self.gotoFrame = None
 				if self.paused:
-					print('   going to frame when paused')
-					print("   self.streamParams['path']:", self.streamParams['path'])
+					print('   FileVideoStream.update() going to frame when paused')
+					print("      self.streamParams['path']:", self.streamParams['path'])
 					self.currentFrame = int(self.stream.get(cv2.CAP_PROP_POS_FRAMES))
 					self.milliseconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC),2)
 					self.seconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC)/1000,2)
-					print('   self.currentFrame:', self.currentFrame)
+					print('      self.currentFrame:', self.currentFrame)
 					try:
 						#print('FileVideoStream.update() gotoFrame is clearing queue when paused')
 						with self.Q.mutex:
 							self.Q.queue.clear()
 						(grabbed, frame) = self.stream.read()
-						print('   grabbed:', grabbed)
+						print('      grabbed:', grabbed)
 					except:
 						print('xxx yyy')
 					"""
@@ -169,7 +171,6 @@ class FileVideoStream:
 					print('   going to frame when playing')
 					with self.Q.mutex:
 						self.Q.queue.clear()
-				self.gotoFrame = None
 				
 			# otherwise, ensure the queue has room in it
 			if self.paused:
@@ -236,7 +237,7 @@ class FileVideoStream:
 		print('FileVideoStream.playPause()', 'pause' if self.paused else 'play')
 		
 	def setFrame(self, newFrame):
-		#print('FileVideoStream.setFrame()', newFrame)
+		print('FileVideoStream.setFrame() newFrame:', newFrame)
 		if not self.isOpened:
 			print('error: setFrame() file is not open')
 			return False
@@ -248,7 +249,7 @@ class FileVideoStream:
 		elif newFrame > (self.streamParams['numFrames']-1):
 			print('FileVideoStream.setFrame() error, newFrame:', newFrame, 'is beyond end of video frame:', self.streamParams['numFrames']-1)
 		else:
-			#print('FileVideoStream.setFrame() newFrame:', newFrame)
+			print('   setting self.gotoFrame = ', self.gotoFrame)
 			self.gotoFrame = newFrame
 		return True
 
