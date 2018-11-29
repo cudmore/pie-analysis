@@ -25,29 +25,49 @@ class bChunkView:
 		self.numChunksLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='')
 		self.numChunksLabel.grid(row=0, column=2)
 	
+		# previous chunk
 		self.previousChunkButton = ttk.Button(self.random_chunks_frame, width=1, text="<", command=self.chunk_previous)
 		self.previousChunkButton.grid(row=0, column=3)
+		self.previousChunkButton.bind("<Key>", self.ignore)
 
+		self.startOfChunkButton = ttk.Button(self.random_chunks_frame, width=1, text="|<", command=self.chunk_start)
+		self.startOfChunkButton.grid(row=0, column=4)
+		self.startOfChunkButton.bind("<Key>", self.ignore)
+
+		# next chunk
 		self.nextChunkButton = ttk.Button(self.random_chunks_frame, width=1, text=">", command=self.chunk_next)
-		self.nextChunkButton.grid(row=0, column=4)
-		#self.nextChunkButton.bind("<Key>", self.app.keyPress)
-		#self.nextChunkButton.takefocus = 0
+		self.nextChunkButton.grid(row=0, column=5)
+		self.nextChunkButton.bind("<Key>", self.ignore)
 		
 		self.gotoChunkButton = ttk.Button(self.random_chunks_frame, width=4, text="Go To", command=self.chunk_goto2)
-		self.gotoChunkButton.grid(row=0, column=5)
+		self.gotoChunkButton.grid(row=0, column=6)
+		self.gotoChunkButton.bind("<Key>", self.ignore)
 
 		#self.gotoChunkEntry = ttk.Entry(self.random_chunks_frame, width=5)
 		self.gotoChunkEntry = ttk.Spinbox(self.random_chunks_frame, width=5, from_=0, to=0)
-		self.gotoChunkEntry.grid(row=0, column=6)
+		self.gotoChunkEntry.grid(row=0, column=7)
 		self.gotoChunkEntry.insert(0, '0')
+		self.gotoChunkEntry.bind("<Key>", self.ignore)
 
 		self.hijackControlsCheckbox_Value = tkinter.IntVar()
 		self.hijackControlsCheckbox = ttk.Checkbutton(self.random_chunks_frame, text='Limit Controls', 
 														command=self.checkbox_callback,
 														variable=self.hijackControlsCheckbox_Value)
 		self.hijackControlsCheckbox.grid(row=1, column=0)
+		self.hijackControlsCheckbox.bind("<Key>", self.ignore)
 		
-		
+	def ignore(self, event):
+		"""
+		This function will take all key-presses (except \r) and pass to main app.
+		return "break" is critical to stop propogation of event
+		"""
+		print('ignore event.char:', event.char)
+		if event.char == '\r':
+			pass
+		else:
+			self.app.keyPress(event)
+			return 'break'
+
 	def checkbox_callback(self):
 		print('checkbox_callback() self.hijackControlsCheckbox_Value.get():', self.hijackControlsCheckbox_Value.get())
 		if self.hijackControlsCheckbox_Value.get() == 1:
@@ -89,12 +109,31 @@ class bChunkView:
 		
 		self.gotoChunkEntry['to'] = self.numChunks - 1
 		
+	def findChunk(self, path, startFrame):
+		theIdx = None
+		currIdx = 0
+		for chunk in self.chunkData['chunks']:
+			if chunk['path'] == path:
+				if startFrame > chunk['startFrame'] and startFrame < chunk['stopFrame']:
+					theIdx = currIdx
+					break
+				currIdx += 1
+		return theIdx
+				
 	def chunk_previous(self):
 		print('chunk_previous()')
 		self.currentChunk -= 1
 		if self.currentChunk < 0:
 			self.currentChunk = 0
 		self.chunk_goto(self.currentChunk)
+		
+	def chunk_start(self):
+		""" Go to first frame in chunk"""
+		actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
+		currentChunk = self.chunkData['chunks'][actualChunkNumber]
+		startFrame = currentChunk['startFrame']
+		print('chunk_start() startFrame:', startFrame)
+		self.app.setFrame(startFrame)
 		
 	def chunk_next(self):
 		#print('chunk_next()')

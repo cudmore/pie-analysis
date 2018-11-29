@@ -53,6 +53,7 @@ class VideoApp:
 		self.pausedAtFrame = None
 
 		#self.myCurrentChunk = None
+		self.chunkLastFrame = 2**32-1
 		
 		self.configDict = {}
 		# load config file
@@ -138,6 +139,9 @@ class VideoApp:
 		# fire up a video stream
 		self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
 	
+	def getEventTypeStr(self, type):
+		return self.configDict['eventTypes'][type]
+		
 	def optionsDefaults(self):
 		self.configDict['appWindowGeometry'] = "1100x700"
 		self.configDict['showVideoFiles'] = True
@@ -150,7 +154,19 @@ class VideoApp:
 		self.configDict['largeSecondsStep'] = 60 # seconds
 		self.configDict['fpsIncrement'] = 5 # seconds
 		self.configDict['lastPath'] = self.path
-
+		# map event number 1..9 to a string
+		self.configDict['eventTypes'] = {
+			'1': 'a',
+			'2': 'b',
+			'3': 'c',
+			'4': 'd',
+			'5': 'e',
+			'6': 'f',
+			'7': 'g',
+			'8': 'h',
+			'9': 'i'
+			}
+		
 	def saveOptions(self):
 		print('saveOptions()')
 
@@ -396,11 +412,15 @@ class VideoApp:
 		#video_ff_button.bind("<Key>", self.keyPress)
 	
 		#self.video_frame_slider = ttk.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback)
-		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback, showvalue=False, repeatdelay=50)
+		self.frameSliderVar = tkinter.IntVar()
+		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", showvalue=False,
+													command=self.frameSlider_callback,
+													variable=self.frameSliderVar)
 		self.video_frame_slider.grid(row=0, column=5, sticky="ew")
 		self.buttonDownInSlider = False
-		#self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback(True))
-		#self.video_frame_slider.bind("<ButtonRelease-1>", self.buttonDownInSlider_callback(True))
+		self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback)
+		self.video_frame_slider.bind("<ButtonRelease-1>", self.buttonUpInSlider_callback)
+		#self.video_frame_slider.bind("<B1-Motion>", self.buttonMotionInSlider_callback)
 		
 		#
 		# set aspect of video frame
@@ -417,11 +437,18 @@ class VideoApp:
 		#self.mySetAspect()
 		
 	"""
-	def buttonDownInSlider_callback(self,val):
-		print('buttonDownInSlider() val:', val)
-		self.buttonDownInSlider = val
+	def buttonMotionInSlider_callback(self, event):
+		print('buttonMotionInSlider_callback() event:', event)
 	"""
 	
+	def buttonDownInSlider_callback(self,event):
+		#print('buttonDownInSlider() event:', event.type, type(event.type))
+		self.buttonDownInSlider = True
+		
+	def buttonUpInSlider_callback(self,event):
+		#print('buttonUpInSlider_callback() event:', event.type, type(event.type))
+		self.buttonDownInSlider = False
+		
 	###################################################################################
 
 	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
@@ -466,11 +493,11 @@ class VideoApp:
 		print('hijackInterface() onoff:', onoff)
 		if onoff:
 			currentChunk = self.chunkView.getCurrentChunk()
+			chunkIndex = currentChunk['index']
 			startFrame = currentChunk['startFrame']
 			stopFrame = currentChunk['stopFrame']
-			numFrames = stopFrame - startFrame + 1
 			
-			print('   startFrame:', startFrame, 'stopFrame:', stopFrame, 'numFrames:', numFrames)
+			print('   startFrame:', startFrame, 'stopFrame:', stopFrame)
 			#print('   ', type(startFrame), type(stopFrame), type(numFrames))
 
 			# need to set value first, if outside start/stop then slider get stuck
@@ -478,20 +505,33 @@ class VideoApp:
 			#self.video_frame_slider['from_'] = startFrame
 			#self.video_frame_slider['to'] = stopFrame
 
+			self.chunkLastFrame = stopFrame
+			
 			#self.video_frame_slider.set(startFrame)
 			self.video_frame_slider['from_'] = startFrame
 			self.video_frame_slider['to'] = stopFrame
+			self.frameSliderVar.set(startFrame)
+			
+			# WHAT THE FUCK IS GOING ON ??????????
+			self.buttonDownInSlider = True
+			
+			self.setFrame(startFrame)
+			
+			self.buttonDownInSlider = False
 			
 			# need to limit event tree to just events in this chunk!!!
 			# todo: write event tree filter(chunkIndex)
+			self.eventTree.filter(chunkIndex)
 		else:
 			#print('hijackInterface() chunk is none')
+			self.chunkLastFrame = 2**32-1
 			self.video_frame_slider['from_'] = 0
 			self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
 			#self.video_frame_slider['value'] = startFrame
+			self.eventTree.filter(None)
 			
 	#def mySetAspect(self):
-	def mySetAspect(self, event):
+	def old_mySetAspect(self, event):
 		print('~~~~~ mySetAspect() event:')
 		print('   event:', event)
 		"""
@@ -538,7 +578,7 @@ class VideoApp:
 		
 		self.setFrame(frameNumber)
 
-		time.sleep(0.01)
+		#time.sleep(0.01)
 		
 	def doCommand(self, cmd):
 
@@ -656,11 +696,11 @@ class VideoApp:
 			print('VideoApp.setFrame() failed')
 			
 	def setStartFrame(self, frame):
-		print('setStartFrame()')
+		print('setStartFrame() frame:', frame)
 		self.eventTree.set('frameStart', frame)
 		
 	def setEndFrame(self, frame):
-		print('setEndFrame()')
+		print('setEndFrame() frame:', frame)
 		self.eventTree.set('frameStop', frame)
 		
 	def setNote(self):
@@ -692,7 +732,8 @@ class VideoApp:
 		frame = int(float(frame))
 		
 		# bTree switch
-		chunkIndex = None
+		videoFilePath = self.vs.streamParams['path']
+		chunkIndex = self.chunkView.findChunk(videoFilePath, frame)
 		self.eventTree.appendEvent(theKey, frame, chunkIndex=chunkIndex)
 		
 	def setFramesPerSecond(self, newFramesPerSecond):
@@ -726,7 +767,7 @@ class VideoApp:
 				self.pausedAtFrame = self.myCurrentFrame
 		else:
 			self.videoLabel.configure(text="")
-			if self.vs is not None and (self.myCurrentFrame != self.vs.getParam('numFrames')-1):
+			if self.vs is not None and (self.myCurrentFrame != self.vs.getParam('numFrames')-1) and ( self.myCurrentFrame < self.chunkLastFrame):
 				[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
 
 		if not self.vs.isOpened or self.vs is None or self.frame is None:
@@ -786,8 +827,10 @@ class VideoApp:
 			# for ttk
 			#self.video_frame_slider['value'] = self.myCurrentFrame
 			# for tkinter
-			self.video_frame_slider.set(self.myCurrentFrame)
-
+			#self.video_frame_slider.set(self.myCurrentFrame)
+			if not self.buttonDownInSlider:
+				self.frameSliderVar.set(self.myCurrentFrame)
+			
 		# leave this here -- CRITICAL
 		self.videoLoopID = self.root.after(self.myFrameInterval, self.videoLoop)
 		

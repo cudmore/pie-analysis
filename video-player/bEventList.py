@@ -12,13 +12,13 @@ from collections import OrderedDict
 
 import FileVideoStream
 
-gEventColumns = ('index', 'path', 'cseconds', 'cDate', 'cTime', 
+gEventColumns = ('index', 'path', 'cSeconds', 'cDate', 'cTime', 
 				'typeNum', 'typeStr', 'frameStart', 'frameStop', 
-				'numFrames', 'sStart', 'sStop', 'numSeconds'
+				'numFrames', 'sStart', 'sStop', 'numSeconds',
 				'chunkIndex', 'note')
 
 class bEventList:
-	def __init__(self, videoFilePath):
+	def __init__(self, parentApp, videoFilePath):
 		
 		"""
 		# check that videoFilePath exists
@@ -27,6 +27,7 @@ class bEventList:
 			return 0
 		"""
 			
+		self.parentApp = parentApp
 		self.videoFilePath = videoFilePath
 
 		self.eventList = []
@@ -54,6 +55,43 @@ class bEventList:
 	def getColumns(self):
 		return gEventColumns
 	
+	def set(self, index, col, val):
+		print('bEventList.set() index:', index, 'col:', col, 'val:', val)
+		
+		self.eventList[index].dict[col] = val
+		
+		# update seconds
+		if col == 'frameStart':
+			frameStart = self.get(index, 'frameStart')
+			sStart = self.parentApp.vs.getSecondsFromFrame(frameStart)
+			#print('   sStart:', sStart)
+			self.eventList[index].dict['sStart'] = sStart
+		if col == 'frameStop':
+			frameStop = self.get(index, 'frameStop')
+			sStop = self.parentApp.vs.getSecondsFromFrame(frameStop)
+			#print('   sStop:', sStop)
+			self.eventList[index].dict['sStop'] = sStop
+			
+		# update durations
+		frameStart = self.get(index, 'frameStart')
+		frameStop = self.get(index, 'frameStop')
+		#print('frameStart:', type(frameStart), 'frameStop:', type(frameStop))
+		if (frameStart is not None) and (frameStop is not None):
+			numFrames = int(float(frameStop)) - int(float(frameStart)) - 1
+			#print('   numFrames:', numFrames)
+			self.eventList[index].dict['numFrames'] = numFrames
+
+		sStart = self.get(index, 'sStart')
+		sStop = self.get(index, 'sStop')
+		#print('sStart:', sStart, 'sStop:', sStop)
+		if (sStart is not None) and (sStop is not None):
+			numSeconds = round(float(sStop) - float(sStart),2)
+			#print('   numSeconds:', numSeconds)
+			self.eventList[index].dict['numSeconds'] = numSeconds
+
+	def get(self, index, col):
+		return self.eventList[index].dict[col]
+		
 	def load(self):
 		"""Load list of events from text file"""
 		if os.path.isfile(self.textFilePath):
@@ -84,16 +122,17 @@ class bEventList:
 				headerStr += k + '=' + str(v) + ','
 			headerStr += 'numEvents=' + str(self.numEvents) + ','
 			headerStr += 'videoFileNote=' + self.videoFileNote + ','
-
+			
 			file.write(headerStr + eol)
 			# column headers
+			print('   ', gEventColumns)
 			for col in gEventColumns:
 				file.write(col + ',')
 			file.write(eol)
 			# one line per event
 			for event in self.eventList:
 				eventStr = event.asString()
-				print('   eventStr:', eventStr)
+				print('   ', eventStr)
 				file.write(eventStr + eol)
 		
 	def asString(self):
@@ -126,23 +165,40 @@ class bEvent:
 		ms: (int)
 		note: (str)
 		"""
+		
 		self.parentList = parentList # to get video parameters
 		
-		# gEventColumns = ('index', 'path', 'cseconds', 'type', 'frameStart', 'frameStop', 'note')
+		now = time.time()
+		
+		"""
+		gEventColumns = ('index', 'path', 'cSeconds', 'cDate', 'cTime', 
+				'typeNum', 'typeStr', 'frameStart', 'frameStop', 
+				'numFrames', 'sStart', 'sStop', 'numSeconds'
+				'chunkIndex', 'note')
+		"""
 		self.eventColumns = gEventColumns
 		self.dict = OrderedDict()
 		for column in self.eventColumns:
-			self.dict[column] = ''
+			self.dict[column] = None
 		self.dict['index'] = index
 		self.dict['path'] = path
-		self.dict['cseconds'] = time.time()
+		self.dict['cSeconds'] = now
+		self.dict['cDate'] = time.strftime('%Y-%m-%d', time.localtime(now))
+		self.dict['cTime'] = time.strftime('%H:%M:%S', time.localtime(now))
 		self.dict['typeNum'] = type
+		if type is not None and len(type) > 0:
+			self.dict['typeStr'] = self.parentList.parentApp.getEventTypeStr(type)
+		else:
+			self.dict['typeStr'] = ''
 		self.dict['frameStart'] = frame
+		self.dict['frameStop'] = ''
+		if frame == '':
+			self.dict['sStart'] = ''
+		else:
+			self.dict['sStart'] = self.parentList.parentApp.vs.getSecondsFromFrame(frame)
 		self.dict['chunkIndex'] = chunkIndex
+		self.dict['note'] = ''
 		
-		# need access to the FileVideoStream
-		#secondsStart = self.parentList.app.getSecondsFromFrame(frame)
-
 		"""
 		self.streamParams['path'] = path
 		self.streamParams['fileName'] = os.path.basename(path)
@@ -179,7 +235,10 @@ class bEvent:
 		str = self.asString()
 		strList = []
 		for s in str.split(','):
-			strList.append(s)
+			if s == 'None':
+				strList.append('')
+			else:
+				strList.append(s)
 		retTuple = tuple(strList)
 		return retTuple
 		

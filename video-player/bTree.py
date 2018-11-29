@@ -125,9 +125,10 @@ class bEventTree(bTree):
 		print('bEventTree.populateEvents() videoFilePath:', videoFilePath)
 		
 		# not sure if previous version of self.eventList will be deleted?
-		self.eventList = bEventList.bEventList(videoFilePath)
+		self.eventList = bEventList.bEventList(self.myParentApp, videoFilePath)
 		
 		eventColumns = self.eventList.getColumns()
+		print('eventColumns:', eventColumns)
 		
 		if doInit:
 			# configure columns
@@ -138,7 +139,7 @@ class bEventTree(bTree):
 							'numFrames', 'sStart', 'sStop', 'numSeconds'
 							'chunkIndex', 'note')
 			"""
-			displaycolumns_ = ['index', 'typeNum', 'frameStart', 'frameStop', 'chunkIndex', 'note'] # hide some columns
+			displaycolumns_ = ['index', 'typeNum', 'sStart', 'sStop', 'numSeconds', 'chunkIndex', 'note']
 			displaycolumns = [] # build a list of columns not in hideColumns
 			for column in eventColumns:
 				self.treeview.column(column, width=20)
@@ -165,6 +166,21 @@ class bEventTree(bTree):
 			position = "end"
 			self.treeview.insert("" , position, text=str(idx+1), values=event.asTuple())
 
+	def filter(self, chunkIdx):
+		"""pass chunkIdx as None to show all"""
+		# first delete entries
+		for i in self.treeview.get_children():
+			self.treeview.delete(i)
+
+		# todo: make bEventList iterable
+		for idx, event in enumerate(self.eventList.eventList):
+			currentChunkIndex = self.eventList.get(idx, 'chunkIndex')
+			if currentChunkIndex != 'None':
+				currentChunkIndex = int(float(currentChunkIndex))
+			print('currentChunkIndex:', type(currentChunkIndex), 'chunkIdx:', type(chunkIdx))
+			if chunkIdx is None or currentChunkIndex == chunkIdx:
+				self.treeview.insert("" , "end", text=str(idx+1), values=event.asTuple())
+		
 	def single_click(self, event):
 		"""
 		On single click in event list tree --> Set the video to a frame
@@ -219,7 +235,8 @@ class bEventTree(bTree):
 		print('   modifying event index:', index)
 		
 		# set in our eventList
-		self.eventList.eventList[index].dict[col] = val
+		#self.eventList.eventList[index].dict[col] = val
+		self.eventList.set(index, col, val)
 		self.eventList.save()
 		
 		# grab event we just set
