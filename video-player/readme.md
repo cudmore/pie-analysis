@@ -131,20 +131,26 @@ Pillow==5.3.0
  
 ## To Do
 
+ - [bug] frame slider gets corrupted and does not move during chunk editing
+ - [bug] Make sure video controls (buttons and keyboard) stay within chunk when 'Limit Controls' is on.
  - Highlight most recent annotation in list as video is played.
  - Finish sorting annotation columns when clicked. Need to insert str(), int(), float() to do this.
  - Add note to video file by putting it in event list header. Finish 'right-click' popup menu in video list.
  - Add option to warn when event frame start/stop is out of order, e.g. frameStart>frameStop.
- - During chunk editing, hijack ALL video controls (frame slider, play, >, >>, <, <<) to only allow scrolling through frames in current chunk.
- - Add checkbox to activate/inactivate chunk editing.
- - Need some way to 1) categorize/file each event into its chunk 2) detect events falling outside a chunk.
  - [big idea] Make a visual bar for each video file showing: duration (black) overlaid .with position of chunks (gray), and position of events (bright colors). 
  - [bug] Make sure chunk navigation is working: >, <, go to.
  - [bug] Make sure toggle of video file and event list do not trash interface on next run. Need to add code to HIDE video and event list, currently setting sashpos==0 (remove this).
  - [bug] When increasing/decreasing fps with +/-, sometimes can not get back to orignal fps. Fix this. This is now fixed but minimum fps is no longer 1 fps.
 
+20181128
+
+ - Recalculate chunkIndex when setting event startFrame with keyboard 'f'
+ 
 ## To Do (done)
 
+ - [done] Need some way to 1) categorize/file each event into its chunk 2) detect events falling outside a chunk.
+ - [done] During chunk editing, hijack ALL video controls (frame slider, play, >, >>, <, <<) to only allow scrolling through frames in current chunk.
+ - [done] Add checkbox to activate/inactivate chunk editing.
  - [done] Running video faster/slower using +/- increments frame interval, it should increment frames per second (+/- 5 fps). Maximum fps for tkinter seems to be ~90 fps. 
  - [done] Implement saving/loading options via JSON file. Include window geometry, show/hide, (MAYBE) mapping of annotation event numbers to names.
  - [done] Toggle 'play' button to reflect state e.g. play and pause.

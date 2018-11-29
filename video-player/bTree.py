@@ -167,7 +167,10 @@ class bEventTree(bTree):
 			self.treeview.insert("" , position, text=str(idx+1), values=event.asTuple())
 
 	def filter(self, chunkIdx):
-		"""pass chunkIdx as None to show all"""
+		"""
+		Only show events with chunkIdx.
+		Pass chunkIdx as None to show all
+		"""
 		# first delete entries
 		for i in self.treeview.get_children():
 			self.treeview.delete(i)
@@ -177,7 +180,7 @@ class bEventTree(bTree):
 			currentChunkIndex = self.eventList.get(idx, 'chunkIndex')
 			if currentChunkIndex != 'None':
 				currentChunkIndex = int(float(currentChunkIndex))
-			print('currentChunkIndex:', type(currentChunkIndex), 'chunkIdx:', type(chunkIdx))
+			#print('currentChunkIndex:', type(currentChunkIndex), 'chunkIdx:', type(chunkIdx))
 			if chunkIdx is None or currentChunkIndex == chunkIdx:
 				self.treeview.insert("" , "end", text=str(idx+1), values=event.asTuple())
 		

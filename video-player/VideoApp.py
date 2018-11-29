@@ -53,6 +53,7 @@ class VideoApp:
 		self.pausedAtFrame = None
 
 		#self.myCurrentChunk = None
+		self.chunkFirstFrame = -2**32-1
 		self.chunkLastFrame = 2**32-1
 		
 		self.configDict = {}
@@ -393,23 +394,23 @@ class VideoApp:
 
 		video_fr_button = ttk.Button(self.video_control_frame, width=1, text="<<", command=lambda: self.doCommand('fast-backward'))
 		video_fr_button.grid(row=0, column=0)
-		#video_fr_button.bind("<Key>", self.keyPress)
+		video_fr_button.bind("<Key>", self.ignore)
 
 		video_r_button = ttk.Button(self.video_control_frame, width=1, text="<", command=lambda: self.doCommand('backward'))
 		video_r_button.grid(row=0, column=1)
-		#video_r_button.bind("<Key>", self.keyPress)
+		video_r_button.bind("<Key>", self.ignore)
 
 		self.video_play_button = ttk.Button(self.video_control_frame, width=4, text="Play", command=lambda: self.doCommand('playpause'))
 		self.video_play_button.grid(row=0, column=2)
-		#video_play_button.bind("<Key>", self.keyPress)
+		self.video_play_button.bind("<Key>", self.ignore)
 	
 		video_f_button = ttk.Button(self.video_control_frame, width=1, text=">", command=lambda: self.doCommand('forward'))
 		video_f_button.grid(row=0, column=3)
-		#video_f_button.bind("<Key>", self.keyPress)
+		video_f_button.bind("<Key>", self.ignore)
 	
 		video_ff_button = ttk.Button(self.video_control_frame, width=1, text=">>", command=lambda: self.doCommand('fast-forward'))
 		video_ff_button.grid(row=0, column=4)
-		#video_ff_button.bind("<Key>", self.keyPress)
+		video_ff_button.bind("<Key>", self.ignore)
 	
 		#self.video_frame_slider = ttk.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback)
 		self.frameSliderVar = tkinter.IntVar()
@@ -441,6 +442,18 @@ class VideoApp:
 		print('buttonMotionInSlider_callback() event:', event)
 	"""
 	
+	def ignore(self, event):
+		"""
+		This function will take all key-presses (except \r) and pass to main app.
+		return "break" is critical to stop propogation of event
+		"""
+		print('ignore event.char:', event.char)
+		if event.char == '\r':
+			pass
+		else:
+			self.keyPress(event)
+			return 'break'
+
 	def buttonDownInSlider_callback(self,event):
 		#print('buttonDownInSlider() event:', event.type, type(event.type))
 		self.buttonDownInSlider = True
@@ -505,6 +518,7 @@ class VideoApp:
 			#self.video_frame_slider['from_'] = startFrame
 			#self.video_frame_slider['to'] = stopFrame
 
+			self.chunkFirstFrame = startFrame
 			self.chunkLastFrame = stopFrame
 			
 			#self.video_frame_slider.set(startFrame)
@@ -524,6 +538,7 @@ class VideoApp:
 			self.eventTree.filter(chunkIndex)
 		else:
 			#print('hijackInterface() chunk is none')
+			self.chunkFirstFrame = -2**32-1
 			self.chunkLastFrame = 2**32-1
 			self.video_frame_slider['from_'] = 0
 			self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
@@ -594,21 +609,41 @@ class VideoApp:
 				else:
 					self.video_play_button['text'] = 'Pause'
 		if cmd == 'forward':
-			 if self.myCurrentSeconds is not None:
-			 	newSeconds = self.myCurrentSeconds + self.configDict['smallSecondsStep']
-			 	self.setSeconds(newSeconds)
+			if self.myCurrentSeconds is not None:
+				newSeconds = self.myCurrentSeconds + self.configDict['smallSecondsStep']
+				newFrame = self.vs.getFrameFromSeconds(newSeconds)
+				print('doCommand FORWARD newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkLastFrame)
+				if newFrame > self.chunkLastFrame:
+					newSeconds = self.vs.getSecondsFromFrame(self.chunkLastFrame)
+					print('   forcing frame to chunkLastFrame', self.chunkLastFrame, 'newSeconds:', newSeconds)
+				self.setSeconds(newSeconds)
 		if cmd == 'fast-forward':
-			 if self.myCurrentSeconds is not None:
-				 newSeconds = self.myCurrentSeconds + self.configDict['largeSecondsStep']
-				 self.setSeconds(newSeconds)
+			if self.myCurrentSeconds is not None:
+				newSeconds = self.myCurrentSeconds + self.configDict['largeSecondsStep']
+				newFrame = self.vs.getFrameFromSeconds(newSeconds)
+				print('doCommand fast-forward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkLastFrame)
+				if newFrame > self.chunkLastFrame:
+					newSeconds = self.vs.getSecondsFromFrame(self.chunkLastFrame)
+					print('   forcing frame to chunkLastFrame', self.chunkLastFrame, 'newSeconds:', newSeconds)
+				self.setSeconds(newSeconds)
 		if cmd == 'backward':
-			 if self.myCurrentSeconds is not None:
-				 newSeconds = self.myCurrentSeconds - self.configDict['smallSecondsStep']
-				 self.setSeconds(newSeconds)
+			if self.myCurrentSeconds is not None:
+				newSeconds = self.myCurrentSeconds - self.configDict['smallSecondsStep']
+				newFrame = self.vs.getFrameFromSeconds(newSeconds)
+				print('doCommand backward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkFirstFrame)
+				if newFrame < self.chunkFirstFrame:
+					newSeconds = self.vs.getSecondsFromFrame(self.chunkFirstFrame)
+					print('   forcing frame to chunkFirstFrame', self.chunkFirstFrame, 'newSeconds:', newSeconds)
+				self.setSeconds(newSeconds)
 		if cmd == 'fast-backward':
-			 if self.myCurrentSeconds is not None:
-				 newSeconds = self.myCurrentSeconds - self.configDict['largeSecondsStep']
-				 self.setSeconds(newSeconds)
+			if self.myCurrentSeconds is not None:
+				newSeconds = self.myCurrentSeconds - self.configDict['largeSecondsStep']
+				newFrame = self.vs.getFrameFromSeconds(newSeconds)
+				print('doCommand fast-backward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkFirstFrame)
+				if newFrame < self.chunkFirstFrame:
+					newSeconds = self.vs.getSecondsFromFrame(self.chunkFirstFrame)
+					print('   forcing frame to chunkFirstFrame', self.chunkFirstFrame, 'newSeconds:', newSeconds)
+				self.setSeconds(newSeconds)
 			 
 	def keyPress(self, event):
 		print('=== VideoApp.keyPress() pressed:', repr(event.char), 'event.state:', event.state, 'self.myCurrentFrame:', self.myCurrentFrame)
@@ -690,7 +725,7 @@ class VideoApp:
 		self.setFrame(theFrame)
 		
 	def setFrame(self, theFrame):
-		if self.vs.setFrame(theFrame):
+		if self.vs is not None and self.vs.setFrame(theFrame):
 			self.myCurrentFrame = theFrame
 		else:
 			print('VideoApp.setFrame() failed')
