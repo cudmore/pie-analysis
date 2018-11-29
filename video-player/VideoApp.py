@@ -48,6 +48,8 @@ class VideoApp:
 		self.currentWidth = 640
 		self.currentHeight = 480
  		
+		self.switchingVideo = False
+		
 		self.myCurrentFrame = None
 		self.myCurrentSeconds = None
 		self.pausedAtFrame = None
@@ -765,6 +767,8 @@ class VideoApp:
 	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
 		print('=== switchvideo() videoPath:', videoPath, 'paused:', paused, 'gotoFrame:', gotoFrame)
 
+		self.switchingVideo = True
+		
 		"""
 		if self.vs is not None:
 			print('   self.vs.stop()')
@@ -791,7 +795,7 @@ class VideoApp:
 		else:
 			print('   switchvideo() is switching stream')
 			self.vs.switchStream(videoPath, paused, gotoFrame)
-			time.sleep(0.01)
+			#time.sleep(0.01)
 		
 		self.pausedAtFrame = None
 		self.myCurrentFrame = gotoFrame
@@ -831,92 +835,97 @@ class VideoApp:
 		self.video_frame_slider['from_'] = 0
 		self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
 		
+		self.switchingVideo = False
 		
 	def videoLoop(self):
 	
-		if self.vs is not None and self.vs.paused:
-			self.videoLabel.configure(text="Paused")
-			if (self.pausedAtFrame is None or self.pausedAtFrame != self.myCurrentFrame):
-				#print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.myCurrentFrame:', self.myCurrentFrame)
-				try:
-					#print('VideoApp2.videoLoop() CALLING self.vs.read()')
-					[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
-				except:
-					print('zzz qqq')
-				self.pausedAtFrame = self.myCurrentFrame
-		else:
-			self.videoLabel.configure(text="")
-			try:
-				if self.vs is not None and (self.myCurrentFrame != self.vs.getParam('numFrames')-1) and ( self.myCurrentFrame < self.chunkLastFrame):
-					[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
-			except:
-				print('****** my exception in videoLoop')
-				
-		if not self.vs.isOpened or self.vs is None or self.frame is None:
-			#print('ERROR: VideoApp2.videoLoop() got None self.frame')
+		
+		if self.switchingVideo:
 			pass
 		else:
-
-			buttonHeight = 32
-			
-			aspectRatio = self.vs.getParam('aspectRatio')
-			
-			width = self.content_frame.winfo_width()
-			height = self.content_frame.winfo_height()
-			
-			tmpWidth = self.content_frame.winfo_width() - buttonHeight
-			#tmpHeight = self.content_frame.winfo_height()
-			tmpHeight = int(tmpWidth * aspectRatio)
-
-			if tmpHeight > height:
-				tmpHeight = height - buttonHeight
-				tmpWidth = int(tmpHeight / aspectRatio)
-
-			tmpImage = self.frame
-			
-			tmpImage = cv2.resize(self.frame, (tmpWidth, tmpHeight))
+			if self.vs is not None and self.vs.paused:
+				self.videoLabel.configure(text="Paused")
+				if (self.pausedAtFrame is None or self.pausedAtFrame != self.myCurrentFrame):
+					#print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.myCurrentFrame:', self.myCurrentFrame)
+					try:
+						#print('VideoApp2.videoLoop() CALLING self.vs.read()')
+						[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
+					except:
+						print('zzz qqq')
+					self.pausedAtFrame = self.myCurrentFrame
+			else:
+				self.videoLabel.configure(text="")
+				try:
+					if self.vs is not None and (self.myCurrentFrame != self.vs.getParam('numFrames')-1) and ( self.myCurrentFrame < self.chunkLastFrame):
+						[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
+				except:
+					print('****** my exception in videoLoop')
 				
-			if tmpImage is not None:
-				tmpImage = cv2.cvtColor(tmpImage, cv2.COLOR_BGR2RGB)
-				tmpImage = Image.fromarray(tmpImage)
-				#tmpImage = tmpImage.resize((tmpWidth, tmpHeight), Image.ANTIALIAS)
-				tmpImage = ImageTk.PhotoImage(tmpImage)
-	
-				self.videoLabel.configure(image=tmpImage)
-				self.videoLabel.image = tmpImage
-			
-			self.videoLabel.place(x=0, y=0, width=tmpWidth, height=tmpHeight)
-			
-			if self.configDict['showRandomChunks']:
-				chunksHeight = self.random_chunks_frame.winfo_height()
-			else:
-				chunksHeight = 0
-			if self.configDict['showVideoFeedback']:
-				feedbackHeight = self.video_feedback_frame.winfo_height()
-			else:
-				feedbackHeight = 0
-			yPos = tmpHeight + chunksHeight + feedbackHeight + 2 #+ buttonHeight
-			self.video_control_frame.place(x=0, y=yPos, width=tmpWidth)
-			
-			#
-			# update feedback labels
-			self.currentFrameLabel['text'] = 'Frame:' + str(self.myCurrentFrame)
-			self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
-			self.currentFramePerScondLabel['text'] ='fps:' + str(self.myFramesPerSecond)
-			self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
-			
-			#print('self.myCurrentFrame:', self.myCurrentFrame)
-			# for ttk
-			#self.video_frame_slider['value'] = self.myCurrentFrame
-			# for tkinter
-			#self.video_frame_slider.set(self.myCurrentFrame)
-			if not self.buttonDownInSlider:
-				self.frameSliderVar.set(self.myCurrentFrame)
-			else:
+			if not self.vs.isOpened or self.vs is None or self.frame is None:
+				#print('ERROR: VideoApp2.videoLoop() got None self.frame')
 				pass
-				#print('xxx self.buttonDownInSlider:', self.buttonDownInSlider)
+			else:
+
+				buttonHeight = 32
+			
+				aspectRatio = self.vs.getParam('aspectRatio')
+			
+				width = self.content_frame.winfo_width()
+				height = self.content_frame.winfo_height()
+			
+				tmpWidth = self.content_frame.winfo_width() - buttonHeight
+				#tmpHeight = self.content_frame.winfo_height()
+				tmpHeight = int(tmpWidth * aspectRatio)
+
+				if tmpHeight > height:
+					tmpHeight = height - buttonHeight
+					tmpWidth = int(tmpHeight / aspectRatio)
+
+				tmpImage = self.frame
+			
+				tmpImage = cv2.resize(self.frame, (tmpWidth, tmpHeight))
 				
-		# leave this here -- CRITICAL
+				if tmpImage is not None:
+					tmpImage = cv2.cvtColor(tmpImage, cv2.COLOR_BGR2RGB)
+					tmpImage = Image.fromarray(tmpImage)
+					#tmpImage = tmpImage.resize((tmpWidth, tmpHeight), Image.ANTIALIAS)
+					tmpImage = ImageTk.PhotoImage(tmpImage)
+	
+					self.videoLabel.configure(image=tmpImage)
+					self.videoLabel.image = tmpImage
+			
+				self.videoLabel.place(x=0, y=0, width=tmpWidth, height=tmpHeight)
+			
+				if self.configDict['showRandomChunks']:
+					chunksHeight = self.random_chunks_frame.winfo_height()
+				else:
+					chunksHeight = 0
+				if self.configDict['showVideoFeedback']:
+					feedbackHeight = self.video_feedback_frame.winfo_height()
+				else:
+					feedbackHeight = 0
+				yPos = tmpHeight + chunksHeight + feedbackHeight + 2 #+ buttonHeight
+				self.video_control_frame.place(x=0, y=yPos, width=tmpWidth)
+			
+				#
+				# update feedback labels
+				self.currentFrameLabel['text'] = 'Frame:' + str(self.myCurrentFrame)
+				self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
+				self.currentFramePerScondLabel['text'] ='fps:' + str(self.myFramesPerSecond)
+				self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
+			
+				#print('self.myCurrentFrame:', self.myCurrentFrame)
+				# for ttk
+				#self.video_frame_slider['value'] = self.myCurrentFrame
+				# for tkinter
+				#self.video_frame_slider.value = self.myCurrentFrame
+				if not self.buttonDownInSlider:
+					self.frameSliderVar.set(self.myCurrentFrame)
+				else:
+					pass
+					#print('xxx self.buttonDownInSlider:', self.buttonDownInSlider)
+				
+			# leave this here -- CRITICAL
 		self.videoLoopID = self.root.after(self.myFrameInterval, self.videoLoop)
 		
 	def onClose(self, event=None):

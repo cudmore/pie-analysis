@@ -132,7 +132,10 @@ class bChunkView:
 		actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
 		currentChunk = self.chunkData['chunks'][actualChunkNumber]
 		startFrame = currentChunk['startFrame']
-		print('chunk_start() startFrame:', startFrame)
+		print('chunk_start()')
+		print('   index:', currentChunk['index'])
+		print('   path:', currentChunk['path'])
+		print('   startFrame:', startFrame)
 		self.app.setFrame(startFrame)
 		
 	def chunk_next(self):
@@ -185,7 +188,9 @@ class bChunkView:
 		
 	def getCurrentChunk(self):
 		if self.currentChunk is not None:
-			return self.chunkData['chunks'][self.currentChunk]
+			actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
+			chunk = self.chunkData['chunks'][actualChunkNumber]
+			return chunk
 		else:
 			return None
 			
