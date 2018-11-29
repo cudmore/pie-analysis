@@ -464,73 +464,6 @@ class VideoApp:
 		
 	###################################################################################
 
-	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
-		print('=== switchvideo() videoPath:', videoPath, 'paused:', paused, 'gotoFrame:', gotoFrame)
-
-		"""
-		if self.vs is not None:
-			print('   self.vs.stop()')
-			self.vs.stop()
-		"""
-		
-		"""
-		print('   time.sleep(0.05)')
-		time.sleep(0.05)
-		"""
-		
-		# was this
-		"""
-		self.vs = FileVideoStream(videoPath, paused, gotoFrame) #.start()
-		self.vs.start()
-		"""
-		
-		if self.vs is None:
-			print('   switchvideo() is instantiating stream')
-			self.vs = FileVideoStream(videoPath, paused, gotoFrame) #.start()
-			#print('   self.vs.start()')
-			self.vs.start()
-			time.sleep(0.01)
-		else:
-			print('   switchvideo() is switching stream')
-			self.vs.switchStream(videoPath, paused, gotoFrame)
-			time.sleep(0.01)
-		
-		"""
-		print('   time.sleep(0.05)')
-		time.sleep(0.05)
-		"""
-		
-		"""
-		if gotoFrame is None:
-			print('   setting frame 0')
-			self.setFrame(0)
-		else:
-			print('   setting gotoFrame:', gotoFrame)
-			self.setFrame(gotoFrame)
-		"""
-		
-		# set the selection in video tree
-		# select the first video
-		#child_id = self.videoFileTree.get_children()[-1] #last
-		#child_id = self.videoFileTree.get_children()[0] #first
-
-		# switch event list
-		#self.eventList = bEventList.bEventList(videoPath)
-		
-		# select in video file tree view
-		self.videoFileTree._selectTreeViewRow('path', videoPath)
-
-		self.eventTree.populateEvents(videoPath)
-		
-		# set feedback frame
-		self.numFrameLabel['text'] = 'of ' + str(self.vs.getParam('numFrames'))
-		self.numSecondsLabel['text'] = 'of ' + str(self.vs.getParam('numSeconds'))
-		
-		# set frame slider
-		self.video_frame_slider['from_'] = 0
-		self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
-		
-		
 	def hijackInterface(self, onoff):
 		print('=== hijackInterface() onoff:', onoff)
 		if onoff:
@@ -829,11 +762,81 @@ class VideoApp:
 		print('   starting video loop with self.myFrameInterval:', self.myFrameInterval)
 		self.videoLoop()
 		
+	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
+		print('=== switchvideo() videoPath:', videoPath, 'paused:', paused, 'gotoFrame:', gotoFrame)
+
+		"""
+		if self.vs is not None:
+			print('   self.vs.stop()')
+			self.vs.stop()
+		"""
+		
+		"""
+		print('   time.sleep(0.05)')
+		time.sleep(0.05)
+		"""
+		
+		# was this
+		"""
+		self.vs = FileVideoStream(videoPath, paused, gotoFrame) #.start()
+		self.vs.start()
+		"""
+		
+		if self.vs is None:
+			print('   switchvideo() is instantiating stream')
+			self.vs = FileVideoStream(videoPath, paused, gotoFrame) #.start()
+			#print('   self.vs.start()')
+			self.vs.start()
+			time.sleep(0.01)
+		else:
+			print('   switchvideo() is switching stream')
+			self.vs.switchStream(videoPath, paused, gotoFrame)
+			time.sleep(0.01)
+		
+		self.pausedAtFrame = None
+		self.myCurrentFrame = gotoFrame
+		
+		"""
+		print('   time.sleep(0.05)')
+		time.sleep(0.05)
+		"""
+		
+		"""
+		if gotoFrame is None:
+			print('   setting frame 0')
+			self.setFrame(0)
+		else:
+			print('   setting gotoFrame:', gotoFrame)
+			self.setFrame(gotoFrame)
+		"""
+		
+		# set the selection in video tree
+		# select the first video
+		#child_id = self.videoFileTree.get_children()[-1] #last
+		#child_id = self.videoFileTree.get_children()[0] #first
+
+		# switch event list
+		#self.eventList = bEventList.bEventList(videoPath)
+		
+		# select in video file tree view
+		self.videoFileTree._selectTreeViewRow('path', videoPath)
+
+		self.eventTree.populateEvents(videoPath)
+		
+		# set feedback frame
+		self.numFrameLabel['text'] = 'of ' + str(self.vs.getParam('numFrames'))
+		self.numSecondsLabel['text'] = 'of ' + str(self.vs.getParam('numSeconds'))
+		
+		# set frame slider
+		self.video_frame_slider['from_'] = 0
+		self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
+		
+		
 	def videoLoop(self):
 	
 		if self.vs is not None and self.vs.paused:
 			self.videoLabel.configure(text="Paused")
-			if (self.pausedAtFrame != self.myCurrentFrame):
+			if (self.pausedAtFrame is None or self.pausedAtFrame != self.myCurrentFrame):
 				#print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.myCurrentFrame:', self.myCurrentFrame)
 				try:
 					#print('VideoApp2.videoLoop() CALLING self.vs.read()')
@@ -910,7 +913,8 @@ class VideoApp:
 			if not self.buttonDownInSlider:
 				self.frameSliderVar.set(self.myCurrentFrame)
 			else:
-				print('xxx self.buttonDownInSlider:', self.buttonDownInSlider)
+				pass
+				#print('xxx self.buttonDownInSlider:', self.buttonDownInSlider)
 				
 		# leave this here -- CRITICAL
 		self.videoLoopID = self.root.after(self.myFrameInterval, self.videoLoop)
