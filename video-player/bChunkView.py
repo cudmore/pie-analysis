@@ -49,10 +49,17 @@ class bChunkView:
 		self.gotoChunkEntry.insert(0, '0')
 		self.gotoChunkEntry.bind("<Key>", self.ignore)
 
+		"""
 		self.hijackControlsCheckbox_Value = tkinter.IntVar()
 		self.hijackControlsCheckbox = ttk.Checkbutton(self.random_chunks_frame, text='Limit Controls', 
 														command=self.checkbox_callback,
 														variable=self.hijackControlsCheckbox_Value)
+		"""
+		self.hijackControlsCheckbox = ttk.Checkbutton(self.random_chunks_frame, text='Limit Controls', 
+														command=self.checkbox_callback)
+		#self.hijackControlsCheckbox.value = False
+		self.hijackControlsCheckbox.state(['!alternate'])
+		self.hijackControlsCheckbox.state(['!selected'])
 		self.hijackControlsCheckbox.grid(row=1, column=0)
 		self.hijackControlsCheckbox.bind("<Key>", self.ignore)
 		
@@ -61,7 +68,7 @@ class bChunkView:
 		This function will take all key-presses (except \r) and pass to main app.
 		return "break" is critical to stop propogation of event
 		"""
-		print('ignore event.char:', event.char)
+		print('bChunkView.ignore() event.char:', event.char)
 		if event.char == '\r':
 			pass
 		else:
@@ -69,11 +76,8 @@ class bChunkView:
 			return 'break'
 
 	def checkbox_callback(self):
-		print('checkbox_callback() self.hijackControlsCheckbox_Value.get():', self.hijackControlsCheckbox_Value.get())
-		if self.hijackControlsCheckbox_Value.get() == 1:
-			self.app.hijackInterface(True)
-		else:
-			self.app.hijackInterface(False)
+		#print('self.hijackControlsCheckbox.state:', self.hijackControlsCheckbox.state)
+		self.app.hijackInterface(self.isHijacking())
 
 	def chunkInterface_populate(self, askForFile=False):
 		"""
@@ -172,13 +176,16 @@ class bChunkView:
 		
 		#self.app.setFrame(startFrame)
 
-		self.app.hijackInterface(self.hijackControlsCheckbox_Value.get() == 1)
+		#self.app.hijackInterface(self.hijackControlsCheckbox_Value.get() == 1)
+		self.app.hijackInterface(self.isHijacking())
 		
 		# update chunk interface
 		self.currentChunkLabel['text'] = str(chunkNumber)
 	
 	def isHijacking(self):
-		return self.hijackControlsCheckbox_Value.get() == 1
+		#return self.hijackControlsCheckbox_Value.get() == 1
+		return self.hijackControlsCheckbox.instate(['selected']
+
 		
 	def getCurrentChunk(self):
 		if self.currentChunk is not None:
