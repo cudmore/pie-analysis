@@ -129,18 +129,17 @@ class bEventTree(bTree):
 		# not sure if previous version of self.eventList will be deleted?
 		self.eventList = bEventList.bEventList(self.myParentApp, videoFilePath)
 		
+		"""
+		eventColumns = ('index', 'path', 'cseconds', 'cDate', 'cTime', 
+						'typeNum', 'typeStr', 'frameStart', 'frameStop', 
+						'numFrames', 'sStart', 'sStop', 'numSeconds'
+						'chunkIndex', 'note')
+		"""
 		eventColumns = self.eventList.getColumns()
-		#print('   eventColumns:', eventColumns)
 		
 		if doInit:
 			# configure columns
 			self.treeview['columns'] = eventColumns
-			"""
-			gEventColumns = ('index', 'path', 'cseconds', 'cDate', 'cTime', 
-							'typeNum', 'typeStr', 'frameStart', 'frameStop', 
-							'numFrames', 'sStart', 'sStop', 'numSeconds'
-							'chunkIndex', 'note')
-			"""
 			displaycolumns_ = ['index', 'typeNum', 'sStart', 'sStop', 'numSeconds', 'chunkIndex', 'note']
 			displaycolumns = [] # build a list of columns not in hideColumns
 			for column in eventColumns:
@@ -153,6 +152,13 @@ class bEventTree(bTree):
 			self.treeview.column('index', minwidth=50, width=50, stretch="no")
 			self.treeview.column('typeNum', minwidth=50, width=50, stretch="no")
 
+			# rename some columns
+			self.treeview.heading('typeNum', text="Type")
+			self.treeview.heading('sStart', text="Start")
+			self.treeview.heading('sStop', text="Stop")
+			self.treeview.heading('numSeconds', text="Dur")
+			self.treeview.heading('chunkIndex', text="Chunk")
+			
 			# hide some columns
 			#print('bEventTree.populateEvent() displaycolumns:', displaycolumns)
 			self.treeview["displaycolumns"] = displaycolumns

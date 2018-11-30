@@ -2,7 +2,7 @@
 # Date: 20181116
 
 """
-Break each video file into numChunks = floor(numFrames / chunkInterval)
+Break each video file into numChunks = floor(numFrames / chunkIntervalSeconds)
 
 Randomly select chunksPerFile without replacement
 
@@ -28,9 +28,9 @@ class bChunk:
 		self.path = path
 		self.videoList = bVideoList.bVideoList(path)
 		
-	def generate(self, chunkInterval, chunksPerFile):
+	def generate(self, chunkIntervalSeconds, chunksPerFile):
 		"""
-		chunkInterval: Number of frames in each chunk
+		chunkIntervalSeconds: Number of frames in each chunk
 		chunksPerFile:
 		"""
 		
@@ -54,7 +54,7 @@ class bChunk:
 			path = videoFile.dict['path']
 			file = videoFile.dict['file']
 			numFrames = videoFile.dict['frames']
-			numChunksInFile = math.floor(numFrames / chunkInterval)
+			numChunksInFile = math.floor(numFrames / chunkIntervalSeconds)
 			print(file, 'numFrames:', numFrames, 'numChunksInFile:', numChunksInFile)
 			
 			# make a list of start frame of each of the numChunksInFile chunks
@@ -68,9 +68,9 @@ class bChunk:
 				newEntry = OrderedDict()
 				newEntry['index'] = totalChunkIndex
 				newEntry['path'] = path
-				newEntry['startFrame'] = int(i * chunkInterval)
-				newEntry['stopFrame'] = newEntry['startFrame'] + chunkInterval - 1
-				newEntry['numFrames'] = chunkInterval
+				newEntry['startFrame'] = int(i * chunkIntervalSeconds)
+				newEntry['stopFrame'] = newEntry['startFrame'] + chunkIntervalSeconds - 1
+				newEntry['numFrames'] = chunkIntervalSeconds
 				#print('newEntry:', newEntry)
 				outChunkList.append(newEntry)
 
@@ -82,8 +82,14 @@ class bChunk:
 		# randomize outChunkOrder
 		shuffle(outChunkOrder)
 		
+		# params
+		params = {
+			'chunkIntervalSeconds': chunkIntervalSeconds,
+			'chunksPerFile': chunksPerFile
+		}
+		
 		# package chunk list and chunk order into a dict
-		outDict = {'chunks':outChunkList, 'chunkOrder':outChunkOrder}
+		outDict = {params, 'chunks':outChunkList, 'chunkOrder':outChunkOrder}
 		
 		now = datetime.datetime.now()
 		dateTimeFile = "chunks_" + now.strftime("%Y%m%d_%H%m%S.txt")
@@ -102,9 +108,9 @@ if __name__ == '__main__':
 	path = '/Users/cudmore/Dropbox/PiE/video'
 	chunks = bChunk(path)
 	
-	chunkInterval = 300 #frames
+	chunkIntervalSeconds = 300 #frames
 	chunksPerFile = 5
-	chunks.generate(chunkInterval, chunksPerFile)
+	chunks.generate(chunkIntervalSeconds, chunksPerFile)
 		
 	#chunks.load(path=path + '/' + 'chunks_20184319_221111.txt')
 

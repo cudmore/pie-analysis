@@ -19,10 +19,10 @@ class bChunkView:
 		self.chunkFileLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='File:')
 		self.chunkFileLabel.grid(row=0, column=0)
 	
-		self.currentChunkLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='')
+		self.currentChunkLabel = ttk.Label(self.random_chunks_frame, width=4, anchor="w", text='')
 		self.currentChunkLabel.grid(row=0, column=1)
 	
-		self.numChunksLabel = ttk.Label(self.random_chunks_frame, width=11, anchor="w", text='')
+		self.numChunksLabel = ttk.Label(self.random_chunks_frame, width=4, anchor="w", text='')
 		self.numChunksLabel.grid(row=0, column=2)
 	
 		# previous chunk
@@ -55,13 +55,19 @@ class bChunkView:
 														command=self.checkbox_callback,
 														variable=self.hijackControlsCheckbox_Value)
 		"""
-		self.hijackControlsCheckbox = ttk.Checkbutton(self.random_chunks_frame, text='Limit Controls', 
+		self.hijackControlsCheckbox = ttk.Checkbutton(self.random_chunks_frame, text='Limit Video Controls', 
 														command=self.checkbox_callback)
-		#self.hijackControlsCheckbox.value = False
 		self.hijackControlsCheckbox.state(['!alternate'])
 		self.hijackControlsCheckbox.state(['!selected'])
 		self.hijackControlsCheckbox.grid(row=1, column=0)
 		self.hijackControlsCheckbox.bind("<Key>", self.ignore)
+		
+		self.limitInterfaceCheckbox = ttk.Checkbutton(self.random_chunks_frame, text='Limit Interface', 
+														command=self.checkbox_callback2)
+		self.limitInterfaceCheckbox.state(['!alternate'])
+		self.limitInterfaceCheckbox.state(['!selected'])
+		self.limitInterfaceCheckbox.grid(row=1, column=1)
+		self.limitInterfaceCheckbox.bind("<Key>", self.ignore)
 		
 	def ignore(self, event):
 		"""
@@ -78,6 +84,19 @@ class bChunkView:
 	def checkbox_callback(self):
 		#print('self.hijackControlsCheckbox.state:', self.hijackControlsCheckbox.state)
 		self.app.hijackInterface(self.isHijacking())
+
+	def checkbox_callback2(self):
+		if self.limitInterfaceCheckbox.instate(['selected']):
+			print('hiding video list and feedback')
+			self.app.limitInterface(True)
+		else:
+			print('showing video list and feedback')
+			self.app.limitInterface(False)
+		
+
+	def isHijacking(self):
+		#return self.hijackControlsCheckbox_Value.get() == 1
+		return self.hijackControlsCheckbox.instate(['selected'])
 
 	def chunkInterface_populate(self, askForFile=False):
 		"""
@@ -105,8 +124,8 @@ class bChunkView:
 			self.chunkData = json.load(f) # data is a dict of {'chunks', 'chunkOrder'}
 				
 		# interface
-		self.chunkFileLabel['text'] = os.path.basename(filepath)
-		self.chunkFileLabel['width'] = len(os.path.basename(filepath))
+		self.chunkFileLabel['text'] = 'File:' + os.path.basename(filepath)
+		self.chunkFileLabel['width'] = len(os.path.basename(filepath)) + 5
 		
 		self.currentChunkLabel['text'] = str(self.currentChunk)
 		self.numChunksLabel['text'] = 'of ' + str(self.numChunks)
@@ -192,10 +211,6 @@ class bChunkView:
 		# update chunk interface
 		self.currentChunkLabel['text'] = str(self.currentChunk)
 	
-	def isHijacking(self):
-		#return self.hijackControlsCheckbox_Value.get() == 1
-		return self.hijackControlsCheckbox.instate(['selected'])
-
 	def printChunk(self, chunk):
 		print('   index:', chunk['index'])
 		print('   path:', chunk['path'])

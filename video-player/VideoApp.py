@@ -118,6 +118,11 @@ class VideoApp:
 
 		self.root.bind('<Command-q>', self.onClose)		
 
+		if os.path.isfile(firstVideoPath):
+			pass
+		else:
+			self.loadFolder()
+			
 		self.root.mainloop()
 		
 	def loadFolder(self, path=''):
@@ -125,24 +130,36 @@ class VideoApp:
 			path = tkinter.filedialog.askdirectory()
 		
 		if not os.path.isdir(path):
+			print('error: did not find path:', path)
 			return
 		
 		self.path = path
 		
 		self.videoList = bVideoList.bVideoList(path)		
-		self.populateVideoFiles(doInit=False)
+		self.videoFileTree.populateVideoFiles(self.videoList, doInit=True)
 	
 		# initialize with first video in path
 		firstVideoPath = self.videoList.videoFileList[0].dict['path']
 
+		self.chunkView.chunkInterface_populate()
+
+		# fire up a video stream
+		# removed when adding loadFolder
+		if len(firstVideoPath) > 0:
+			self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
+
 		#self.eventList = bEventList.bEventList(firstVideoPath)
 		# bTree switch
 		#self.populateEvents(doInit=False)
+		"""
 		self.eventTree.populateEvents(firstVideoPath)
+		"""
 		
 		# fire up a video stream
+		"""
 		self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
-	
+		"""
+		
 	def getEventTypeStr(self, type):
 		return self.configDict['eventTypes'][type]
 		
@@ -185,6 +202,15 @@ class VideoApp:
 			json.dump(self.configDict, outfile, indent=4, sort_keys=True)
 	
 	###################################################################################
+	def limitInterface(self, onoff):
+		"""turn video list and controls on/off"""
+		if onoff:
+			self.vPane.sashpos(0, 0)
+			self.video_feedback_frame.grid_remove()
+		else:
+			self.vPane.sashpos(0, self.configDict['videoFileSash'])
+			self.video_feedback_frame.grid()
+			
 	def toggleInterface(self, this):
 		"""
 		toggle window panel/frames on and off, including
@@ -475,6 +501,10 @@ class VideoApp:
 		#print('\n=== hijackInterface() onoff:', onoff)
 		if onoff:
 			currentChunk = self.chunkView.getCurrentChunk()
+			if currentChunk is None:
+				print('error: VideoApp.hijackInterface() did not find any chunks')
+				return 0
+			
 			chunkIndex = currentChunk['index']
 			startFrame = currentChunk['startFrame']
 			stopFrame = currentChunk['stopFrame']
@@ -626,7 +656,7 @@ class VideoApp:
 		validEventKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 		if theKey in validEventKeys:
 			if self.myCurrentFrame is not None:
-				print('keyPress() adding event')
+				print('keyPress() adding event, theKey:', theKey)
 				self.addEvent(theKey, self.myCurrentFrame)
 		
 		# set note of selected event
@@ -821,7 +851,7 @@ class VideoApp:
 				except:
 					print('****** my exception in videoLoop')
 				
-			if not self.vs.isOpened or self.vs is None or self.frame is None:
+			if self.vs is None or not self.vs.isOpened or self.vs is None or self.frame is None:
 				#print('ERROR: VideoApp2.videoLoop() got None self.frame')
 				pass
 			else:
