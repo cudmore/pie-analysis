@@ -27,7 +27,7 @@ class bEventList:
 			return 0
 		"""
 			
-		print('bEventList() videoFilePath:', videoFilePath)
+		#print('bEventList() videoFilePath:', videoFilePath)
 		
 		self.parentApp = parentApp
 		self.videoFilePath = videoFilePath
@@ -127,14 +127,14 @@ class bEventList:
 			
 			file.write(headerStr + eol)
 			# column headers
-			print('   ', gEventColumns)
+			#print('   ', gEventColumns)
 			for col in gEventColumns:
 				file.write(col + ',')
 			file.write(eol)
 			# one line per event
 			for event in self.eventList:
 				eventStr = event.asString()
-				print('   ', eventStr)
+				#print('   ', eventStr)
 				file.write(eventStr + eol)
 		
 	def asString(self):

@@ -53,6 +53,7 @@ class VideoApp:
 		self.myCurrentFrame = None
 		self.myCurrentSeconds = None
 		self.pausedAtFrame = None
+		self.switchedVideo = False
 
 		#self.myCurrentChunk = None
 		self.chunkFirstFrame = -2**32-1
@@ -415,7 +416,6 @@ class VideoApp:
 		video_ff_button.bind("<Key>", self._ignore)
 	
 		#self.video_frame_slider = ttk.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", command=self.frameSlider_callback)
-		"""
 		self.frameSliderVar = tkinter.IntVar()
 		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", showvalue=False,
 													command=self.frameSlider_callback,
@@ -423,6 +423,7 @@ class VideoApp:
 		"""
 		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", showvalue=False,
 													command=self.frameSlider_callback)
+		"""
 		self.video_frame_slider.grid(row=0, column=5, sticky="ew")
 		self.buttonDownInSlider = False
 		self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback)
@@ -471,33 +472,44 @@ class VideoApp:
 	###################################################################################
 
 	def hijackInterface(self, onoff):
-		print('=== hijackInterface() onoff:', onoff)
+		#print('\n=== hijackInterface() onoff:', onoff)
 		if onoff:
 			currentChunk = self.chunkView.getCurrentChunk()
 			chunkIndex = currentChunk['index']
 			startFrame = currentChunk['startFrame']
 			stopFrame = currentChunk['stopFrame']
 			
-			#print('   ', type(startFrame), type(stopFrame), type(numFrames))
-
-			# need to set value first, if outside start/stop then slider get stuck
-			#self.video_frame_slider['value'] = startFrame + 1
-			#self.video_frame_slider['from_'] = startFrame
-			#self.video_frame_slider['to'] = stopFrame
+			#self.chunkView.printChunk(currentChunk)
 
 			self.chunkFirstFrame = startFrame
 			self.chunkLastFrame = stopFrame
 			
+			###
+			#self.frameSliderVar = tkinter.IntVar()
+			"""
+			self.video_frame_slider.destroy()
+			self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=startFrame, to=stopFrame, orient="horizontal", showvalue=False,
+														command=self.frameSlider_callback,
+														variable=self.frameSliderVar)
+			self.video_frame_slider.grid(row=0, column=5, sticky="ew")
+			self.buttonDownInSlider = False
+			self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback)
+			self.video_frame_slider.bind("<ButtonRelease-1>", self.buttonUpInSlider_callback)
+			"""
+			###
+
+			#self.video_frame_slider['from_'] = startFrame
+			#self.video_frame_slider['to'] = stopFrame
+			#self.video_frame_slider.value = startFrame
+			
+			self.video_frame_slider.config(from_=startFrame)
+			self.video_frame_slider.config(to=stopFrame)
 			#self.video_frame_slider.set(startFrame)
-			self.video_frame_slider['from_'] = startFrame
-			self.video_frame_slider['to'] = stopFrame
-			self.video_frame_slider.value = startFrame
-			#self.frameSliderVar.set(startFrame)
 			
 			# WHAT THE FUCK IS GOING ON ??????????
 			#self.buttonDownInSlider = True
 			
-			print('   hijackInterface calling self.setFrame() startFrame:', startFrame)
+			#print('   hijackInterface calling self.setFrame() startFrame:', startFrame)
 			self.setFrame(startFrame)
 			
 			#self.buttonDownInSlider = False
@@ -516,19 +528,22 @@ class VideoApp:
 			
 	# video file tree
 	def frameSlider_callback(self, frameNumber):
-		print('VideoApp.frameSlider_callback()')
-		if self.buttonDownInSlider:
+		#print('VideoApp.frameSlider_callback()')
+		if 0 or self.buttonDownInSlider:
 			frameNumber = int(float(frameNumber))
-			print('VideoApp.frameSlider_callback() frameNumber:', frameNumber, 'self.myCurrentFrame:', self.myCurrentFrame)
-			print('   from:', self.video_frame_slider['from'], 'to:', self.video_frame_slider['to'], 'value:', self.video_frame_slider.value)
+			"""
+			print('VideoApp.frameSlider_callback()')
+			print('   frameNumber:', frameNumber)
+			print('   self.myCurrentFrame:', self.myCurrentFrame)
+			print('   from:', self.video_frame_slider['from'])
+			print('   to:', self.video_frame_slider['to'])
+			#print('   get():', self.video_frame_slider.get())
 			
-			#frameNumber = self.video_frame_slider['from'] + frameNumber
-			
+			print('   calling self.setFrame(frameNumber)', frameNumber)
+			"""
 			self.setFrame(frameNumber)
-	
-			#time.sleep(0.01)
 		else:
-			print('   skipped when not self.buttonDownInSlider')
+			print('VideoApp.frameSlider_callback() skipped when not self.buttonDownInSlider')
 				
 	def doCommand(self, cmd):
 
@@ -547,53 +562,53 @@ class VideoApp:
 			if self.myCurrentSeconds is not None:
 				newSeconds = self.myCurrentSeconds + self.configDict['smallSecondsStep']
 				newFrame = self.vs.getFrameFromSeconds(newSeconds)
-				print('doCommand FORWARD newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkLastFrame)
+				#print('doCommand FORWARD newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkLastFrame)
 				if newFrame > self.chunkLastFrame:
 					newSeconds = self.vs.getSecondsFromFrame(self.chunkLastFrame)
-					print('   forcing frame to chunkLastFrame', self.chunkLastFrame, 'newSeconds:', newSeconds)
+					#print('   forcing frame to chunkLastFrame', self.chunkLastFrame, 'newSeconds:', newSeconds)
 				if newFrame > self.vs.getParam('numFrames')-1:
 					newSeconds = self.vs.getSecondsFromFrame(self.vs.getParam('numFrames')-1)
-					print('   (1) forcing frame to newSeconds:', newSeconds)
+					#print('   (1) forcing frame to newSeconds:', newSeconds)
 				self.setSeconds(newSeconds)
 		if cmd == 'fast-forward':
 			if self.myCurrentSeconds is not None:
 				newSeconds = self.myCurrentSeconds + self.configDict['largeSecondsStep']
 				newFrame = self.vs.getFrameFromSeconds(newSeconds)
-				print('doCommand fast-forward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkLastFrame)
+				#print('doCommand fast-forward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkLastFrame)
 				if newFrame > self.chunkLastFrame:
 					newSeconds = self.vs.getSecondsFromFrame(self.chunkLastFrame)
-					print('   forcing frame to chunkLastFrame', self.chunkLastFrame, 'newSeconds:', newSeconds)
+					#print('   forcing frame to chunkLastFrame', self.chunkLastFrame, 'newSeconds:', newSeconds)
 				if newFrame > self.vs.getParam('numFrames')-1:
 					newSeconds = self.vs.getSecondsFromFrame(self.vs.getParam('numFrames')-1)
-					print('   (2) forcing frame to newSeconds:', newSeconds)
+					#print('   (2) forcing frame to newSeconds:', newSeconds)
 				self.setSeconds(newSeconds)
 		if cmd == 'backward':
 			if self.myCurrentSeconds is not None:
 				newSeconds = self.myCurrentSeconds - self.configDict['smallSecondsStep']
 				newFrame = self.vs.getFrameFromSeconds(newSeconds)
-				print('doCommand backward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkFirstFrame)
+				#print('doCommand backward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkFirstFrame)
 				if newFrame < self.chunkFirstFrame:
 					newSeconds = self.vs.getSecondsFromFrame(self.chunkFirstFrame)
-					print('   forcing frame to chunkFirstFrame', self.chunkFirstFrame, 'newSeconds:', newSeconds)
+					#print('   forcing frame to chunkFirstFrame', self.chunkFirstFrame, 'newSeconds:', newSeconds)
 				if newFrame < 0:
 					newSeconds = 0
-					print('   (3) forcing frame to newSeconds:', newSeconds)
+					#print('   (3) forcing frame to newSeconds:', newSeconds)
 				self.setSeconds(newSeconds)
 		if cmd == 'fast-backward':
 			if self.myCurrentSeconds is not None:
 				newSeconds = self.myCurrentSeconds - self.configDict['largeSecondsStep']
 				newFrame = self.vs.getFrameFromSeconds(newSeconds)
-				print('doCommand fast-backward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkFirstFrame)
+				#print('doCommand fast-backward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkFirstFrame)
 				if newFrame < self.chunkFirstFrame:
 					newSeconds = self.vs.getSecondsFromFrame(self.chunkFirstFrame)
-					print('   forcing frame to chunkFirstFrame', self.chunkFirstFrame, 'newSeconds:', newSeconds)
+					#print('   forcing frame to chunkFirstFrame', self.chunkFirstFrame, 'newSeconds:', newSeconds)
 				if newFrame < 0:
 					newSeconds = 0
-					print('   (4) forcing frame to newSeconds:', newSeconds)
+					#print('   (4) forcing frame to newSeconds:', newSeconds)
 				self.setSeconds(newSeconds)
 			 
 	def keyPress(self, event):
-		print('=== VideoApp.keyPress() pressed:', repr(event.char), 'event.state:', event.state, 'self.myCurrentFrame:', self.myCurrentFrame)
+		#print('=== VideoApp.keyPress() pressed:', repr(event.char), 'event.state:', event.state, 'self.myCurrentFrame:', self.myCurrentFrame)
 		"""
 		print('event.keysym:', event.keysym)
 		print('event.keysym_num:', event.keysym_num)
@@ -669,14 +684,18 @@ class VideoApp:
 		move to position in video seconds
 		"""
 		theFrame = self.vs.getFrameFromSeconds(seconds)
-		self.setFrame(theFrame)
+		self.setFrame(theFrame, withDelay=True)
 		
-	def setFrame(self, theFrame):
-		print('VideoApp.setFrame() theFrame:', theFrame)
+	def setFrame(self, theFrame, withDelay=False):
+		#print('VideoApp.setFrame() theFrame:', theFrame)
+		self.switchingVideo = True
 		if self.vs is not None and self.vs.setFrame(theFrame):
 			self.myCurrentFrame = theFrame
+			if withDelay:
+				time.sleep(0.1)
 		else:
 			print('VideoApp.setFrame() failed')
+		self.switchingVideo = False
 			
 	def setStartFrame(self, frame):
 		print('setStartFrame() frame:', frame)
@@ -737,62 +756,26 @@ class VideoApp:
 		self.videoLoop()
 		
 	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
-		print('=== switchvideo() videoPath:', videoPath, 'paused:', paused, 'gotoFrame:', gotoFrame)
+		#print('=== switchvideo() videoPath:', videoPath, 'paused:', paused, 'gotoFrame:', gotoFrame)
 
 		self.switchingVideo = True
-		
-		"""
-		if self.vs is not None:
-			print('   self.vs.stop()')
-			self.vs.stop()
-		"""
-		
-		"""
-		print('   time.sleep(0.05)')
-		time.sleep(0.05)
-		"""
-		
-		# was this
-		"""
-		self.vs = FileVideoStream(videoPath, paused, gotoFrame) #.start()
-		self.vs.start()
-		"""
 		
 		if self.vs is None:
 			print('   switchvideo() is instantiating stream')
 			self.vs = FileVideoStream(videoPath, paused, gotoFrame) #.start()
 			#print('   self.vs.start()')
 			self.vs.start()
-			time.sleep(0.01)
+			time.sleep(0.02)
 		else:
 			print('   switchvideo() is switching stream')
 			self.vs.switchStream(videoPath, paused, gotoFrame)
-			#time.sleep(0.01)
+			time.sleep(0.02)
 		
+		self.switchedVideo = True
+		"""
 		self.pausedAtFrame = None
 		self.myCurrentFrame = gotoFrame
-		
 		"""
-		print('   time.sleep(0.05)')
-		time.sleep(0.05)
-		"""
-		
-		"""
-		if gotoFrame is None:
-			print('   setting frame 0')
-			self.setFrame(0)
-		else:
-			print('   setting gotoFrame:', gotoFrame)
-			self.setFrame(gotoFrame)
-		"""
-		
-		# set the selection in video tree
-		# select the first video
-		#child_id = self.videoFileTree.get_children()[-1] #last
-		#child_id = self.videoFileTree.get_children()[0] #first
-
-		# switch event list
-		#self.eventList = bEventList.bEventList(videoPath)
 		
 		# select in video file tree view
 		self.videoFileTree._selectTreeViewRow('path', videoPath)
@@ -804,24 +787,29 @@ class VideoApp:
 		self.numSecondsLabel['text'] = 'of ' + str(self.vs.getParam('numSeconds'))
 		
 		# set frame slider
-		self.video_frame_slider['from_'] = 0
-		self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
-		
+		#print('~~~ switchvideo() is setting frame slider from_ to to 0,', self.vs.getParam('numFrames') - 1)
+		#self.video_frame_slider['from_'] = 0
+		#self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
+		self.video_frame_slider.config(from_=0)
+		self.video_frame_slider.config(to=self.vs.getParam('numFrames') - 1)
+
 		self.switchingVideo = False
 		
 	def videoLoop(self):
-	
 		
 		if self.switchingVideo:
 			pass
 		else:
 			if self.vs is not None and self.vs.paused:
 				self.videoLabel.configure(text="Paused")
-				if (self.pausedAtFrame is None or self.pausedAtFrame != self.myCurrentFrame):
+				if (self.pausedAtFrame is None or (self.pausedAtFrame != self.myCurrentFrame) or self.switchedVideo):
+					self.switchedVideo = False
 					#print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.myCurrentFrame:', self.myCurrentFrame)
 					try:
 						#print('VideoApp2.videoLoop() CALLING self.vs.read()')
 						[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
+						self.frameSliderVar.set(self.myCurrentFrame)
+						#print('   got self.myCurrentFrame:', self.myCurrentFrame)
 					except:
 						print('zzz qqq')
 					self.pausedAtFrame = self.myCurrentFrame
@@ -891,8 +879,10 @@ class VideoApp:
 				#self.video_frame_slider['value'] = self.myCurrentFrame
 				# for tkinter
 				if not self.buttonDownInSlider:
-					#self.frameSliderVar.set(self.myCurrentFrame)
-					self.video_frame_slider.value = self.myCurrentFrame
+					if not self.vs.paused:
+						self.frameSliderVar.set(self.myCurrentFrame)
+						#self.video_frame_slider.value = self.myCurrentFrame
+						#self.video_frame_slider.set(self.myCurrentFrame)
 				else:
 					pass
 					#print('xxx self.buttonDownInSlider:', self.buttonDownInSlider)

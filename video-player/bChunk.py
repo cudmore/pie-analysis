@@ -102,7 +102,7 @@ if __name__ == '__main__':
 	path = '/Users/cudmore/Dropbox/PiE/video'
 	chunks = bChunk(path)
 	
-	chunkInterval = 30 #frames
+	chunkInterval = 300 #frames
 	chunksPerFile = 5
 	chunks.generate(chunkInterval, chunksPerFile)
 		

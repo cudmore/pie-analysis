@@ -68,7 +68,7 @@ class bChunkView:
 		This function will take all key-presses (except \r) and pass to main app.
 		return "break" is critical to stop propogation of event
 		"""
-		print('bChunkView.ignore() event.char:', event.char)
+		#print('bChunkView.ignore() event.char:', event.char)
 		if event.char == '\r':
 			pass
 		else:
@@ -141,7 +141,7 @@ class bChunkView:
 		print('   index:', currentChunk['index'])
 		print('   path:', currentChunk['path'])
 		print('   startFrame:', startFrame)
-		self.app.setFrame(startFrame)
+		self.app.setFrame(startFrame, withDelay=True)
 		
 	def chunk_next(self):
 		#print('chunk_next()')
@@ -173,9 +173,11 @@ class bChunkView:
 		startFrame = chunk['startFrame']
 		stopFrame = chunk['stopFrame']
 		
+		"""
 		print('   path:', path)
 		print('   startFrame:', startFrame)
 		print('   stopFrame:', stopFrame)
+		"""
 		
 		print('   calling self.app.switchvideo() gotoFrame:', startFrame)
 		self.app.switchvideo(path, paused=True, gotoFrame=startFrame)
@@ -192,9 +194,14 @@ class bChunkView:
 	
 	def isHijacking(self):
 		#return self.hijackControlsCheckbox_Value.get() == 1
-		return self.hijackControlsCheckbox.instate(['selected']
+		return self.hijackControlsCheckbox.instate(['selected'])
 
-		
+	def printChunk(self, chunk):
+		print('   index:', chunk['index'])
+		print('   path:', chunk['path'])
+		print('   startFrame:', chunk['startFrame'])
+		print('   stopFrame:', chunk['stopFrame'])
+			
 	def getCurrentChunk(self):
 		if self.currentChunk is not None:
 			actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
