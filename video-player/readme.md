@@ -259,12 +259,3 @@ Pillow==5.3.0
  - [done] Write recipe for installation into Python virtual environment.
  - [done] Design system where events can have start/stop frames or start frame and number of frames (duration). Right now events only have single (start) frame.
 
-## Learning Tkinter
-
-https://www.inoreader.com/article/3a9c6e79a229d841-stack-abuse-gui-development-with-python-tkinter-an-introduction
-
-https://www.pyimagesearch.com/2016/05/23/opencv-with-tkinter/
-
-https://www.pyimagesearch.com/2016/05/30/displaying-a-video-feed-with-opencv-and-tkinter/
-
-https://www.pyimagesearch.com/2017/02/06/faster-video-file-fps-with-cv2-videocapture-and-opencv/
