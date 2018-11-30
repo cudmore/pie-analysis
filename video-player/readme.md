@@ -12,7 +12,7 @@ Video files are listed on top, events of current video on the left. Selecting an
 
 ## Install on macOS
 
-This install recipe assumes you have Python 3.7, pip, virtualenv, and git installed on your computer. If you do not have these things or have no idea what we are talking about, then please see the [Step-By-Step-Install](#advanced_install) section below.
+This install recipe assumes you have Python 3.7, pip, virtualenv, homebrew, and git installed on your computer. If you do not have these things or have no idea what we are talking about, then please see the [Step-By-Step-Install](#advanced_install) section below.
 
  1. Clone repository
 
@@ -244,6 +244,13 @@ pip install -r requirements.txt
 <a name="advanced_install"></a>
 ### Step By Step Install
 
+You will install the following
+
+ - [Homebrew][https://brew.sh/]
+ - [Python 3.7][https://www.python.org/]
+ - [Virtualenv][https://virtualenv.pypa.io/en/latest/]
+ - [Git][https://git-scm.com/]
+
 ```
 # Install homebrew
 ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
@@ -256,7 +263,10 @@ brew upgrade python
 	
 # Check Python 3.7 is installed, should return 'Python 3.7.1' or 'Python 3.7.2'
 python3 --version
-	
+
+# install virtualenv if necessary
+pip3 install virtualenv
+
 # Install git if necessary
 brew install git
 	
@@ -287,10 +297,19 @@ python3 player.py
 #brew install opencv3 --with-python3
 ```
     
-## Make a standalone application with Py2App
+## Make a standalone application
+
+[py2app][https://py2app.readthedocs.io/en/latest/] does not seem to work
 
 ```
 rm -rf build dist
 
 python setup.py py2app -A
+```
+
+[pyInstaller][https://www.pyinstaller.org/] does work but generates massive .app (250 MB)
+
+```
+cd src
+pyinstaller --windowed player.py 
 ```
