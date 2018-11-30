@@ -132,13 +132,11 @@ Pillow==5.3.0
 ## To Do
 
  - Implement 2nd layer of random chunks with 'pieces'
- - [bug] frame slider gets corrupted and does not move during chunk editing
- - [bug] Make sure video controls (buttons and keyboard) stay within chunk when 'Limit Controls' is on.
  - Highlight most recent annotation in list as video is played. Need to sort by startFrame.
  - Finish sorting annotation columns when clicked. Need to insert str(), int(), float() to do this.
+ - Just always sort events by frameStart
  - Add note to video file by putting it in event list header. Finish 'right-click' popup menu in video list.
  - Add option to warn when event frame start/stop is out of order, e.g. frameStart>frameStop.
- - [bug] Make sure chunk navigation is working: >, <, go to.
  - [bug] Make sure toggle of video file and event list do not trash interface on next run. Need to add code to HIDE video and event list, currently setting sashpos==0 (remove this).
  - [bug] When increasing/decreasing fps with +/-, sometimes can not get back to orignal fps. Fix this. This is now fixed but minimum fps is no longer 1 fps.
  - [big idea] Make a visual bar for each video file showing: duration (black) overlaid .with position of chunks (gray), and position of events (bright colors). 
@@ -149,6 +147,9 @@ Pillow==5.3.0
  
 ## To Do (done)
 
+ - [hopefully done, bug] Make sure chunk navigation is working: >, <, go to.
+ - [hopefully done, bug] frame slider gets corrupted and does not move during chunk editing
+ - [hopefully done, bug] Make sure video controls (buttons and keyboard) stay within chunk when 'Limit Controls' is on.
  - [done] Need some way to 1) categorize/file each event into its chunk 2) detect events falling outside a chunk.
  - [done] During chunk editing, hijack ALL video controls (frame slider, play, >, >>, <, <<) to only allow scrolling through frames in current chunk.
  - [done] Add checkbox to activate/inactivate chunk editing.

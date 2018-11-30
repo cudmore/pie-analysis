@@ -42,9 +42,11 @@ class bTree(ttk.Frame):
 		l.sort(reverse=reverse)
 
 		# rearrange items in sorted positions
+		"""
 		for index, (val, k) in enumerate(l):
 			self.treeview.move(k, '', index)
-
+		"""
+		
 		# reverse sort next time
 		self.treeview.heading(col, command=lambda:self.sort_column(col, not reverse))
 
