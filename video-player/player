@@ -16,12 +16,12 @@ fi
 
 if [ -f "player_env/bin/activate" ]; then
 	echo '==='
-	echo "=== install-player: Activating Python 3 virtual environment with 'source player_env/bin/activate'"
+	echo "=== ./player: Activating Python 3 virtual environment with 'source player_env/bin/activate'"
 	echo '==='
 	source player_env/bin/activate
 else
-	echo -e "${RED}ERROR${NC}: Python 3 virtual environment did not install in $PWD/player_env"
-	echo "Make sure virtualenv is installed and try installing again"
+	echo -e "${RED}ERROR${NC}: Python 3 virtual environment not installed in $PWD/player_env"
+	echo "Make sure the player is installed with './install-player' and run again with './player'."
 	exit 1
 fi
 

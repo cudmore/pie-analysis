@@ -139,7 +139,9 @@ class VideoApp:
 		self.videoFileTree.populateVideoFiles(self.videoList, doInit=True)
 	
 		# initialize with first video in path
-		firstVideoPath = self.videoList.videoFileList[0].dict['path']
+		firstVideoPath = ''
+		if len(self.videoList.videoFileList):
+			firstVideoPath = self.videoList.videoFileList[0].dict['path']
 
 		self.chunkView.chunkInterface_populate()
 
@@ -370,11 +372,11 @@ class VideoApp:
 		self.numSecondsLabel = ttk.Label(self.video_feedback_frame, width=8, anchor="w", text='of ')
 		self.numSecondsLabel.grid(row=0, column=3, sticky="w")
 		
-		self.currentFrameIntervalLabel = ttk.Label(self.video_feedback_frame, width=20, anchor="w", text='Frame Interval (ms):')
-		self.currentFrameIntervalLabel.grid(row=0, column=4, sticky="w")
+		#self.currentFrameIntervalLabel = ttk.Label(self.video_feedback_frame, width=20, anchor="w", text='Frame Interval (ms):')
+		#self.currentFrameIntervalLabel.grid(row=0, column=4, sticky="w")
 
 		self.currentFramePerScondLabel = ttk.Label(self.video_feedback_frame, width=20, anchor="w", text='fps:')
-		self.currentFramePerScondLabel.grid(row=0, column=5, sticky="w")
+		self.currentFramePerScondLabel.grid(row=0, column=4, sticky="w")
 
 		if self.configDict['showVideoFeedback']:
 			#self.video_feedback_frame.grid()
@@ -580,8 +582,8 @@ class VideoApp:
 		#myCurrentSeconds = self.vs.getSecondsFromFrame(self.myCurrentFrame)
 		
 		if cmd == 'playpause':
-			if not self.vs.isOpened:
-				print('playpause, video is not opened')
+			if self.vs is None or not self.vs.isOpened:
+				print('playpause - video is not opened')
 			else:
 				self.vs.playPause()
 				if self.vs.paused:
@@ -900,7 +902,7 @@ class VideoApp:
 				#
 				# update feedback labels
 				self.currentFrameLabel['text'] = 'Frame:' + str(self.myCurrentFrame)
-				self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
+				#self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
 				self.currentFramePerScondLabel['text'] ='fps:' + str(self.myFramesPerSecond)
 				self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
 			

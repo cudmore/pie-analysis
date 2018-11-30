@@ -130,17 +130,21 @@ class bChunkView:
 		self.currentChunkLabel['text'] = str(self.currentChunk)
 		self.numChunksLabel['text'] = 'of ' + str(self.numChunks)
 		
-		self.gotoChunkEntry['to'] = self.numChunks - 1
-		
+		if self.numChunks >= 1:
+			self.gotoChunkEntry['to'] = self.numChunks - 1
+		else:
+			self.gotoChunkEntry['to'] = 0
+
 	def findChunk(self, path, startFrame):
 		theIdx = None
 		currIdx = 0
-		for chunk in self.chunkData['chunks']:
-			if chunk['path'] == path:
-				if startFrame > chunk['startFrame'] and startFrame < chunk['stopFrame']:
-					theIdx = currIdx
-					break
-				currIdx += 1
+		if self.chunkData is not None:
+			for chunk in self.chunkData['chunks']:
+				if chunk['path'] == path:
+					if startFrame > chunk['startFrame'] and startFrame < chunk['stopFrame']:
+						theIdx = currIdx
+						break
+					currIdx += 1
 		return theIdx
 				
 	def chunk_previous(self):
@@ -155,19 +159,21 @@ class bChunkView:
 		#actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
 		#currentChunk = self.chunkData['chunks'][actualChunkNumber]
 		currentChunk = self.getCurrentChunk()
-		startFrame = currentChunk['startFrame']
-		print('chunk_start()')
-		print('   index:', currentChunk['index'])
-		print('   path:', currentChunk['path'])
-		print('   startFrame:', startFrame)
-		self.app.setFrame(startFrame, withDelay=True)
+		if currentChunk is not None:
+			startFrame = currentChunk['startFrame']
+			print('chunk_start()')
+			print('   index:', currentChunk['index'])
+			print('   path:', currentChunk['path'])
+			print('   startFrame:', startFrame)
+			self.app.setFrame(startFrame, withDelay=True)
 		
 	def chunk_next(self):
 		#print('chunk_next()')
-		self.currentChunk += 1
-		if self.currentChunk > self.numChunks:
-			self.currentChunk = self.numChunks - 1
-		self.chunk_goto(self.currentChunk)
+		if self.numChunks > 0:
+			self.currentChunk += 1
+			if self.currentChunk > self.numChunks:
+				self.currentChunk = self.numChunks - 1
+			self.chunk_goto(self.currentChunk)
 		
 	def chunk_goto2(self):
 		# get value from gotoChunkEntry
@@ -176,6 +182,9 @@ class bChunkView:
 		
 	def chunk_goto(self, chunkNumber):
 		print('chunk_goto() chunkNumber:', chunkNumber)
+		
+		if self.numChunks == 0:
+			return 0
 		
 		# check valid chunkNumber
 		if chunkNumber > self.numChunks-1:
@@ -188,24 +197,15 @@ class bChunkView:
 		#chunk = self.chunkData['chunks'][actualChunkNumber]
 		chunk = self.getCurrentChunk()
 		
+		if chunk is None: return 0
+		
 		path = chunk['path']
 		startFrame = chunk['startFrame']
 		stopFrame = chunk['stopFrame']
 		
-		"""
-		print('   path:', path)
-		print('   startFrame:', startFrame)
-		print('   stopFrame:', stopFrame)
-		"""
-		
-		print('   calling self.app.switchvideo() gotoFrame:', startFrame)
+		#print('   calling self.app.switchvideo() gotoFrame:', startFrame)
 		self.app.switchvideo(path, paused=True, gotoFrame=startFrame)
 		
-		#time.sleep(0.05)
-		
-		#self.app.setFrame(startFrame)
-
-		#self.app.hijackInterface(self.hijackControlsCheckbox_Value.get() == 1)
 		self.app.hijackInterface(self.isHijacking())
 		
 		# update chunk interface
@@ -218,7 +218,7 @@ class bChunkView:
 		print('   stopFrame:', chunk['stopFrame'])
 			
 	def getCurrentChunk(self):
-		if self.currentChunk is not None:
+		if self.chunkData is not None:
 			actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
 			chunk = self.chunkData['chunks'][actualChunkNumber]
 			return chunk
@@ -227,4 +227,7 @@ class bChunkView:
 			
 	@property
 	def numChunks(self):
-		return len(self.chunkData['chunkOrder'])
+		if self.chunkData is not None:
+			return len(self.chunkData['chunkOrder'])
+		else:
+			return 0

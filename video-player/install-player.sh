@@ -20,7 +20,8 @@ if ! type "virtualenv" > /dev/null; then
 	echo '==='
 	#sudo /usr/bin/easy_install virtualenv
 	#pip install virtualenv
-	sudo apt-get -qy install python-virtualenv
+	#sudo apt-get -qy install python-virtualenv
+	pip install virtualenv
 fi
 
 if [ ! -d "player_env/" ]; then
@@ -66,4 +67,4 @@ deactivate
 
 # done
 echo -e "${GREEN}Success${NC}: The video-player is installed."
-echo "Run the video-player with 'player'"
+echo "Run the video-player with './player'"

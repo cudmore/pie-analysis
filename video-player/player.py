@@ -12,7 +12,7 @@ from VideoApp import VideoApp
 #fvs = FileVideoStream(videoPath) #.start()
 #fvs.start()
 
-path = '/Users/cudmore/Dropbox/PiE/video'
+path = '!/Users/cudmore/Dropbox/PiE/video'
 
 pba = VideoApp(path)
 

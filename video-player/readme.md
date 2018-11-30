@@ -12,20 +12,28 @@ Video files are listed on top, events of current video on the left. Selecting an
 
 ## Install on macOS
 
-Clone repository
+This install recipe assumes you have Python 3.7, pip, virtualenv, and git installed on your computer. If you do not have these things or have no idea what we are talking about, then please see the [Step-By-Step-Install](#advanced_install) section below.
 
-	cd ~
-	git clone https://github.com/cudmore/pie-analysis.git
+ 1. Clone repository
 
-Install video-player
+```
+cd ~
+git clone https://github.com/cudmore/pie-analysis.git
+```
 
-	cd pie-analysis/video-player
-	./install-player
+ 2. Install video-player
 
-Run
+```
+cd pie-analysis/video-player
+./install-player
+```
 
-	cd pie-analysis/video-player
-	./player
+ 3. Run
+
+```
+cd pie-analysis/video-player
+./player
+```
 
 ## Keyboard commands
 
@@ -233,41 +241,49 @@ source player_env/bin/activate
 pip install -r requirements.txt
 ```
 
-### Advanced Install
+<a name="advanced_install"></a>
+### Step By Step Install
 
-	# install homebrew
-	ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+# Install homebrew
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 
-	# upgrade to Python 3.7
-	brew upgrade python
+# Install Python 3.7
+brew install python
 	
-	# check Python 3.7 is installed, should return Python 3.7.1
-	python3 --version
+# Upgrade to Python 3.7
+brew upgrade python
 	
-	# check pip3, should return
-	# pip 18.1 from /usr/local/lib/python3.7/site-packages/pip (python 3.7)
-	pip3 --version
+# Check Python 3.7 is installed, should return 'Python 3.7.1' or 'Python 3.7.2'
+python3 --version
 	
-	# add the following to profile using 'pico ~/.profile'
-	# assuming username is 'cudmore', change as neccessary
-	export PATH="$PATH:/Users/cudmore/Library/Python/3.7/bin"
+# Install git if necessary
+brew install git
+	
+# Clone repository
+git clone https://github.com/cudmore/pie-analysis.git
+	
+# Create a Python 3 virtual environment 'player_env' and activate it.
+# Once activated, command line should begin with '(player_env)'
+cd ~/pie-analysis/video-player
+mkdir player_env
+virtualenv -p python3 --no-site-packages player_env
+source player_env/bin/activate
+	
+# install with pip
+pip install -r requirements.txt
 
-	# activate the changes made to path
-	source ~/.profile
-	
-	# clone repository
-	git clone https://github.com/cudmore/pie-analysis.git
-	
-	# create a python 3 virtual environment 'player_env' and activate it
-	# once activated, command line should begin with '(env)'
-	cd pie-analysis/video-player
-	mkdir player_env
-	virtualenv -p python3 --no-site-packages player_env
-	source player_env/bin/activate
-	
-    # install with pip
-    pip install -r requirements.txt
+# finally, run the player with
+python3 player.py
 
-	# if needed, install opencv with brew
-	brew install opencv3 --with-python3
+# or run the player with
+./player
+```
+
+### Deeper troubleshooting
+
+```
+# if needed, install opencv with brew
+#brew install opencv3 --with-python3
+```
     
