@@ -157,11 +157,72 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 }
 ```
 
+
+	
+## Known bugs
+
+ - [fixed] Has some problems when it reaches end of file.
+ - [fixed] Resizing window will sometimes cause a crash.
+ 
+## To Do
+
+ - Implement 2nd layer of random chunks with 'pieces'.
+ - Stop saving/loading event 'index'. Switch event list view to use internal tkinter treeview index.
+ - Implement 'delete event'.
+ - Recalculate chunkIndex when setting event startFrame with keyboard 'f'.
+ - Make fps a spin box to easily increase/descrease.
+ - Highlight most recent event in list as video is played. Need to sort by startFrame.
+ - Finish sorting event columns when clicked. Need to insert str(), int(), float() to do this.
+ - Just always sort events by frameStart.
+ - Add note to video file by putting it in event list header. Finish 'right-click' popup menu in video list.
+ - Add option to warn when event frame start/stop is out of order, e.g. frameStart>frameStop.
+ - [bug] Make sure toggle of video file and event list do not trash interface on next run. Need to add code to HIDE video and event list, currently setting sashpos==0 (remove this).
+ - [bug] When increasing/decreasing fps with +/-, sometimes can not get back to orignal fps. Fix this. This is now fixed but minimum fps is no longer 1 fps.
+ - [big idea] Make a visual bar for each video file showing: duration (black) overlaid .with position of chunks (gray), and position of events (bright colors). 
+ 
+## To Do (done)
+
+ - [hopefully done, bug] Make sure chunk navigation is working: >, <, go to.
+ - [hopefully done, bug] frame slider gets corrupted and does not move during chunk editing
+ - [hopefully done, bug] Make sure video controls (buttons and keyboard) stay within chunk when 'Limit Controls' is on.
+ - [done] Need some way to 1) categorize/file each event into its chunk 2) detect events falling outside a chunk.
+ - [done] During chunk editing, hijack ALL video controls (frame slider, play, >, >>, <, <<) to only allow scrolling through frames in current chunk.
+ - [done] Add checkbox to activate/inactivate chunk editing.
+ - [done] Running video faster/slower using +/- increments frame interval, it should increment frames per second (+/- 5 fps). Maximum fps for tkinter seems to be ~90 fps. 
+ - [done] Implement saving/loading options via JSON file. Include window geometry, show/hide, (MAYBE) mapping of event numbers to names.
+ - [done] Toggle 'play' button to reflect state e.g. play and pause.
+ - [done] Add option to hide video controls like we hide video file list and event list.
+ - [done] Add information about video file to saved event list .txt file, e.g. (path=xxx, numframes=yyy, fps=zzz).
+ - [done] Expand code to open a folder of video files. Right now it is one hard-coded video file.
+ - [done] Add standard video control buttons like play/pause/forward/backward/large-forward/large-backward.
+ - [done] Finish setting event notes with keyboard 'n'.
+ - [done] Write recipe for installation into Python virtual environment.
+ - [done] Design system where events can have start/stop frames or start frame and number of frames (duration). Right now events only have single (start) frame.
+
 ## Troubleshooting
+
+If there are errors when running, check the versions.
+
+The video-player requires:
+
+ - Python 3.7.0 (includes tkinter 8.x)
+ - numpy
+ - opencv 3
+ - Pillow
+
+Check Python version with 'python --version'.
+
+Check Python libraries with 'pip freeze'.
+
+```
+numpy==1.15.4
+opencv-python==3.4.3.18
+Pillow==5.3.0
+```
 
 ### Intermediate Install
 
-Requires Python 3.7, Open CV 3, Pillow (PIL), Numpy
+Requires Python 3.7.0, Open CV 3, Pillow (PIL), Numpy
 
 ```
 git clone https://github.com/cudmore/pie-analysis.git
@@ -210,52 +271,3 @@ pip install -r requirements.txt
 	# if needed, install opencv with brew
 	brew install opencv3 --with-python3
     
-Current working system has 'pip freeze'
-
-```
-numpy==1.15.4
-opencv-python==3.4.3.18
-Pillow==5.3.0
-```
-
-	
-## Known bugs
-
- - [fixed] Has some problems when it reaches end of file.
- - [fixed] Resizing window will sometimes cause a crash.
- 
-## To Do
-
- - Implement 2nd layer of random chunks with 'pieces'.
- - Stop saving/loading event 'index'. Switch event list view to use internal tkinter treeview index.
- - Implement 'delete event'.
- - Recalculate chunkIndex when setting event startFrame with keyboard 'f'.
- - Make fps a spin box to easily increase/descrease.
- - Highlight most recent event in list as video is played. Need to sort by startFrame.
- - Finish sorting event columns when clicked. Need to insert str(), int(), float() to do this.
- - Just always sort events by frameStart.
- - Add note to video file by putting it in event list header. Finish 'right-click' popup menu in video list.
- - Add option to warn when event frame start/stop is out of order, e.g. frameStart>frameStop.
- - [bug] Make sure toggle of video file and event list do not trash interface on next run. Need to add code to HIDE video and event list, currently setting sashpos==0 (remove this).
- - [bug] When increasing/decreasing fps with +/-, sometimes can not get back to orignal fps. Fix this. This is now fixed but minimum fps is no longer 1 fps.
- - [big idea] Make a visual bar for each video file showing: duration (black) overlaid .with position of chunks (gray), and position of events (bright colors). 
- 
-## To Do (done)
-
- - [hopefully done, bug] Make sure chunk navigation is working: >, <, go to.
- - [hopefully done, bug] frame slider gets corrupted and does not move during chunk editing
- - [hopefully done, bug] Make sure video controls (buttons and keyboard) stay within chunk when 'Limit Controls' is on.
- - [done] Need some way to 1) categorize/file each event into its chunk 2) detect events falling outside a chunk.
- - [done] During chunk editing, hijack ALL video controls (frame slider, play, >, >>, <, <<) to only allow scrolling through frames in current chunk.
- - [done] Add checkbox to activate/inactivate chunk editing.
- - [done] Running video faster/slower using +/- increments frame interval, it should increment frames per second (+/- 5 fps). Maximum fps for tkinter seems to be ~90 fps. 
- - [done] Implement saving/loading options via JSON file. Include window geometry, show/hide, (MAYBE) mapping of event numbers to names.
- - [done] Toggle 'play' button to reflect state e.g. play and pause.
- - [done] Add option to hide video controls like we hide video file list and event list.
- - [done] Add information about video file to saved event list .txt file, e.g. (path=xxx, numframes=yyy, fps=zzz).
- - [done] Expand code to open a folder of video files. Right now it is one hard-coded video file.
- - [done] Add standard video control buttons like play/pause/forward/backward/large-forward/large-backward.
- - [done] Finish setting event notes with keyboard 'n'.
- - [done] Write recipe for installation into Python virtual environment.
- - [done] Design system where events can have start/stop frames or start frame and number of frames (duration). Right now events only have single (start) frame.
-
