@@ -1,7 +1,7 @@
 # Author: Robert Cudmore
 # Date: 20181120
 
-import os, json
+import os, time, json
 import tkinter
 from tkinter import ttk
 
@@ -133,10 +133,14 @@ class bChunkView:
 		
 	def chunk_start(self):
 		""" Go to first frame in chunk"""
-		actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
-		currentChunk = self.chunkData['chunks'][actualChunkNumber]
+		#actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
+		#currentChunk = self.chunkData['chunks'][actualChunkNumber]
+		currentChunk = self.getCurrentChunk()
 		startFrame = currentChunk['startFrame']
-		print('chunk_start() startFrame:', startFrame)
+		print('chunk_start()')
+		print('   index:', currentChunk['index'])
+		print('   path:', currentChunk['path'])
+		print('   startFrame:', startFrame)
 		self.app.setFrame(startFrame)
 		
 	def chunk_next(self):
@@ -161,8 +165,9 @@ class bChunkView:
 			
 		self.currentChunk = chunkNumber
 		
-		actualChunkNumber = self.chunkData['chunkOrder'][chunkNumber]
-		chunk = self.chunkData['chunks'][actualChunkNumber]
+		#actualChunkNumber = self.chunkData['chunkOrder'][chunkNumber]
+		#chunk = self.chunkData['chunks'][actualChunkNumber]
+		chunk = self.getCurrentChunk()
 		
 		path = chunk['path']
 		startFrame = chunk['startFrame']
@@ -172,7 +177,10 @@ class bChunkView:
 		print('   startFrame:', startFrame)
 		print('   stopFrame:', stopFrame)
 		
+		print('   calling self.app.switchvideo() gotoFrame:', startFrame)
 		self.app.switchvideo(path, paused=True, gotoFrame=startFrame)
+		
+		#time.sleep(0.05)
 		
 		#self.app.setFrame(startFrame)
 
@@ -180,7 +188,7 @@ class bChunkView:
 		self.app.hijackInterface(self.isHijacking())
 		
 		# update chunk interface
-		self.currentChunkLabel['text'] = str(chunkNumber)
+		self.currentChunkLabel['text'] = str(self.currentChunk)
 	
 	def isHijacking(self):
 		#return self.hijackControlsCheckbox_Value.get() == 1
@@ -189,7 +197,9 @@ class bChunkView:
 		
 	def getCurrentChunk(self):
 		if self.currentChunk is not None:
-			return self.chunkData['chunks'][self.currentChunk]
+			actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunk]
+			chunk = self.chunkData['chunks'][actualChunkNumber]
+			return chunk
 		else:
 			return None
 			
