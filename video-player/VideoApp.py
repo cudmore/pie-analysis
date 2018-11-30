@@ -878,8 +878,8 @@ class VideoApp:
 				# for ttk
 				#self.video_frame_slider['value'] = self.myCurrentFrame
 				# for tkinter
-				if not self.buttonDownInSlider:
-					if not self.vs.paused:
+				if 1 or not self.buttonDownInSlider:
+					if 1 or not self.vs.paused:
 						self.frameSliderVar.set(self.myCurrentFrame)
 						#self.video_frame_slider.value = self.myCurrentFrame
 						#self.video_frame_slider.set(self.myCurrentFrame)
