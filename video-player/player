@@ -12,8 +12,6 @@ if [ ! -d "player_env/" ]; then
 	echo '==='
 fi
 
-
-
 if [ -f "player_env/bin/activate" ]; then
 	echo '==='
 	echo "=== ./player: Activating Python 3 virtual environment with 'source player_env/bin/activate'"
@@ -25,4 +23,4 @@ else
 	exit 1
 fi
 
-python player.py
+python src/player.py

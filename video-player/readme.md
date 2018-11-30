@@ -287,3 +287,10 @@ python3 player.py
 #brew install opencv3 --with-python3
 ```
     
+## Make a standalone application with Py2App
+
+```
+rm -rf build dist
+
+python setup.py py2app -A
+```
