@@ -36,6 +36,8 @@ class bVideoList:
 		useExtension = '.mp4'
 		videoFileIdx = 0
 		for file in os.listdir(path):
+			if file.startswith('.'):
+				continue
 			if file.endswith(useExtension):
 				fullPath = os.path.join(path, file)
 				newVideoFile = bVideoFile(videoFileIdx, fullPath)
