@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# Author: Robert H Cudmore
+# Date: 20180603
+#
+# Purpose: Bash script to run video-player
+#          Be sure to install first with ./install-player
+
+if [ ! -d "player_env/" ]; then
+	echo '==='
+	echo "=== error: Did not find virtual environment in player_env"
+	echo '==='
+fi
+
+
+
+if [ -f "player_env/bin/activate" ]; then
+	echo '==='
+	echo "=== install-player: Activating Python 3 virtual environment with 'source player_env/bin/activate'"
+	echo '==='
+	source player_env/bin/activate
+else
+	echo -e "${RED}ERROR${NC}: Python 3 virtual environment did not install in $PWD/player_env"
+	echo "Make sure virtualenv is installed and try installing again"
+	exit 1
+fi
+
+python player.py
