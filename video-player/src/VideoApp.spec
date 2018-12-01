@@ -26,7 +26,7 @@ exe = EXE(pyz,
           bootloader_ignore_signals=False,
           strip=False,
           upx=True,
-          console=False )
+          console=False , icon='app.icns')
 coll = COLLECT(exe,
                a.binaries,
                a.zipfiles,
@@ -36,5 +36,5 @@ coll = COLLECT(exe,
                name='VideoApp')
 app = BUNDLE(coll,
              name='VideoApp.app',
-             icon=None,
+             icon='app.icns',
              bundle_identifier=None)

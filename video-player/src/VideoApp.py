@@ -5,6 +5,7 @@
 Create a video editing interface using tkinter
 """
 
+import sys # for drag and drop in app created by pyinstaller
 import os, time, math
 import threading
 import json
@@ -47,7 +48,7 @@ class VideoApp:
 		# keep track of current with and only scale in VideoLoop() when neccessary
 		self.currentWidth = 640
 		self.currentHeight = 480
- 		
+		 
 		self.switchingVideo = False
 		
 		self.myCurrentFrame = None
@@ -61,9 +62,21 @@ class VideoApp:
 		
 		self.configDict = {}
 		# load config file
-		self.optionsFile = 'options.json'
+		# todo: pu tthis in a 'loadOption' function
+		frozen = 'not'
+		if getattr(sys, 'frozen', False):
+			# we are running in a bundle
+			frozen = 'ever so'
+			bundle_dir = sys._MEIPASS
+		else:
+			# we are running in a normal Python environment
+			bundle_dir = os.path.dirname(os.path.abspath(__file__))
+
+		#self.optionsFile = 'options.json'
+		self.optionsFile = os.path.join(bundle_dir, 'options.json')
+		
 		if os.path.isfile(self.optionsFile):
-			print('loading options file options.json')
+			print('loading options file:', self.optionsFile)
 			with open(self.optionsFile) as f:
 				self.configDict = json.load(f)
 		else:
@@ -199,6 +212,7 @@ class VideoApp:
 		geometryStr = str(self.root.winfo_width()) + "x" + str(self.root.winfo_height())
 		self.configDict['appWindowGeometry'] = geometryStr
 		
+		print('   saving self.optionsFile:', self.optionsFile)
 		with open(self.optionsFile, 'w') as outfile:
 			json.dump(self.configDict, outfile, indent=4, sort_keys=True)
 	
@@ -933,5 +947,33 @@ class VideoApp:
 		
 		self.root.quit()
 
+###
+"""
+frozen = 'not'
+if getattr(sys, 'frozen', False):
+		# we are running in a bundle
+		frozen = 'ever so'
+		bundle_dir = sys._MEIPASS
+else:
+		# we are running in a normal Python environment
+		bundle_dir = os.path.dirname(os.path.abspath(__file__))
+print('~~~')
+print( 'we are',frozen,'frozen')
+print( 'bundle dir is', bundle_dir )
+print( 'sys.argv[0] is', sys.argv[0] )
+print( 'sys.executable is', sys.executable )
+print( 'os.getcwd is', os.getcwd() )
+print('~~~')
+"""
+###
+
+"""
+# test saving a file in bundle_dir
+tmpOptions = os.path.join(bundle_dir, 'myTest.json')
+with open(tmpOptions, 'w') as tmpFile:
+	tmpFile.write('xxx')
+"""
+	
 if __name__ == '__main__':
- pba = VideoApp()
+	print('VideoApp.__main__() sys.argv:', sys.argv)
+	pba = VideoApp()
