@@ -77,8 +77,9 @@ class bEventList:
 		# update durations
 		frameStart = self.get(index, 'frameStart')
 		frameStop = self.get(index, 'frameStop')
-		#print('frameStart:', type(frameStart), 'frameStop:', type(frameStop))
-		if (frameStart is not None) and (frameStop is not None):
+		print('frameStart:', type(frameStart), frameStart, 'frameStop:', type(frameStop), frameStop)
+		#if (frameStart is not None) and (frameStop is not None):
+		if frameStart and frameStop:
 			numFrames = int(float(frameStop)) - int(float(frameStart)) - 1
 			#print('   numFrames:', numFrames)
 			self.eventList[index].dict['numFrames'] = numFrames
@@ -86,13 +87,17 @@ class bEventList:
 		sStart = self.get(index, 'sStart')
 		sStop = self.get(index, 'sStop')
 		#print('sStart:', sStart, 'sStop:', sStop)
-		if (sStart is not None) and (sStop is not None):
+		#if (sStart is not None) and (sStop is not None):
+		if sStart and sStop:
 			numSeconds = round(float(sStop) - float(sStart),2)
 			#print('   numSeconds:', numSeconds)
 			self.eventList[index].dict['numSeconds'] = numSeconds
 
 	def get(self, index, col):
-		return self.eventList[index].dict[col]
+		if self.eventList[index].dict[col] is None:
+			return ''
+		else:
+			return str(self.eventList[index].dict[col])
 		
 	def load(self):
 		"""Load list of events from text file"""

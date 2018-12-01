@@ -7,12 +7,12 @@ Usage:
 
 from setuptools import setup
 
-APP = ['src/player.py']
+APP = ['src/VideoApp.py']
 DATA_FILES = []
 OPTIONS = {'argv_emulation': True}
 
 setup(
-    package='src',
+    packages=['src'],
     app=APP,
     data_files=DATA_FILES,
     options={'py2app': OPTIONS},

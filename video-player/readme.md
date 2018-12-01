@@ -171,7 +171,8 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 
  - [fixed] Has some problems when it reaches end of file.
  - [fixed] Resizing window will sometimes cause a crash.
- 
+ - Check that avconv (used by PiE server on Pi) always generates valid mp4 files. See [here](https://trac.ffmpeg.org/ticket/7365). In at least one file, getting errors like 'Invalid NAL unit size' and 'Error splitting the input into NAL'. Maybe save original .h264 on Pi so we can convert later if neccessary.
+
 ## To Do
 
  - Implement 2nd layer of random chunks with 'pieces'.
@@ -246,10 +247,10 @@ pip install -r requirements.txt
 
 You will install the following
 
- - [Homebrew][https://brew.sh/]
- - [Python 3.7][https://www.python.org/]
- - [Virtualenv][https://virtualenv.pypa.io/en/latest/]
- - [Git][https://git-scm.com/]
+ - [Homebrew](https://brew.sh/)
+ - [Python 3.7](https://www.python.org/)
+ - [Virtualenv](https://virtualenv.pypa.io/en/latest/)
+ - [Git](https://git-scm.com/)
 
 ```
 # Install homebrew
@@ -269,47 +270,113 @@ pip3 install virtualenv
 
 # Install git if necessary
 brew install git
+```
 	
-# Clone repository
+Clone the repository
+
+```
 git clone https://github.com/cudmore/pie-analysis.git
-	
-# Create a Python 3 virtual environment 'player_env' and activate it.
-# Once activated, command line should begin with '(player_env)'
+```
+
+Run the provided installer
+
+```
+cd pie-analysis/video-play
+./install-player
+```
+
+You should now be able to run the video-player with
+
+```
+./player
+```
+
+If that does not work, create your own virtual environment and run from there.
+
+```
+# Create a Python 3 virtual environment in 'player_env'.
 cd ~/pie-analysis/video-player
 mkdir player_env
 virtualenv -p python3 --no-site-packages player_env
+
+# activate the virtual environment
+# Once activated, command line should begin with '(player_env)'
 source player_env/bin/activate
 	
 # install with pip
 pip install -r requirements.txt
 
 # finally, run the player with
-python3 player.py
-
-# or run the player with
-./player
+python3 src/player.py
 ```
 
 ### Deeper troubleshooting
 
+If needed, install opencv with brew
+
 ```
-# if needed, install opencv with brew
-#brew install opencv3 --with-python3
+brew install opencv3 --with-python3
 ```
     
-## Make a standalone application
+## Development notes
 
-[py2app][https://py2app.readthedocs.io/en/latest/] does not seem to work
+### Other software
+
+Take a look at [moviepy](https://zulko.github.io/moviepy/).
+
+### Make a standalone application using [py2app](https://py2app.readthedocs.io/en/latest/)
+
+The key here was to
+
+ - don't use a virtual environment
+ - pip3 uninstall opencv-python (it is experimental anyway)
+ - brew install opencv
+ - generate app with 'python3 setup.py py2app --packages=PIL'
+ 
+#install
+pip install py2app
+
+#make setup.py
+py2applet --make-setup src/VideoApp.py
+
+#Setup file contains
 
 ```
+from setuptools import setup
+
+APP = ['src/VideoApp.py']
+DATA_FILES = []
+OPTIONS = {'argv_emulation': True}
+
+setup(
+    packages=['src'],
+    app=APP,
+    data_files=DATA_FILES,
+    options={'py2app': OPTIONS},
+    setup_requires=['py2app'],
+)
+```
+
+#remember to remove these before building
 rm -rf build dist
 
-python setup.py py2app -A
-```
+#Compile development (not stand-alone)
+python3 setup.py py2app -A
 
-[pyInstaller][https://www.pyinstaller.org/] does work but generates massive .app (250 MB)
+Compile distribution, fully stand-alone This did not work in a virtual environment (did not generate .app in dist/) but works fine without using virtualenv
 
-```
-cd src
-pyinstaller --windowed player.py 
-```
+# this had problems with 'from PIL import Image'
+python3 setup.py py2app
+
+# this worked
+# after I uninstalled opencv-python and used 'brew install opencv'
+python3 setup.py py2app --packages=PIL
+
+#Run app from command line (to see errors)
+dist/VideoApp.app/Contents/MacOS/VideoApp
+
+# try using pyinstaller
+
+cd src/
+pyinstaller --windowed VideoApp.py 
+

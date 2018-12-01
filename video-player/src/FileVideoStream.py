@@ -272,7 +272,7 @@ class FileVideoStream:
 		if not self.isOpened:
 			print('error: getSecondsFromFrame() file is not open')
 			return None
-		theSeconds = round(frame / self.streamParams['fps'],2)
+		theSeconds = round(int(float(frame)) / self.streamParams['fps'],2)
 		return theSeconds
 		
 if __name__ == '__main__':

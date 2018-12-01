@@ -391,6 +391,7 @@ class bVideoFileTree(bTree):
 			self.treeview.column('frames', minwidth=defaultWidth, width=defaultWidth, stretch="no")
 			self.treeview.column('fps', minwidth=defaultWidth, width=defaultWidth, stretch="no")
 			self.treeview.column('seconds', minwidth=defaultWidth, width=defaultWidth, stretch="no")
+			self.treeview.column('minutes', minwidth=defaultWidth, width=defaultWidth, stretch="no")
 			self.treeview.column('numevents', minwidth=defaultWidth, width=defaultWidth, stretch="no")
 			
 			# hide some columns

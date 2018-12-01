@@ -72,7 +72,7 @@ class VideoApp:
 		if os.path.isdir(self.configDict['lastPath']):
 			self.path = self.configDict['lastPath']
 		
-		self.videoList = bVideoList.bVideoList(path)		
+		self.videoList = bVideoList.bVideoList(self.path)		
 
 		# initialize with first video in path
 		firstVideoPath = ''
@@ -132,6 +132,7 @@ class VideoApp:
 			return
 		
 		self.path = path
+		self.configDict['lastPath'] = path
 		
 		self.videoList = bVideoList.bVideoList(path)		
 		self.videoFileTree.populateVideoFiles(self.videoList, doInit=True)
