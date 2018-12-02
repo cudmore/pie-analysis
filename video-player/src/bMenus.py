@@ -21,7 +21,9 @@ class bMenus:
 		self.root  = app.root
 		
 		menubar = tkinter.Menu(self.root)
+		
 		appmenu = tkinter.Menu(menubar, name='apple')
+		appmenu.add_command(label="About Video Player", command=self.about)
 		menubar.add_cascade(menu=appmenu)
 
 		filemenu = tkinter.Menu(menubar, tearoff=0)
@@ -46,6 +48,9 @@ class bMenus:
 
 		# display the menu
 		self.root['menu'] = [menubar]
+	
+	def about(self):
+		print('about()')
 	
 	def open_folder(self):
 		print("open a folder with video files")

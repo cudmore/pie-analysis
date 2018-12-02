@@ -252,7 +252,7 @@ class FileVideoStream:
 		elif newFrame > (self.streamParams['numFrames']-1):
 			print('FileVideoStream.setFrame() error, newFrame:', newFrame, 'is beyond end of video frame:', self.streamParams['numFrames']-1)
 		else:
-			#print('   setting self.gotoFrame = ', self.gotoFrame)
+			print('   FileVideoStream.setFrame() setting self.gotoFrame = ', newFrame, type(newFrame))
 			self.gotoFrame = newFrame
 		return True
 

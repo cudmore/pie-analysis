@@ -5,6 +5,8 @@
 self.eventTree
 """
 
+import numpy as np
+
 import tkinter
 from tkinter import ttk
 
@@ -32,19 +34,65 @@ class bTree(ttk.Frame):
 		self.treeview.configure(yscrollcommand=self.scrollbar.set)
 
 	def sort_column(self, col, reverse):
-		print('bTree.sort_column()()', 'col:', col, 'reverse:', reverse)
-		l = [(self.treeview.set(k, col), k) for k in self.treeview.get_children('')]
-		
-		print('   l:', l)
-		
-		#newlist = sorted(list_to_be_sorted, key=lambda k: k['name'])
-		
-		l.sort(reverse=reverse)
+		print('=== bTree.sort_column()()', 'col:', col, 'reverse:', reverse)
 
-		# rearrange items in sorted positions
+		sortType = 'float'
+		if col in ['file', 'note']:
+			sortType = 'str'
+			#print('   not allowed to sort on:', col)
+			#return 0
+		
+		itemList = self.treeview.get_children()
+		
+		frameStartList = []
+		valuesList = [] # list of each rows 'values'
+		for item in self.treeview.get_children(''):
+			# set() here is actually getting row as dict (names are column name)
+			itemColValue = self.treeview.set(item, col) # itemColValue is always a string
+			if sortType == 'str':
+				currentFrameStart = itemColValue # itemColValue is a str
+			else:
+				if itemColValue:
+					currentFrameStart = float(itemColValue)
+				else:
+					# handles empy string ''
+					currentFrameStart = np.NaN
+			frameStartList.append(currentFrameStart)
+
+			values = self.treeview.item(item, 'values')
+			valuesList.append(values)
+			
+		#print('frameStartList:', frameStartList)
+		
+		sortOrder = np.argsort(frameStartList).tolist()
+		
+		if reverse:
+			sortOrder = list(reversed(sortOrder))
+		
+		#print('sortOrder:', sortOrder)
+		
+		# get current selection
+		selectedIndex, selectedItem = self._getTreeViewSelection('index')
+		
+		# first delete entries
+		"""for i in self.treeview.get_children():
+			self.treeview.delete(i)
 		"""
-		for index, (val, k) in enumerate(l):
-			self.treeview.move(k, '', index)
+		
+		# re-insert in proper order
+		for idx, i in enumerate(sortOrder):
+			#event = self.eventList.eventList[i]
+			position = idx
+			values = valuesList[i]
+			#self.treeview.insert("" , position, text=str(idx+1), values=values)
+			self.treeview.move(itemList[i], '', idx)
+			
+		# re-select original selection
+		#print('selectedIndex:', selectedIndex, type(selectedIndex))
+		"""
+		if selectedIndex is not None:
+			selectedIndex = int(selectedIndex)
+			self._selectTreeViewRow('index', selectedIndex)
 		"""
 		
 		# reverse sort next time
@@ -68,13 +116,15 @@ class bTree(ttk.Frame):
 
 	def _selectTreeViewRow(self, col, isThis):
 		"""
-		Given a treeview (tv), a column name (col) and a value (isThis)
+		Given a column name (col) and a value (isThis)
 		Visually select the row in tree view that has column mathcing isThis
 		
-		tv: treeview
 		col: (str) column name
 		isThis: (str) value of a cell in column (col)
 		"""
+		if not isinstance(isThis, str):
+			print('warning: _selectTreeViewRow() expecting string isThis, got', type(isThis))
+		
 		theRow = self._getTreeViewRow(col, isThis)
 		
 		if theRow is not None:
@@ -84,24 +134,29 @@ class bTree(ttk.Frame):
 			#print('item:', item)
 			
 			# select the row
-			self.treeview.focus(item) # select internally
+			#self.treeview.focus(item) # select internally
 			self.treeview.selection_set(item) # visually select
-
+		else:
+			print('warning: _selectTreeViewRow() did not find row for col:', col, 'matching:', isThis, type(isThis))
+			
 	def _getTreeViewRow(self, col, isThis):
 		"""
 		Given a treeview, a col name and a value (isThis)
 		Return the row index of the column col mathing isThis
 		"""
+		if not isinstance(isThis, str):
+			print('warning: _getTreeViewRow() expecting string isThis, got', type(isThis))
+
 		#print('_getTreeViewRow col:', col, 'isThis:', isThis)
+
 		# get the tree view columns and find the col we are looking for
 		columns = self.treeview['columns']				
 		try:
 			colIdx = columns.index(col) # assuming 'frameStart' exists
 		except (ValueError):
+			print('warning: _getTreeViewRow() did not find col:', col)
 			colIdx = None
-			
-		#print('tv.get_children():', tv.get_children())
-		
+					
 		theRet = None
 		if colIdx is not None:
 			rowIdx = 0
@@ -140,7 +195,7 @@ class bEventTree(bTree):
 		if doInit:
 			# configure columns
 			self.treeview['columns'] = eventColumns
-			displaycolumns_ = ['index', 'typeNum', 'sStart', 'sStop', 'numSeconds', 'chunkIndex', 'note']
+			displaycolumns_ = ['index', 'typeNum', 'frameStart', 'sStart', 'sStop', 'numSeconds', 'chunkIndex', 'note']
 			displaycolumns = [] # build a list of columns not in hideColumns
 			for column in eventColumns:
 				self.treeview.column(column, width=20)
@@ -163,7 +218,10 @@ class bEventTree(bTree):
 			#print('bEventTree.populateEvent() displaycolumns:', displaycolumns)
 			self.treeview["displaycolumns"] = displaycolumns
 
+			# we need this so user scroll up/down triggers selection
 			self.treeview.bind('<<TreeviewSelect>>', self.single_click)
+			#self.treeview.bind('<ButtonRelease-1>', self.single_click)
+
 
 		# first delete entries
 		for i in self.treeview.get_children():
@@ -174,6 +232,9 @@ class bEventTree(bTree):
 			position = "end"
 			self.treeview.insert("" , position, text=str(idx+1), values=event.asTuple())
 
+		# this also deletes then inserts (fix it)
+		self.sort_column('frameStart', False)
+		
 	def filter(self, chunkIdx):
 		"""
 		Only show events with chunkIdx.
@@ -193,18 +254,23 @@ class bEventTree(bTree):
 			if chunkIdx is None or currentChunkIndex == chunkIdx:
 				self.treeview.insert("" , "end", text=str(idx+1), values=event.asTuple())
 		
+		self.sort_column('frameStart', False)
+		
 	def single_click(self, event):
 		"""
 		On single click in event list tree --> Set the video to a frame
 		event: <ButtonRelease event state=Button1 num=1 x=227 y=64>
 		"""
-		print('=== bEventTree.single_click()')
+		print('=== bEventTree.single_click()', event.x, event.y)
+		region = self.treeview.identify("region", event.x, event.y)
+		print('   region:', region)
+		
 		frameStart, item = self._getTreeViewSelection('frameStart')
 		frameStart = float(frameStart) # need first because frameNumber (str) can be 100.00000000001
 		frameStart = int(frameStart)
-		print('   event_tree_single_click() is progressing to frameStart:', frameStart)
+		print('   bEventTree.single_click() is progressing to frameStart:', frameStart)
 		#self.vs.setFrame(frameStart) # set the video frame
-		self.myParentApp.setFrame(frameStart) # set the video frame
+		self.myParentApp.setFrame(frameStart, withDelay=False) # set the video frame
 		
 	def appendEvent(self, type, frame, chunkIndex=None):
 		
@@ -228,6 +294,8 @@ class bEventTree(bTree):
 		self._selectTreeViewRow('index', newEvent.dict['index'])		
 		# scroll to bottom of event tree
 		self.treeview.yview_moveto(1) # 1 is fractional
+
+		self.sort_column('frameStart', False)
 
 	def set(self, col, val):
 		"""
@@ -421,10 +489,14 @@ class bVideoFileTree(bTree):
 		
 		# get video file path
 		path, item = self._getTreeViewSelection('path')
-		print('   path:', path)
+		#print('   path:', path)
 
-		# switch video stream
-		self.myParentApp.switchvideo(path, paused=True, gotoFrame=0)
+		if path is None:
+			# when heading is clicked
+			pass
+		else:
+			# switch video stream
+			self.myParentApp.switchvideo(path, paused=True, gotoFrame=0)
 		
 		"""
 		# switch event list
