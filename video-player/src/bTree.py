@@ -9,6 +9,7 @@ import numpy as np
 
 import tkinter
 from tkinter import ttk
+from tkinter import messagebox
 
 import bEventList
 import bNoteDialog
@@ -26,7 +27,7 @@ class bTree(ttk.Frame):
 		self.grid_rowconfigure(0, weight=1)
 		self.grid_columnconfigure(0, weight=1)
 
-		self.treeview = ttk.Treeview(self, *args, **kwargs)
+		self.treeview = ttk.Treeview(self, selectmode="browse", show=['headings'], *args, **kwargs)
 		self.treeview.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 
 		self.scrollbar = ttk.Scrollbar(self, orient="vertical", command = self.treeview.yview)
@@ -71,8 +72,10 @@ class bTree(ttk.Frame):
 		
 		#print('sortOrder:', sortOrder)
 		
+		"""
 		# get current selection
 		selectedIndex, selectedItem = self._getTreeViewSelection('index')
+		"""
 		
 		# first delete entries
 		"""for i in self.treeview.get_children():
@@ -134,7 +137,7 @@ class bTree(ttk.Frame):
 			#print('item:', item)
 			
 			# select the row
-			#self.treeview.focus(item) # select internally
+			self.treeview.focus(item) # select internally
 			self.treeview.selection_set(item) # visually select
 		else:
 			print('warning: _selectTreeViewRow() did not find row for col:', col, 'matching:', isThis, type(isThis))
@@ -221,6 +224,7 @@ class bEventTree(bTree):
 			# we need this so user scroll up/down triggers selection
 			self.treeview.bind('<<TreeviewSelect>>', self.single_click)
 			#self.treeview.bind('<ButtonRelease-1>', self.single_click)
+			self.treeview.bind("<Key>", self.key)
 
 
 		# first delete entries
@@ -237,9 +241,11 @@ class bEventTree(bTree):
 		
 	def filter(self, chunkIdx):
 		"""
-		Only show events with chunkIdx.
+		Only show events with chunkIdx (int).
 		Pass chunkIdx as None to show all
 		"""
+		print('filter() chunkIdx:', chunkIdx, type(chunkIdx))
+		
 		# first delete entries
 		for i in self.treeview.get_children():
 			self.treeview.delete(i)
@@ -247,6 +253,7 @@ class bEventTree(bTree):
 		# todo: make bEventList iterable
 		for idx, event in enumerate(self.eventList.eventList):
 			currentChunkIndex = self.eventList.get(idx, 'chunkIndex')
+			print('filter() chunkIdx:', chunkIdx, 'currentChunkIndex:', currentChunkIndex, type(currentChunkIndex))
 			#print('filter() idx:', idx, 'currentChunkIndex:', currentChunkIndex, type(currentChunkIndex))
 			if currentChunkIndex is not None and currentChunkIndex != 'None':
 				currentChunkIndex = int(float(currentChunkIndex))
@@ -256,18 +263,51 @@ class bEventTree(bTree):
 		
 		self.sort_column('frameStart', False)
 		
+	def key(self, event):
+		print('\n=== bEventTree.key() event.char: "' +  event.char + '"')
+		theKey = event.char
+		passToParent = False
+		if theKey == '\uf702' and event.state==97:
+			# shift + left
+			passToParent = True
+		elif theKey == '\uf702':
+			# left
+			passToParent = True
+		if theKey == '\uf703' and event.state==97:
+			# shift + right
+			passToParent = True
+		elif theKey == '\uf703':
+			# right
+			passToParent = True
+
+		if passToParent:
+			self.myParentApp.keyPress(event)
+			return 'break'
+		else:
+			return ''
+		"""
+		if event.char == '\r':
+			pass
+		else:
+			self.myParentApp.keyPress(event)
+			return 'break'
+		"""
+		
 	def single_click(self, event):
 		"""
 		On single click in event list tree --> Set the video to a frame
 		event: <ButtonRelease event state=Button1 num=1 x=227 y=64>
 		"""
-		print('=== bEventTree.single_click()', event.x, event.y)
-		region = self.treeview.identify("region", event.x, event.y)
-		print('   region:', region)
+		print('\n=== bEventTree.single_click()', event.x, event.y)
+		#region = self.treeview.identify("region", event.x, event.y)
+		#print('   region:', region)
 		
 		frameStart, item = self._getTreeViewSelection('frameStart')
-		frameStart = float(frameStart) # need first because frameNumber (str) can be 100.00000000001
-		frameStart = int(frameStart)
+		if frameStart is None and item is  None:
+			print('bEventTree.single_click() did not find selection')
+			return 0
+			
+		frameStart = int(float(frameStart)) # need first because frameNumber (str) can be 100.00000000001
 		print('   bEventTree.single_click() is progressing to frameStart:', frameStart)
 		#self.vs.setFrame(frameStart) # set the video frame
 		self.myParentApp.setFrame(frameStart, withDelay=False) # set the video frame
@@ -297,6 +337,58 @@ class bEventTree(bTree):
 
 		self.sort_column('frameStart', False)
 
+	def deleteEvent(self):
+		print('=== bEventTree.deleteEvent()')
+		# get selected event
+		index, item = self._getTreeViewSelection('index')
+		if index is None or item is None:
+			print('   please select an event')
+			return 0
+			
+		# ask user
+		result = messagebox.askyesno("Delete Event","Do you want to delete event " + str(index) + "?", icon='warning')
+		if not result:
+			print('   deleteEvent cancelled by user')
+			return 0
+			
+		print('   deleteEvent() is deleting event index:', index)
+		
+		# delete from internal list
+		index = int(index)
+		self.eventList.deleteEvent(index)
+		
+		# remove selection
+		self.treeview.selection_remove(item) # remove visual seleciton
+		
+		# todo: write a funciton to do this
+		# re-populate entire list
+
+		# todo: write wrapper function in VideoApp to tell us about chunk view (don't reference directly)
+		# this should represent the 'state' of the video app
+		currentChunk = None
+		if self.myParentApp.chunkView.isHijacking():
+			currentChunk = self.myParentApp.chunkView.getCurrentChunk() # can be nan
+		print('deleteEvent() got currentChunk:', currentChunk)
+
+		chunkIdx = None
+		if currentChunk is not None:
+			chunkIdx = currentChunk['index']
+		self.filter(chunkIdx)
+
+		"""
+		# first delete entries
+		for i in self.treeview.get_children():
+			self.treeview.delete(i)
+
+		# todo: make bEventList iterable
+		for idx, event in enumerate(self.eventList.eventList):
+			position = "end"
+			self.treeview.insert("" , position, text=str(idx+1), values=event.asTuple())
+
+		# this also deletes then inserts (fix it)
+		self.sort_column('frameStart', False)
+		"""
+		
 	def set(self, col, val):
 		"""
 		Set a value in selected row of tree

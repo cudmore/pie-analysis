@@ -73,7 +73,7 @@ pyinstaller --windowed VideoApp.py
 pyinstaller --windowed --icon=app.ico VideoApp.py
 # mac
 # mac icons are ICNS: 128x128, 72 pixels/inch
-pyinstaller --windowed --icon=app.icns VideoApp.py
+pyinstaller --windowed --icon=videoapp.icns VideoApp.py
 
 # remove previous before building
 rm -rf build dist

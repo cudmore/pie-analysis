@@ -77,7 +77,7 @@ class bEventList:
 		# update durations
 		frameStart = self.get(index, 'frameStart')
 		frameStop = self.get(index, 'frameStop')
-		print('frameStart:', type(frameStart), frameStart, 'frameStop:', type(frameStop), frameStop)
+		print('   frameStart:', frameStart, type(frameStart), 'frameStop:', frameStop, type(frameStop))
 		#if (frameStart is not None) and (frameStop is not None):
 		if frameStart and frameStop:
 			numFrames = int(float(frameStop)) - int(float(frameStart)) - 1
@@ -86,12 +86,16 @@ class bEventList:
 
 		sStart = self.get(index, 'sStart')
 		sStop = self.get(index, 'sStop')
-		#print('sStart:', sStart, 'sStop:', sStop)
+		print('   sStart:', sStart, type(sStart), 'sStop:', sStop, type(sStop))
 		#if (sStart is not None) and (sStop is not None):
 		if sStart and sStop:
-			numSeconds = round(float(sStop) - float(sStart),2)
-			#print('   numSeconds:', numSeconds)
-			self.eventList[index].dict['numSeconds'] = numSeconds
+			if sStop == 'None':
+				print('fix this xxx')
+				pass
+			else:
+				numSeconds = round(float(sStop) - float(sStart),2)
+				#print('   numSeconds:', numSeconds)
+				self.eventList[index].dict['numSeconds'] = numSeconds
 
 	def get(self, index, col):
 		if self.eventList[index].dict[col] is None:
@@ -163,6 +167,13 @@ class bEventList:
 		
 		return event
 
+	def deleteEvent(self, index):
+		del self.eventList[index]
+		
+		# renumber remaining events 0..n-1
+		for idx, event in enumerate(self.eventList):
+			event.dict['index'] = idx
+			
 class bEvent:
 	def __init__(self, parentList, index='', path='', type='', frame='', chunkIndex=None):
 		"""
@@ -203,6 +214,7 @@ class bEvent:
 			self.dict['sStart'] = ''
 		else:
 			self.dict['sStart'] = self.parentList.parentApp.vs.getSecondsFromFrame(frame)
+		self.dict['sStop'] = ''
 		self.dict['chunkIndex'] = chunkIndex
 		self.dict['note'] = ''
 		

@@ -50,7 +50,7 @@ class bMenus:
 		self.root['menu'] = [menubar]
 	
 	def about(self):
-		print('about()')
+		self.app.showAboutDialog()
 	
 	def open_folder(self):
 		print("open a folder with video files")

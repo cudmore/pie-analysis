@@ -29,8 +29,11 @@ import bMenus
 import bEventList
 import bVideoList
 #import bNoteDialog
+import bAboutDialog
 import bChunkView
 import bTree # gives us bEventTree and (eventually) bVideoFileTree
+
+__version__ = '20181202'
 
 ##################################################################################
 class VideoApp:
@@ -50,11 +53,13 @@ class VideoApp:
 		self.currentHeight = 480
 		 
 		self.switchingVideo = False
+		self.switchingFrame = False
 		
 		self.myCurrentFrame = None
 		self.myCurrentSeconds = None
 		self.pausedAtFrame = None
 		self.switchedVideo = False
+		self.setFrameWhenPaused = None
 
 		#self.myCurrentChunk = None
 		self.chunkFirstFrame = -2**32-1
@@ -132,9 +137,13 @@ class VideoApp:
 		if os.path.isfile(firstVideoPath):
 			pass
 		else:
-			self.loadFolder()
+			pass
+			#self.loadFolder()
 			
 		self.root.mainloop()
+		
+	def showAboutDialog(self):
+		myAboutDialog = bAboutDialog.bAboutDialog(self.root)
 		
 	def loadFolder(self, path=''):
 		if len(path) < 1:
@@ -280,7 +289,7 @@ class VideoApp:
 		self.vPane.add(upper_frame)
 
 		# bTree switch
-		self.videoFileTree = bTree.bVideoFileTree(upper_frame, self, videoFileList='', show='headings')
+		self.videoFileTree = bTree.bVideoFileTree(upper_frame, self, videoFileList='')
 		self.videoFileTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		"""
 		self.videoFileTree = ttk.Treeview(upper_frame, show='headings')
@@ -324,7 +333,7 @@ class VideoApp:
 		self.hPane.add(lower_left_frame)
 		
 		# bTree switch
-		self.eventTree = bTree.bEventTree(lower_left_frame, self, videoFilePath='', show='headings')
+		self.eventTree = bTree.bEventTree(lower_left_frame, self, videoFilePath='')
 		self.eventTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		"""
 		self.eventTree = ttk.Treeview(lower_left_frame, show='headings')
@@ -574,7 +583,7 @@ class VideoApp:
 	# video file tree
 	def frameSlider_callback(self, frameNumber):
 		#print('VideoApp.frameSlider_callback()')
-		if 0 or self.buttonDownInSlider:
+		if self.buttonDownInSlider:
 			frameNumber = int(float(frameNumber))
 			"""
 			print('VideoApp.frameSlider_callback()')
@@ -586,7 +595,7 @@ class VideoApp:
 			
 			print('   calling self.setFrame(frameNumber)', frameNumber)
 			"""
-			self.setFrame(frameNumber)
+			self.setFrame(frameNumber, withDelay=False)
 		else:
 			print('VideoApp.frameSlider_callback() skipped when not self.buttonDownInSlider')
 				
@@ -674,14 +683,14 @@ class VideoApp:
 				print('keyPress() adding event, theKey:', theKey)
 				self.addEvent(theKey, self.myCurrentFrame)
 		
+		# delete event
+		if theKey == 'd':
+			self.deleteEvent()
+
 		# set note of selected event
 		if theKey == 'n':
 			self.setNote()
 			
-		# delete event
-		if theKey == 'd':
-			print('keyPress() d will delete -->> not implemented')
-
 		# set event start frame
 		if theKey == 'f':
 			if self.myCurrentFrame is not None:
@@ -733,19 +742,27 @@ class VideoApp:
 		
 	def setFrame(self, theFrame, withDelay=False):
 		#print('VideoApp.setFrame() theFrame:', theFrame)
-		self.switchingVideo = True
+		#self.switchingFrame = True
 		if self.vs is not None and self.vs.setFrame(theFrame):
 			self.myCurrentFrame = theFrame
+			#print('   self.myCurrentFrame:', self.myCurrentFrame)
+			#print('   self.pausedAtFrame:', self.pausedAtFrame)
+			if self.vs.paused:
+				self.setFrameWhenPaused = theFrame
+				#print('   self.setFrameWhenPaused:', self.setFrameWhenPaused)
 			if withDelay:
 				time.sleep(0.1)
 		else:
 			print('VideoApp.setFrame() failed')
-		self.switchingVideo = False
+		#self.switchingFrame = False
 			
 	def setStartFrame(self, frame):
 		print('setStartFrame() frame:', frame)
 		self.eventTree.set('frameStart', frame)
+		#self.eventTree.sort_column('frameStart', False)
 		
+		# sort events
+		xxx
 	def setEndFrame(self, frame):
 		print('setEndFrame() frame:', frame)
 		self.eventTree.set('frameStop', frame)
@@ -775,13 +792,25 @@ class VideoApp:
 		"""
 		Append a new event at the current frame
 		"""
+		print('=== VideoApp.addEvent()')
+		
 		# just in case
 		frame = int(float(frame))
 		
-		# bTree switch
 		videoFilePath = self.vs.streamParams['path']
+		
+		# chunkIndex is NOT sort order (As in interface)
+		# chunkIndex is absolute index into chunk list in randomChunks.txt
 		chunkIndex = self.chunkView.findChunk(videoFilePath, frame)
+		
+		print('   frame:', frame)
+		print('   videoFilePath:', videoFilePath)
+		print('   chunkIndex:', chunkIndex, type(chunkIndex))
+		
 		self.eventTree.appendEvent(theKey, frame, chunkIndex=chunkIndex)
+	
+	def deleteEvent(self):
+		self.eventTree.deleteEvent()
 		
 	def setFramesPerSecond(self, newFramesPerSecond):
 		"""
@@ -844,10 +873,14 @@ class VideoApp:
 		
 		if self.switchingVideo:
 			pass
+		if self.vs is not None and self.vs.gotoFrame is not None:
+			pass
+		#if self.switchingFrame:
+		#	pass
 		else:
 			if self.vs is not None and self.vs.paused:
 				self.videoLabel.configure(text="Paused")
-				if (self.pausedAtFrame is None or (self.pausedAtFrame != self.myCurrentFrame) or self.switchedVideo):
+				if (self.pausedAtFrame is None or (self.pausedAtFrame != self.myCurrentFrame) or self.switchedVideo or self.setFrameWhenPaused is not None):
 					self.switchedVideo = False
 					#print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.myCurrentFrame:', self.myCurrentFrame)
 					try:
@@ -857,12 +890,23 @@ class VideoApp:
 						#print('   got self.myCurrentFrame:', self.myCurrentFrame)
 					except:
 						print('zzz qqq')
+					# this is to fix not progressing on click to new eent (we are reading too fast)
+					if self.setFrameWhenPaused is not None:
+						print('   videoLoop() grabbed frame when paused after setFrame')
+						print('      self.myCurrentFrame:', self.myCurrentFrame, 'self.setFrameWhenPaused:', self.setFrameWhenPaused)
+						if self.myCurrentFrame != self.setFrameWhenPaused:
+							print('      *** OUT OF SYNCH ***\n')
+							#[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
+							#print('      self.myCurrentFrame:', self.myCurrentFrame)
+						#self.frameSliderVar.set(self.myCurrentFrame)
+						self.setFrameWhenPaused = None
 					self.pausedAtFrame = self.myCurrentFrame
 			else:
 				self.videoLabel.configure(text="")
 				try:
 					if self.vs is not None and (self.myCurrentFrame != self.vs.getParam('numFrames')-1) and ( self.myCurrentFrame < self.chunkLastFrame):
 						[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
+						self.frameSliderVar.set(self.myCurrentFrame)
 				except:
 					print('****** my exception in videoLoop')
 				
@@ -919,18 +963,16 @@ class VideoApp:
 				self.currentFramePerScondLabel['text'] ='fps:' + str(self.myFramesPerSecond)
 				self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
 			
-				#print('self.myCurrentFrame:', self.myCurrentFrame)
-				# for ttk
-				#self.video_frame_slider['value'] = self.myCurrentFrame
-				# for tkinter
-				if 1 or not self.buttonDownInSlider:
-					if 1 or not self.vs.paused:
+				"""
+				if not self.buttonDownInSlider:
+					if not self.vs.paused:
 						self.frameSliderVar.set(self.myCurrentFrame)
 						#self.video_frame_slider.value = self.myCurrentFrame
 						#self.video_frame_slider.set(self.myCurrentFrame)
 				else:
 					pass
 					#print('xxx self.buttonDownInSlider:', self.buttonDownInSlider)
+				"""
 				
 			# leave this here -- CRITICAL
 		self.videoLoopID = self.root.after(self.myFrameInterval, self.videoLoop)

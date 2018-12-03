@@ -173,11 +173,23 @@ The options are saved in a json file 'options.json' and can be manually edited. 
  - [fixed] Resizing window will sometimes cause a crash.
  - Check that avconv (used by PiE server on Pi) always generates valid mp4 files. See [here](https://trac.ffmpeg.org/ticket/7365). In at least one file, getting errors like 'Invalid NAL unit size' and 'Error splitting the input into NAL'. Maybe save original .h264 on Pi so we can convert later if neccessary.
 
+## To Do (important)
+ - Have PiE server keep .h264 files
+ - Fix chunk interface, it is remembering pointers to old chunk file
+ - Implement second layer of blinding with 'parts' to evenly distribute random chunks through file
+ - Make menu interface to create random chunks file from folder. So we can do it in standalaone app
+ - Standardize chunk index. I am showing random index in chunk interface but absolute chunk index in event list.
+ - Add dIndex to events so we can always show events in list with 1,2,3,...
+ 
 ## To Do
 
+ - [done] Implement 'delete event'. Add dialog to ask if ok.
+ - Sort events after setting first frame
+ - Implement options dialog to set small/big keyboard steps (Seconds)
+ 
+ - Finish 'about dialog'
  - Implement 2nd layer of random chunks with 'pieces'.
- - Stop saving/loading event 'index'. Switch event list view to use internal tkinter treeview index.
- - Implement 'delete event'.
+ - Stop saving/loading event 'index'. Switch event list view to use internal tkinter treeview index. No, instead, add dIndex (display index) to event list.
  - Recalculate chunkIndex when setting event startFrame with keyboard 'f'.
  - Make fps a spin box to easily increase/descrease.
  - Highlight most recent event in list as video is played. Need to sort by startFrame.
@@ -191,6 +203,8 @@ The options are saved in a json file 'options.json' and can be manually edited. 
  
 ## To Do (done)
 
+ - Now building standalone app with pyinstaller
+ - Added video edit icon
  - [hopefully done, bug] Make sure chunk navigation is working: >, <, go to.
  - [hopefully done, bug] frame slider gets corrupted and does not move during chunk editing
  - [hopefully done, bug] Make sure video controls (buttons and keyboard) stay within chunk when 'Limit Controls' is on.
