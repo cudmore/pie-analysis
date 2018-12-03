@@ -181,13 +181,12 @@ The options are saved in a json file 'options.json' and can be manually edited. 
  - Make menu interface to create random chunks file from folder. So we can do it in standalaone app
  - Standardize chunk index. I am showing random index in chunk interface but absolute chunk index in event list.
  - Add dIndex to events so we can always show events in list with 1,2,3,...
- 
+
 ## To Do
 
  - [done] Implement 'delete event'. Add dialog to ask if ok.
  - Sort events after setting first frame
- - Implement options dialog to set small/big keyboard steps (Seconds)
- 
+ - Implement options dialog to set small/big keyboard steps (Seconds) 
  - Finish 'about dialog'
  - Implement 2nd layer of random chunks with 'pieces'.
  - Stop saving/loading event 'index'. Switch event list view to use internal tkinter treeview index. No, instead, add dIndex (display index) to event list.
