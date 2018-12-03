@@ -762,7 +762,8 @@ class VideoApp:
 		#self.eventTree.sort_column('frameStart', False)
 		
 		# sort events
-		xxx
+		#print('todo: implement sort events')
+		
 	def setEndFrame(self, frame):
 		print('setEndFrame() frame:', frame)
 		self.eventTree.set('frameStop', frame)

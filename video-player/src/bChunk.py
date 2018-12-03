@@ -89,7 +89,7 @@ class bChunk:
 		}
 		
 		# package chunk list and chunk order into a dict
-		outDict = {params, 'chunks':outChunkList, 'chunkOrder':outChunkOrder}
+		outDict = {'params':params, 'chunks':outChunkList, 'chunkOrder':outChunkOrder}
 		
 		now = datetime.datetime.now()
 		dateTimeFile = "chunks_" + now.strftime("%Y%m%d_%H%m%S.txt")
@@ -106,6 +106,7 @@ class bChunk:
 		
 if __name__ == '__main__':
 	path = '/Users/cudmore/Dropbox/PiE/video'
+	path = '/Users/cudmore/Dropbox/PiE/scrambled'
 	chunks = bChunk(path)
 	
 	chunkIntervalSeconds = 300 #frames

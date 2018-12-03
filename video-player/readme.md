@@ -178,10 +178,12 @@ The options are saved in a json file 'options.json' and can be manually edited. 
  - Have PiE server keep .h264 files
  - Fix chunk interface, it is remembering pointers to old chunk file
  - Implement second layer of blinding with 'parts' to evenly distribute random chunks through file
- - Make menu interface to create random chunks file from folder. So we can do it in standalaone app
+ - Make menu interface to create random chunks file from folder. So we can do it in stand-alone app
  - Standardize chunk index. I am showing random index in chunk interface but absolute chunk index in event list.
  - Add dIndex to events so we can always show events in list with 1,2,3,...
-
+ - Finalize event display columns. Maybe hide start/stop when editing chunks?
+ - When editing chunks, do not allow video list selection
+ 
 ## To Do
 
  - [done] Implement 'delete event'. Add dialog to ask if ok.
