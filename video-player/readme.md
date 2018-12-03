@@ -174,6 +174,7 @@ The options are saved in a json file 'options.json' and can be manually edited. 
  - Check that avconv (used by PiE server on Pi) always generates valid mp4 files. See [here](https://trac.ffmpeg.org/ticket/7365). In at least one file, getting errors like 'Invalid NAL unit size' and 'Error splitting the input into NAL'. Maybe save original .h264 on Pi so we can convert later if neccessary.
 
 ## To Do (important)
+
  - Have PiE server keep .h264 files
  - Fix chunk interface, it is remembering pointers to old chunk file
  - Implement second layer of blinding with 'parts' to evenly distribute random chunks through file
