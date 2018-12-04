@@ -258,9 +258,12 @@ class bEventTree(bTree):
 			if currentChunkIndex is not None and currentChunkIndex != 'None':
 				currentChunkIndex = int(float(currentChunkIndex))
 			#print('currentChunkIndex:', type(currentChunkIndex), 'chunkIdx:', type(chunkIdx))
-			if chunkIdx is None or currentChunkIndex == chunkIdx:
+			if chunkIdx is None:
 				self.treeview.insert("" , "end", text=str(idx+1), values=event.asTuple())
-		
+			elif currentChunkIndex == chunkIdx:
+				print('todo: insert with start/stop frame relative to start of chunk')
+				self.treeview.insert("" , "end", text=str(idx+1), values=event.asTuple())
+
 		self.sort_column('frameStart', False)
 		
 	def key(self, event):
@@ -457,6 +460,7 @@ class bEventTree(bTree):
 		self.eventList.eventList[self.myEditNoteIndex].dict['note'] = newNoteStr
 		self.eventList.save()
 		
+		#todo: pass to edit note dialog constructor and pass back here as parameter
 		# get the event we just set
 		event = self.eventList.eventList[self.myEditNoteIndex]
 		
