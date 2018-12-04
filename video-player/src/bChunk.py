@@ -58,14 +58,27 @@ class bChunk:
 			fps = videoFile.dict['fps']
 			numFrames = videoFile.dict['frames']
 			
+			pieceDurationFrame = math.floor(pieceDurationSeconds * fps)
+			numPiecesInFile = math.floor(numFrames / pieceDurationFrame) # constrain to integer
+			
 			chunkDurationFrames = math.floor(chunkDurationSeconds * fps) # constrain to integer
 			numChunksInFile = math.floor(numFrames / chunkDurationFrames) # constrain to integer
+
+			# for each piece, randomly choose (without replacement) chunksPerPiece
+			chunksPerPiece = math.floor(numChunksInFile / numPiecesInFile)
+
 			print('file:', file)
 			print('   numFrames:', numFrames)
 			print('   fps:', fps)
+			print('   pieceDurationFrame:', pieceDurationFrame)
+			print('   numPiecesInFile:', numPiecesInFile)
 			print('   chunkDurationFrames:', chunkDurationFrames)
 			print('   numChunksInFile:', numChunksInFile)
+			print('   chunksPerPiece:', chunksPerPiece)
 			
+			#for pieceIdx, piece in enumerate(range(numPiecesInFile)):
+			#	randomPiecesInChunk = np.random.choice(range(numChunksInFile), chunksPerPiece, replace=False)
+				
 			# make a list of start frame of each of the numChunksInFile chunks
 			
 			# randomly select chunksPerFile without replacement
@@ -86,7 +99,7 @@ class bChunk:
 				# 2) we need to RANDOMLY iterate through all selected chunks in all files
 				outChunkOrder.append(totalChunkIndex)
 
-				totalChunkIndex += 1			
+				totalChunkIndex += 1 # across all files		
 			
 		# randomize outChunkOrder
 		shuffle(outChunkOrder)
