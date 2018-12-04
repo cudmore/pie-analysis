@@ -28,10 +28,9 @@ from FileVideoStream import FileVideoStream
 import bMenus
 import bEventList
 import bVideoList
-#import bNoteDialog
-import bAboutDialog
 import bChunkView
 import bTree # gives us bEventTree and (eventually) bVideoFileTree
+import bDialog
 
 __version__ = '20181202'
 
@@ -61,7 +60,7 @@ class VideoApp:
 		self.switchedVideo = False
 		self.setFrameWhenPaused = None
 
-		#self.myCurrentChunk = None
+		self.myCurrentChunk = None # bChunk object
 		self.chunkFirstFrame = -2**32-1
 		self.chunkLastFrame = 2**32-1
 		
@@ -98,7 +97,7 @@ class VideoApp:
 			firstVideoPath = self.videoList.videoFileList[0].dict['path']
 		
 		self.myFrameInterval = 30 # ms per frame
-		self.myFramesPerSecond = round(1 / self.myFrameInterval,3) * 1000 # frames/second
+		self.myFramesPerSecond = round(1 / self.myFrameInterval * 1000, 2) # frames/second
 				
 		#
 		# tkinter interface
@@ -143,7 +142,7 @@ class VideoApp:
 		self.root.mainloop()
 		
 	def showAboutDialog(self):
-		myAboutDialog = bAboutDialog.bAboutDialog(self.root)
+		myAboutDialog = bAboutDialog(self.root)
 		
 	def loadFolder(self, path=''):
 		if len(path) < 1:
@@ -196,6 +195,8 @@ class VideoApp:
 		self.configDict['showVideoFeedback'] = True
 		self.configDict['smallSecondsStep'] = 10 # seconds
 		self.configDict['largeSecondsStep'] = 60 # seconds
+		self.configDict['smallSecondsStep_chunk'] = 1 # seconds
+		self.configDict['largeSecondsStep_chunk'] = 2 # seconds
 		self.configDict['fpsIncrement'] = 5 # seconds
 		self.configDict['lastPath'] = self.path
 		# map event number 1..9 to a string
@@ -229,11 +230,11 @@ class VideoApp:
 	def limitInterface(self, onoff):
 		"""turn video list and controls on/off"""
 		if onoff:
-			self.vPane.sashpos(0, 0)
-			self.video_feedback_frame.grid_remove()
+			self.vPane.sashpos(0, 0) # video file list
+			#self.video_feedback_frame.grid_remove()
 		else:
 			self.vPane.sashpos(0, self.configDict['videoFileSash'])
-			self.video_feedback_frame.grid()
+			#self.video_feedback_frame.grid()
 			
 	def toggleInterface(self, this):
 		"""
@@ -364,13 +365,14 @@ class VideoApp:
 		###
 		self.lower_right_frame.grid_rowconfigure(3, weight=0)
 		self.lower_right_frame.grid_columnconfigure(0, weight=1)
+		# add to pane
 		self.hPane.add(self.lower_right_frame)
 
 		#
 		# random chunks
 		self.random_chunks_frame = ttk.Frame(self.lower_right_frame)
-		self.random_chunks_frame.grid(row=0, column=0, sticky="new")
-		# this removes and then re-adds a frame from the grid ... very useful
+		tmpPad = 0
+		self.random_chunks_frame.grid(row=0, column=0, sticky="w", padx=tmpPad, pady=tmpPad)
 		if self.configDict['showRandomChunks']:
 			self.random_chunks_frame.grid()
 		else:
@@ -388,7 +390,7 @@ class VideoApp:
 		self.numFrameLabel = ttk.Label(self.video_feedback_frame, width=8, anchor="w", text='of ')
 		self.numFrameLabel.grid(row=0, column=1)
 
-		self.currentSecondsLabel = ttk.Label(self.video_feedback_frame, width=8, anchor="w", text='Sec:')
+		self.currentSecondsLabel = ttk.Label(self.video_feedback_frame, width=9, anchor="w", text='Sec:')
 		self.currentSecondsLabel.grid(row=0, column=2, sticky="w")
 		
 		self.numSecondsLabel = ttk.Label(self.video_feedback_frame, width=8, anchor="w", text='of ')
@@ -470,10 +472,6 @@ class VideoApp:
 		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", showvalue=False,
 													command=self.frameSlider_callback,
 													variable=self.frameSliderVar)
-		"""
-		self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=0, to=0, orient="horizontal", showvalue=False,
-													command=self.frameSlider_callback)
-		"""
 		self.video_frame_slider.grid(row=0, column=5, sticky="ew")
 		self.buttonDownInSlider = False
 		self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback)
@@ -524,34 +522,20 @@ class VideoApp:
 	def hijackInterface(self, onoff):
 		#print('\n=== hijackInterface() onoff:', onoff)
 		if onoff:
-			currentChunk = self.chunkView.getCurrentChunk()
-			if currentChunk is None:
+			self.myCurrentChunk, randomIdx = self.chunkView.getCurrentChunk()
+			if self.myCurrentChunk is None:
 				print('error: VideoApp.hijackInterface() did not find any chunks')
 				return 0
 			
-			chunkIndex = currentChunk['index']
-			startFrame = currentChunk['startFrame']
-			stopFrame = currentChunk['stopFrame']
+			chunkIndex = self.myCurrentChunk['index'] # absolute index
+			startFrame = self.myCurrentChunk['startFrame']
+			stopFrame = self.myCurrentChunk['stopFrame']
 			
-			#self.chunkView.printChunk(currentChunk)
+			#self.chunkView.printChunk(self.myCurrentChunk)
 
-			self.chunkFirstFrame = startFrame
-			self.chunkLastFrame = stopFrame
+			self.chunkFirstFrame = startFrame # -inf when off
+			self.chunkLastFrame = stopFrame # +inf when off
 			
-			###
-			#self.frameSliderVar = tkinter.IntVar()
-			"""
-			self.video_frame_slider.destroy()
-			self.video_frame_slider = tkinter.Scale(self.video_control_frame, from_=startFrame, to=stopFrame, orient="horizontal", showvalue=False,
-														command=self.frameSlider_callback,
-														variable=self.frameSliderVar)
-			self.video_frame_slider.grid(row=0, column=5, sticky="ew")
-			self.buttonDownInSlider = False
-			self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback)
-			self.video_frame_slider.bind("<ButtonRelease-1>", self.buttonUpInSlider_callback)
-			"""
-			###
-
 			#self.video_frame_slider['from_'] = startFrame
 			#self.video_frame_slider['to'] = stopFrame
 			#self.video_frame_slider.value = startFrame
@@ -570,15 +554,26 @@ class VideoApp:
 			
 			# need to limit event tree to just events in this chunk!!!
 			# todo: write event tree filter(chunkIndex)
-			self.eventTree.filter(chunkIndex)
+			self.eventTree.filter(randomIdx) # randomIdx is index into random list of chunks
+
+			# set feedback frame
+			tmpNumFrames = self.myCurrentChunk['stopFrame'] - self.myCurrentChunk['startFrame'] + 1
+			self.numFrameLabel['text'] = 'of ' + str(tmpNumFrames)
+			tmpNumSeconds = round(tmpNumFrames / self.vs.getParam('fps'), 2)
+			self.numSecondsLabel['text'] = 'of ' + str(tmpNumSeconds)
 		else:
 			#print('hijackInterface() chunk is none')
+			self.myCurrentChunk = None
 			self.chunkFirstFrame = -2**32-1
 			self.chunkLastFrame = 2**32-1
 			self.video_frame_slider['from_'] = 0
 			self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
 			#self.video_frame_slider['value'] = startFrame
 			self.eventTree.filter(None)
+
+			# set feedback frame
+			self.numFrameLabel['text'] = 'of ' + str(self.vs.getParam('numFrames'))
+			self.numSecondsLabel['text'] = 'of ' + str(self.vs.getParam('numSeconds'))
 			
 	# video file tree
 	def frameSlider_callback(self, frameNumber):
@@ -602,7 +597,13 @@ class VideoApp:
 	def doCommand(self, cmd):
 
 		#myCurrentSeconds = self.vs.getSecondsFromFrame(self.myCurrentFrame)
-		
+		if self.myCurrentChunk is None:
+			smallSecondsStep = self.configDict['smallSecondsStep']
+			largeSecondsStep = self.configDict['largeSecondsStep']
+		else:
+			smallSecondsStep = self.configDict['smallSecondsStep_chunk']
+			largeSecondsStep = self.configDict['largeSecondsStep_chunk']
+			
 		if cmd == 'playpause':
 			if self.vs is None or not self.vs.isOpened:
 				print('playpause - video is not opened')
@@ -614,7 +615,7 @@ class VideoApp:
 					self.video_play_button['text'] = 'Pause'
 		if cmd == 'forward':
 			if self.myCurrentSeconds is not None:
-				newSeconds = self.myCurrentSeconds + self.configDict['smallSecondsStep']
+				newSeconds = self.myCurrentSeconds + smallSecondsStep
 				newFrame = self.vs.getFrameFromSeconds(newSeconds)
 				#print('doCommand FORWARD newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkLastFrame)
 				if newFrame > self.chunkLastFrame:
@@ -626,7 +627,7 @@ class VideoApp:
 				self.setSeconds(newSeconds)
 		if cmd == 'fast-forward':
 			if self.myCurrentSeconds is not None:
-				newSeconds = self.myCurrentSeconds + self.configDict['largeSecondsStep']
+				newSeconds = self.myCurrentSeconds + largeSecondsStep
 				newFrame = self.vs.getFrameFromSeconds(newSeconds)
 				#print('doCommand fast-forward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkLastFrame)
 				if newFrame > self.chunkLastFrame:
@@ -638,7 +639,7 @@ class VideoApp:
 				self.setSeconds(newSeconds)
 		if cmd == 'backward':
 			if self.myCurrentSeconds is not None:
-				newSeconds = self.myCurrentSeconds - self.configDict['smallSecondsStep']
+				newSeconds = self.myCurrentSeconds - smallSecondsStep
 				newFrame = self.vs.getFrameFromSeconds(newSeconds)
 				#print('doCommand backward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkFirstFrame)
 				if newFrame < self.chunkFirstFrame:
@@ -650,7 +651,7 @@ class VideoApp:
 				self.setSeconds(newSeconds)
 		if cmd == 'fast-backward':
 			if self.myCurrentSeconds is not None:
-				newSeconds = self.myCurrentSeconds - self.configDict['largeSecondsStep']
+				newSeconds = self.myCurrentSeconds - largeSecondsStep
 				newFrame = self.vs.getFrameFromSeconds(newSeconds)
 				#print('doCommand fast-backward newSeconds:', newSeconds, 'newFrame:', newFrame, 'self.chunkLastFrame:', self.chunkFirstFrame)
 				if newFrame < self.chunkFirstFrame:
@@ -684,7 +685,7 @@ class VideoApp:
 				self.addEvent(theKey, self.myCurrentFrame)
 		
 		# delete event
-		if theKey == 'd':
+		if theKey in ['d', '\x7f']:
 			self.deleteEvent()
 
 		# set note of selected event
@@ -763,6 +764,7 @@ class VideoApp:
 		
 		# sort events
 		#print('todo: implement sort events')
+		self.eventTree.sort_column('frameStart', False)
 		
 	def setEndFrame(self, frame):
 		print('setEndFrame() frame:', frame)
@@ -802,13 +804,14 @@ class VideoApp:
 		
 		# chunkIndex is NOT sort order (As in interface)
 		# chunkIndex is absolute index into chunk list in randomChunks.txt
-		chunkIndex = self.chunkView.findChunk(videoFilePath, frame)
+		chunkIndex, randomChunkIndex = self.chunkView.findChunk(videoFilePath, frame)
 		
 		print('   frame:', frame)
 		print('   videoFilePath:', videoFilePath)
 		print('   chunkIndex:', chunkIndex, type(chunkIndex))
+		print('   randomChunkIndex:', randomChunkIndex, type(randomChunkIndex))
 		
-		self.eventTree.appendEvent(theKey, frame, chunkIndex=chunkIndex)
+		self.eventTree.appendEvent(theKey, frame, chunkIndex=chunkIndex, randomChunkIndex=randomChunkIndex)
 	
 	def deleteEvent(self):
 		self.eventTree.deleteEvent()
@@ -825,8 +828,8 @@ class VideoApp:
 		self.root.after_cancel(self.videoLoopID)
 		
 		self.myFrameInterval = math.floor(1000 / newFramesPerSecond)
-		self.myFramesPerSecond = newFramesPerSecond #round(1 / self.myFrameInterval,3) * 1000
-		print('self.myFrameInterval:', self.myFrameInterval, 'self.myFramesPerSecond:', self.myFramesPerSecond)
+		self.myFramesPerSecond = round(newFramesPerSecond,2)
+		print('   self.myFrameInterval:', self.myFrameInterval, 'self.myFramesPerSecond:', self.myFramesPerSecond)
 		print('   starting video loop with self.myFrameInterval:', self.myFrameInterval)
 		self.videoLoop()
 		
@@ -959,10 +962,21 @@ class VideoApp:
 			
 				#
 				# update feedback labels
-				self.currentFrameLabel['text'] = 'Frame:' + str(self.myCurrentFrame)
+				if self.myCurrentChunk is not None:
+					tmpFrame = self.myCurrentFrame - self.myCurrentChunk['startFrame']
+					self.currentFrameLabel['text'] = 'Frame:' + str(tmpFrame)
+				
+				else:
+					self.currentFrameLabel['text'] = 'Frame:' + str(self.myCurrentFrame)
+
+				if self.myCurrentChunk is not None:
+					tmpCurrentSeconds = self.vs.getSecondsFromFrame(self.myCurrentFrame) - self.vs.getSecondsFromFrame(self.myCurrentChunk['startFrame'])
+					tmpCurrentSeconds = round(tmpCurrentSeconds,2)
+					self.currentSecondsLabel['text'] = 'Sec:' + str(tmpCurrentSeconds)
+				else:
+					self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
 				#self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
-				self.currentFramePerScondLabel['text'] ='fps:' + str(self.myFramesPerSecond)
-				self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
+				self.currentFramePerScondLabel['text'] ='playback fps:' + str(self.myFramesPerSecond)
 			
 				"""
 				if not self.buttonDownInSlider:

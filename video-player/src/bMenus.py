@@ -24,13 +24,16 @@ class bMenus:
 		
 		appmenu = tkinter.Menu(menubar, name='apple')
 		appmenu.add_command(label="About Video Player", command=self.about)
+		appmenu.add_command(label="Preferences...", command=self.preferences)
 		menubar.add_cascade(menu=appmenu)
 
 		filemenu = tkinter.Menu(menubar, tearoff=0)
 		filemenu.add_command(label="Open Folder ...", command=self.open_folder)
 		filemenu.add_separator()
-		filemenu.add_command(label="Open Random Chunks ...", command=self.open_random)
+		filemenu.add_command(label="Generate Chunks ...", command=self.generateChunks)
 		filemenu.add_separator()
+		#filemenu.add_command(label="Open Random Chunks ...", command=self.open_random)
+		#filemenu.add_separator()
 		filemenu.add_command(label="Save Options", command=self.app.saveOptions)
 		filemenu.add_separator()
 		#filemenu.add_command(label="Quit", command=self.root.quit)
@@ -52,6 +55,10 @@ class bMenus:
 	def about(self):
 		self.app.showAboutDialog()
 	
+	def preferences(self):
+		print('not implemented')
+		#self.app.showAboutDialog()
+	
 	def open_folder(self):
 		print("open a folder with video files")
 		path = ''
@@ -59,9 +66,14 @@ class bMenus:
 		#print('path:', path)
 		self.app.loadFolder(path)
 		
+	def generateChunks(self):
+		print('not implemented')
+	
+	"""
 	def open_random(self):
 		print("open a random chunks file")
 		self.app.chunkView.chunkInterface_populate(askForFile=True)
+	"""
 				
 	def togglevideofiles(self):
 		print('bMenus.togglevideofiles()')

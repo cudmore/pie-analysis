@@ -175,28 +175,19 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 
 ## To Do (important)
 
- - Have PiE server keep .h264 files
- - Fix chunk interface, it is remembering pointers to old chunk file
  - Implement second layer of blinding with 'parts' to evenly distribute random chunks through file
  - Make menu interface to create random chunks file from folder. So we can do it in stand-alone app
- - Standardize chunk index. I am showing random index in chunk interface but absolute chunk index in event list.
- - Add dIndex to events so we can always show events in list with 1,2,3,...
- - Finalize event display columns. Maybe hide start/stop when editing chunks?
+ - Add dIndex to events so we can always show events in list with 'index' column as 1,2,3,...
  - When editing chunks, do not allow video list selection
+ - Recalculate chunkIndex when setting event startFrame with keyboard 'f'.
  
 ## To Do
 
- - [done] Implement 'delete event'. Add dialog to ask if ok.
- - Sort events after setting first frame
+ - Fix chunk interface, it is remembering pointers to old chunk file
  - Implement options dialog to set small/big keyboard steps (Seconds) 
  - Finish 'about dialog'
- - Implement 2nd layer of random chunks with 'pieces'.
- - Stop saving/loading event 'index'. Switch event list view to use internal tkinter treeview index. No, instead, add dIndex (display index) to event list.
- - Recalculate chunkIndex when setting event startFrame with keyboard 'f'.
  - Make fps a spin box to easily increase/descrease.
  - Highlight most recent event in list as video is played. Need to sort by startFrame.
- - Finish sorting event columns when clicked. Need to insert str(), int(), float() to do this.
- - Just always sort events by frameStart.
  - Add note to video file by putting it in event list header. Finish 'right-click' popup menu in video list.
  - Add option to warn when event frame start/stop is out of order, e.g. frameStart>frameStop.
  - [bug] Make sure toggle of video file and event list do not trash interface on next run. Need to add code to HIDE video and event list, currently setting sashpos==0 (remove this).
@@ -205,6 +196,12 @@ The options are saved in a json file 'options.json' and can be manually edited. 
  
 ## To Do (done)
 
+ - [done] Finish sorting event columns when clicked. Need to insert str(), int(), float() to do this.
+ - [done] Just always sort events by frameStart.
+ - [done] Implement 'delete event'. Add dialog to ask if ok.
+ - [done] Sort events after setting first frame
+ - [done] Add differnet small/big step for chunk edit
+ - [done] Standardize chunk index. I am showing random index in chunk interface but absolute chunk index in event list.
  - Now building standalone app with pyinstaller
  - Added video edit icon
  - [hopefully done, bug] Make sure chunk navigation is working: >, <, go to.

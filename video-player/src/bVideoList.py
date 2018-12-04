@@ -72,7 +72,7 @@ class bVideoFile:
 		width = int(myFile.get(cv2.CAP_PROP_FRAME_WIDTH))
 		height = int(myFile.get(cv2.CAP_PROP_FRAME_HEIGHT))
 		numFrames = int(myFile.get(cv2.CAP_PROP_FRAME_COUNT))
-		fps = int(myFile.get(cv2.CAP_PROP_FPS))
+		fps = myFile.get(cv2.CAP_PROP_FPS)
 		
 		videoFileName = os.path.basename(path)
 		
@@ -84,9 +84,9 @@ class bVideoFile:
 		self.dict['width'] = width
 		self.dict['height'] = height
 		self.dict['frames'] = numFrames
-		self.dict['fps'] = fps
-		self.dict['seconds'] = round(self.dict['frames'] / self.dict['fps'],2)
-		self.dict['minutes'] = round(self.dict['seconds'] / 60,2)
+		self.dict['fps'] = round(fps, 2)
+		self.dict['seconds'] = round(self.dict['frames'] / self.dict['fps'], 2)
+		self.dict['minutes'] = round(self.dict['seconds'] / 60, 2)
 		self.dict['numevents'] = ''
 		self.dict['note'] = ''
 		

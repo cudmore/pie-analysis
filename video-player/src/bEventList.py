@@ -15,7 +15,7 @@ from collections import OrderedDict
 gEventColumns = ('index', 'path', 'cSeconds', 'cDate', 'cTime', 
 				'typeNum', 'typeStr', 'frameStart', 'frameStop', 
 				'numFrames', 'sStart', 'sStop', 'numSeconds',
-				'chunkIndex', 'note')
+				'chunkIndex', 'rChunkIndex', 'note')
 
 class bEventList:
 	def __init__(self, parentApp, videoFilePath):
@@ -153,13 +153,13 @@ class bEventList:
 	def getEvent(self, idx):
 		return self.eventList[idx]
 		
-	def appendEvent(self, type, frame, chunkIndex=None, autoSave=False):
+	def appendEvent(self, type, frame, chunkIndex=None, randomChunkIndex=None, autoSave=False):
 		"""
 		type: in (1,2,3,4,5)
 		frame: frame number into video
 		"""
 		idx = len(self.eventList)
-		event = bEvent(self, idx, self.videoFilePath, type, frame, chunkIndex=chunkIndex)
+		event = bEvent(self, idx, self.videoFilePath, type, frame, chunkIndex=chunkIndex, randomChunkIndex=randomChunkIndex)
 		self.eventList.append(event)
 		
 		if autoSave:
@@ -168,6 +168,9 @@ class bEventList:
 		return event
 
 	def deleteEvent(self, index):
+		if index > len(self.eventList) - 1:
+			print('deleteEvent() got bad index', index, 'len=', len(self.eventList))
+			return 0
 		del self.eventList[index]
 		
 		# renumber remaining events 0..n-1
@@ -175,13 +178,13 @@ class bEventList:
 			event.dict['index'] = idx
 			
 class bEvent:
-	def __init__(self, parentList, index='', path='', type='', frame='', chunkIndex=None):
+	def __init__(self, parentList, index='', path='', type='', frame='', chunkIndex=None, randomChunkIndex=None):
 		"""
 		path: (str) path to video file
 		type: (int)
-		frameNumber: (int)
-		ms: (int)
-		note: (str)
+		frame: (int) frame number
+		chunkIndex: (int) Absolute chunk index into chunk list
+		randomChunkIndex: (int)Index into list of random chunks
 		"""
 		
 		self.parentList = parentList # to get video parameters
@@ -216,18 +219,9 @@ class bEvent:
 			self.dict['sStart'] = self.parentList.parentApp.vs.getSecondsFromFrame(frame)
 		self.dict['sStop'] = ''
 		self.dict['chunkIndex'] = chunkIndex
+		self.dict['rChunkIndex'] = randomChunkIndex
 		self.dict['note'] = ''
 		
-		"""
-		self.streamParams['path'] = path
-		self.streamParams['fileName'] = os.path.basename(path)
-		self.streamParams['width'] = self.stream.get(cv2.CAP_PROP_FRAME_WIDTH)
-		self.streamParams['height'] = self.stream.get(cv2.CAP_PROP_FRAME_HEIGHT)
-		self.streamParams['aspectRatio'] = round(self.streamParams['height'] / self.streamParams['width'],2)
-		self.streamParams['fps'] = self.stream.get(cv2.CAP_PROP_FPS)
-		self.streamParams['numFrames'] = int(self.stream.get(cv2.CAP_PROP_FRAME_COUNT))
-		self.streamParams['numSeconds'] = round(self.streamParams['numFrames'] / self.streamParams['fps'],2)
-		"""
 	def fromFile(self, headerLine, eventLine):
 		"""
 		Initialize a bEvent from one line in a text file

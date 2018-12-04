@@ -10,7 +10,7 @@ todo: Add parameters used when saving json
 
 """
 
-import os, time, math, json
+import os, time, math, jwson
 import datetime
 from collections import OrderedDict 
 from pprint import pprint
@@ -28,9 +28,11 @@ class bChunk:
 		self.path = path
 		self.videoList = bVideoList.bVideoList(path)
 		
-	def generate(self, chunkIntervalSeconds, chunksPerFile):
+	def generate(self, pieceDurationSeconds, chunkDurationSeconds, chunksPerFile):
 		"""
-		chunkIntervalSeconds: Number of frames in each chunk
+		pieceDurationSeconds (int): Duration of each piece
+			Each file is split into a number of pieces to evenly distribute the random chunk selection
+		chunkDurationSeconds (int): Number of seconds in each chunk
 		chunksPerFile:
 		"""
 		
@@ -53,9 +55,16 @@ class bChunk:
 			#print(file.asString())
 			path = videoFile.dict['path']
 			file = videoFile.dict['file']
+			fps = videoFile.dict['fps']
 			numFrames = videoFile.dict['frames']
-			numChunksInFile = math.floor(numFrames / chunkIntervalSeconds)
-			print(file, 'numFrames:', numFrames, 'numChunksInFile:', numChunksInFile)
+			
+			chunkDurationFrames = math.floor(chunkDurationSeconds * fps) # constrain to integer
+			numChunksInFile = math.floor(numFrames / chunkDurationFrames) # constrain to integer
+			print('file:', file)
+			print('   numFrames:', numFrames)
+			print('   fps:', fps)
+			print('   chunkDurationFrames:', chunkDurationFrames)
+			print('   numChunksInFile:', numChunksInFile)
 			
 			# make a list of start frame of each of the numChunksInFile chunks
 			
@@ -68,9 +77,9 @@ class bChunk:
 				newEntry = OrderedDict()
 				newEntry['index'] = totalChunkIndex
 				newEntry['path'] = path
-				newEntry['startFrame'] = int(i * chunkIntervalSeconds)
-				newEntry['stopFrame'] = newEntry['startFrame'] + chunkIntervalSeconds - 1
-				newEntry['numFrames'] = chunkIntervalSeconds
+				newEntry['startFrame'] = int(i * chunkDurationFrames)
+				newEntry['stopFrame'] = newEntry['startFrame'] + chunkDurationFrames - 1
+				newEntry['numFrames'] = chunkDurationFrames
 				#print('newEntry:', newEntry)
 				outChunkList.append(newEntry)
 
@@ -82,9 +91,14 @@ class bChunk:
 		# randomize outChunkOrder
 		shuffle(outChunkOrder)
 		
+		now = datetime.datetime.now()
+		timeStampStr = now.strftime('%Y%m%d_%H%m%S')
+
 		# params
 		params = {
-			'chunkIntervalSeconds': chunkIntervalSeconds,
+			'generated': timeStampStr,
+			'pieceDurationSeconds': pieceDurationSeconds,
+			'chunkDurationSeconds': chunkDurationSeconds,
 			'chunksPerFile': chunksPerFile
 		}
 		
@@ -101,7 +115,7 @@ class bChunk:
 	def load(self, path=''):
 		with open(path) as f:
 			data = json.load(f)
-		pprint(data)
+		#pprint(data)
 		# data is a dict of {'chunks', 'chunkOrder'}
 		
 if __name__ == '__main__':
@@ -109,9 +123,14 @@ if __name__ == '__main__':
 	path = '/Users/cudmore/Dropbox/PiE/scrambled'
 	chunks = bChunk(path)
 	
-	chunkIntervalSeconds = 300 #frames
-	chunksPerFile = 5
-	chunks.generate(chunkIntervalSeconds, chunksPerFile)
+	# pieces is 10 min
+	# chunk duration is 10 seconds
+	# chunksPerVideo is 30
+	
+	pieceDurationSeconds = 10 * 60 # seconds
+	chunkDurationSeconds = 10 # seconds
+	chunksPerFile = 30
+	chunks.generate(pieceDurationSeconds, chunkDurationSeconds, chunksPerFile)
 		
 	#chunks.load(path=path + '/' + 'chunks_20184319_221111.txt')
 

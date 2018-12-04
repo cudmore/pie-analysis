@@ -12,7 +12,7 @@ from tkinter import ttk
 from tkinter import messagebox
 
 import bEventList
-import bNoteDialog
+import bDialog
 
 ###################################################################################
 class bTree(ttk.Frame):
@@ -198,7 +198,7 @@ class bEventTree(bTree):
 		if doInit:
 			# configure columns
 			self.treeview['columns'] = eventColumns
-			displaycolumns_ = ['index', 'typeNum', 'frameStart', 'sStart', 'sStop', 'numSeconds', 'chunkIndex', 'note']
+			displaycolumns_ = ['index', 'typeNum', 'sStart', 'sStop', 'numSeconds', 'rChunkIndex', 'note']
 			displaycolumns = [] # build a list of columns not in hideColumns
 			for column in eventColumns:
 				self.treeview.column(column, width=20)
@@ -215,7 +215,7 @@ class bEventTree(bTree):
 			self.treeview.heading('sStart', text="Start")
 			self.treeview.heading('sStop', text="Stop")
 			self.treeview.heading('numSeconds', text="Dur")
-			self.treeview.heading('chunkIndex', text="Chunk")
+			self.treeview.heading('rChunkIndex', text="Chunk")
 			
 			# hide some columns
 			#print('bEventTree.populateEvent() displaycolumns:', displaycolumns)
@@ -252,8 +252,8 @@ class bEventTree(bTree):
 
 		# todo: make bEventList iterable
 		for idx, event in enumerate(self.eventList.eventList):
-			currentChunkIndex = self.eventList.get(idx, 'chunkIndex')
-			print('filter() chunkIdx:', chunkIdx, 'currentChunkIndex:', currentChunkIndex, type(currentChunkIndex))
+			currentChunkIndex = self.eventList.get(idx, 'rChunkIndex')
+			#print('filter() chunkIdx:', chunkIdx, 'currentChunkIndex:', currentChunkIndex, type(currentChunkIndex))
 			#print('filter() idx:', idx, 'currentChunkIndex:', currentChunkIndex, type(currentChunkIndex))
 			if currentChunkIndex is not None and currentChunkIndex != 'None':
 				currentChunkIndex = int(float(currentChunkIndex))
@@ -312,9 +312,9 @@ class bEventTree(bTree):
 		#self.vs.setFrame(frameStart) # set the video frame
 		self.myParentApp.setFrame(frameStart, withDelay=False) # set the video frame
 		
-	def appendEvent(self, type, frame, chunkIndex=None):
+	def appendEvent(self, type, frame, chunkIndex=None, randomChunkIndex=None):
 		
-		newEvent = self.eventList.appendEvent(type, frame, chunkIndex=chunkIndex)
+		newEvent = self.eventList.appendEvent(type, frame, chunkIndex=chunkIndex, randomChunkIndex=randomChunkIndex)
 		self.eventList.save()
 
 		# interface
@@ -356,38 +356,18 @@ class bEventTree(bTree):
 		# delete from internal list
 		index = int(index)
 		self.eventList.deleteEvent(index)
+		self.eventList.save()
 		
 		# remove selection
 		self.treeview.selection_remove(item) # remove visual seleciton
 		
-		# todo: write a funciton to do this
-		# re-populate entire list
-
 		# todo: write wrapper function in VideoApp to tell us about chunk view (don't reference directly)
 		# this should represent the 'state' of the video app
-		currentChunk = None
+		randomIndex = None
 		if self.myParentApp.chunkView.isHijacking():
-			currentChunk = self.myParentApp.chunkView.getCurrentChunk() # can be nan
-		print('deleteEvent() got currentChunk:', currentChunk)
-
-		chunkIdx = None
-		if currentChunk is not None:
-			chunkIdx = currentChunk['index']
-		self.filter(chunkIdx)
-
-		"""
-		# first delete entries
-		for i in self.treeview.get_children():
-			self.treeview.delete(i)
-
-		# todo: make bEventList iterable
-		for idx, event in enumerate(self.eventList.eventList):
-			position = "end"
-			self.treeview.insert("" , position, text=str(idx+1), values=event.asTuple())
-
-		# this also deletes then inserts (fix it)
-		self.sort_column('frameStart', False)
-		"""
+			currentChunk, randomIndex = self.myParentApp.chunkView.getCurrentChunk() # can be nan
+			print('bEventTree.deleteEvent() got currentChunk:', currentChunk)
+		self.filter(randomIndex)
 		
 	def set(self, col, val):
 		"""
@@ -403,6 +383,9 @@ class bEventTree(bTree):
 		if index is None:
 			print('   warning: please select an event')
 			return None
+			
+		print('todo: re-calculate chunk index !!!')
+		
 		index = int(index)
 		print('   modifying event index:', index)
 		
@@ -436,7 +419,7 @@ class bEventTree(bTree):
 		
 		print('original note is noteStr:', noteStr)
 
-		myDialog = bNoteDialog.bNoteDialog(self, noteStr, self.editNote_Callback)
+		myDialog = bDialog.bNoteDialog(self, noteStr, self.editNote_Callback)
 		
 		"""
 		# to make modal
