@@ -5,7 +5,7 @@ import os, time, json
 import tkinter
 from tkinter import ttk
 
-from bDialog import bNumberDialog
+import bDialog
 
 class bChunkView:
 	
@@ -198,7 +198,7 @@ class bChunkView:
 	def chunk_goto2(self):
 		# get value from gotoChunkEntry
 		#chunkNumber = int(self.gotoChunkEntry.get())
-		bNumberDialog(self.app.root, from_=0, to=self.numChunks - 1, callback=self._chunk_goto2)
+		bDialog.bNumberDialog(self.app.root, from_=0, to=self.numChunks - 1, callback=self._chunk_goto2)
 		# flow goes to _chunk_goto2()
 		#self.chunk_goto(chunkNumber)
 		

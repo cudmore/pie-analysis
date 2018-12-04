@@ -67,6 +67,69 @@ class bNoteDialog:
 		self.top.destroy() # destroy *this, the modal
 
 ##################################################################################
+class bPreferencesDialog:
+	"""
+	Opens a modal dialog to set the note of an event
+	"""
+	def __init__(self, parentApp):
+
+		# to make modal
+		#self.grab_set()
+		# see: http://effbot.org/tkinterbook/tkinter-dialog-windows.htm
+		
+		self.top = tkinter.Toplevel(parentApp.root)
+		
+		print(parentApp.configDict)
+		
+		self.top.title('Preferences')
+		self.top.geometry('640x240')
+		
+		includeOptions = ('smallSecondsStep', 'largeSecondsStep', 'smallSecondsStep_chunk', 'largeSecondsStep_chunk')
+		
+		myPadding = 2
+		
+		self.top.grid_rowconfigure(0, weight=1)
+		self.top.grid_columnconfigure(0, weight=1)
+
+		myFrame = ttk.Frame(self.top)
+		myFrame.grid(row=0, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
+		myFrame.grid_columnconfigure(0, weight=1)
+		myFrame.grid_columnconfigure(1, weight=1)
+		
+		from_ = 0
+		to = 2**32-1
+		
+		for idx, option in enumerate(includeOptions):
+			myFrame.grid_rowconfigure(idx, weight=1)
+
+			myText = parentApp.configDict[option]
+			myInt = int(myText)
+			
+			myLabel = ttk.Label(myFrame, text=option)
+			myLabel.grid(row=idx, column=0, sticky="w", padx=myPadding, pady=myPadding)
+
+			mySpinbox = ttk.Spinbox(myFrame, from_=from_, to=to)
+			mySpinbox.set(myInt)
+			mySpinbox.selection_range(0, "end")
+			mySpinbox.icursor("end")
+
+			mySpinbox.grid(row=idx, column=1, sticky="w", padx=myPadding, pady=myPadding)
+		
+		lastIdx = idx + 1
+		okButton = ttk.Button(myFrame, text="OK", command=self.okButton_Callback)
+		okButton.grid(row=lastIdx, column=1, padx=myPadding, pady=myPadding)
+
+		#self.top.focus_force() # added
+		
+		self.top.grab_set()
+		
+		#self.top.grab_set_global()
+
+
+	def okButton_Callback(self):
+		self.top.destroy() # destroy *this, the modal
+
+##################################################################################
 class bAboutDialog:
 	"""
 	Opens a modal dialog to set the note of an event

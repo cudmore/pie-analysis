@@ -10,6 +10,7 @@ from tkinter import filedialog
 from pprint import pprint
 
 #from bRandomChunks import bRandomChunks
+import bDialog
 
 #
 # menus
@@ -57,6 +58,7 @@ class bMenus:
 	
 	def preferences(self):
 		print('not implemented')
+		bDialog.bPreferencesDialog(self.app)
 		#self.app.showAboutDialog()
 	
 	def open_folder(self):
