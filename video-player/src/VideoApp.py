@@ -142,7 +142,7 @@ class VideoApp:
 		self.root.mainloop()
 		
 	def showAboutDialog(self):
-		myAboutDialog = bAboutDialog(self.root)
+		myAboutDialog = bDialog.bAboutDialog(self.root)
 		
 	def loadFolder(self, path=''):
 		if len(path) < 1:
