@@ -132,6 +132,9 @@ Blinding Algorithm
  
  - Add 'pieceIndex' to each chunk in output chunk list
  
+Here is an example of the results of the blinding algorithm for 6 video files, 30 chunks each. Each colored symbol is a different random chunk (duration 10 sec) and the color scale shows the order the chunks are visited. There are 180 chunks spread across the 6 files.
+ 
+ <IMG src="img/chunk-order.png" width=700>
 
 <a name="options_file"></a>
 ## Options file
