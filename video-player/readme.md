@@ -180,6 +180,7 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 
 ## To Do (important)
 
+ - Streamline interface for blinding. Make a system where wehen handed to a scorer, they can not activate non-blinded interface (they are locked into blinding). Try and add a password to switch between one and the other.
  - [done] Implement second layer of blinding with 'parts' to evenly distribute random chunks through file
  - Update numEvents in video list as we add/delete events
  - Select and go to next event when event is deleted (if next event exists)

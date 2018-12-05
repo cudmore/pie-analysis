@@ -403,6 +403,19 @@ class bEventTree(bTree):
 		# update treeview with new event
 		self.treeview.item(item, values=event.asTuple())
 
+		# colorize if start/stop out of order
+		if col in ['frameStart', 'frameStop']:
+			print('set() colorize')
+			frameStart, item = self._getTreeViewSelection('frameStart')
+			frameStop, item = self._getTreeViewSelection('frameStop')
+			print('   frameStart:', frameStart, type(frameStart))
+			print('   frameStop:', frameStop, type(frameStop))
+			if frameStart and frameStop:
+				frameStart = int(frameStart)
+				frameStop = int(frameStop)
+				if frameStop < frameStart:
+					print(' colorize -- out of order')
+							
 	def editNote(self):
 
 		print('bEventTree.editNote()')
