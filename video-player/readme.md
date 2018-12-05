@@ -12,6 +12,8 @@ Video files are listed on top, events of current video on the left. Selecting an
 
 ## Install on macOS
 
+**Coming Soon**. We will provide a stand-alone macOS app that does not require any special installation, just download and run.
+
 This install recipe assumes you have Python 3.7, pip, virtualenv, homebrew, and git installed on your computer. If you do not have these things or have no idea what we are talking about, then please see the [Step-By-Step-Install](#advanced_install) section below.
 
  1. Clone repository
@@ -175,7 +177,7 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 
 ## To Do (important)
 
- - Implement second layer of blinding with 'parts' to evenly distribute random chunks through file
+ - [done] Implement second layer of blinding with 'parts' to evenly distribute random chunks through file
  - Make menu interface to create random chunks file from folder. So we can do it in stand-alone app
  - Add dIndex to events so we can always show events in list with 'index' column as 1,2,3,...
  - When editing chunks, do not allow video list selection
@@ -183,7 +185,7 @@ The options are saved in a json file 'options.json' and can be manually edited. 
  
 ## To Do
 
- - Fix chunk interface, it is remembering pointers to old chunk file
+ - [done?] Fix chunk interface, it is remembering pointers to old chunk file
  - Implement options dialog to set small/big keyboard steps (Seconds) 
  - Finish 'about dialog'
  - Make fps a spin box to easily increase/descrease.
