@@ -9,7 +9,6 @@ import sys # for drag and drop in app created by pyinstaller
 import os, time, math
 import threading
 import json
-#from collections import OrderedDict 
 
 import numpy as np
 
@@ -29,7 +28,7 @@ import bMenus
 import bEventList
 import bVideoList
 import bChunkView
-import bTree # gives us bEventTree and (eventually) bVideoFileTree
+import bTree # gives us bEventTree and bVideoFileTree
 import bDialog
 
 __version__ = '20181202'
@@ -40,7 +39,7 @@ class VideoApp:
 		"""
 		TKInter application to create interface for loading, viewing, and annotating video
 		
-		path: path to folder with video files
+		path: path to folder with video files (only works with mp4)
 		"""
 		
 		self.path = path
@@ -66,7 +65,7 @@ class VideoApp:
 		
 		self.configDict = {}
 		# load config file
-		# todo: pu tthis in a 'loadOption' function
+		# todo: put this in a 'loadOption' function
 		frozen = 'not'
 		if getattr(sys, 'frozen', False):
 			# we are running in a bundle
@@ -76,7 +75,6 @@ class VideoApp:
 			# we are running in a normal Python environment
 			bundle_dir = os.path.dirname(os.path.abspath(__file__))
 
-		#self.optionsFile = 'options.json'
 		self.optionsFile = os.path.join(bundle_dir, 'options.json')
 		
 		if os.path.isfile(self.optionsFile):
@@ -102,15 +100,12 @@ class VideoApp:
 		#
 		# tkinter interface
 		self.root = tkinter.Tk()
-		self.root.title('PiE Video Analysis')
+		self.root.title('Video Annotate')
 		
-		# make window not resiazeable
-		#self.root.resizable(width=False, height=False)
-				
 		# remove the default behavior of invoking the button with the space key
 		self.root.unbind_class("Button", "<Key-space>")
 
-		self.root.geometry(self.configDict['appWindowGeometry']) # home2
+		self.root.geometry(self.configDict['appWindowGeometry'])
 
 		self.buildInterface()
 
@@ -121,7 +116,6 @@ class VideoApp:
 		self.root.bind("<Key>", self.keyPress)
 
 		# fire up a video stream
-		# removed when adding loadFolder
 		if len(firstVideoPath) > 0:
 			self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
 
@@ -170,18 +164,6 @@ class VideoApp:
 		if len(firstVideoPath) > 0:
 			self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
 
-		#self.eventList = bEventList.bEventList(firstVideoPath)
-		# bTree switch
-		#self.populateEvents(doInit=False)
-		"""
-		self.eventTree.populateEvents(firstVideoPath)
-		"""
-		
-		# fire up a video stream
-		"""
-		self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
-		"""
-		
 	def getEventTypeStr(self, type):
 		return self.configDict['eventTypes'][type]
 		
@@ -289,25 +271,8 @@ class VideoApp:
 		upper_frame.grid_columnconfigure(0, weight=1)
 		self.vPane.add(upper_frame)
 
-		# bTree switch
 		self.videoFileTree = bTree.bVideoFileTree(upper_frame, self, videoFileList='')
 		self.videoFileTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
-		"""
-		self.videoFileTree = ttk.Treeview(upper_frame, show='headings')
-		self.videoFileTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
-		videoFileTree_scrollbar = ttk.Scrollbar(upper_frame, orient="vertical", command = self.videoFileTree.yview)
-		videoFileTree_scrollbar.grid(row=0, column=0, sticky='nse', padx=myPadding, pady=myPadding)
-		self.videoFileTree.configure(yscrollcommand=videoFileTree_scrollbar.set)
-		"""
-		
-		"""
-		if self.configDict['showVideoFiles']:
-			self.videoFileTree.grid()
-		else:
-			self.videoFileTree.grid_remove()
-		"""
-		# bTree switch
-		#self.populateVideoFiles(doInit=True)
 		self.videoFileTree.populateVideoFiles(self.videoList, doInit=True)
 
 		#
@@ -336,23 +301,11 @@ class VideoApp:
 		# bTree switch
 		self.eventTree = bTree.bEventTree(lower_left_frame, self, videoFilePath='')
 		self.eventTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
-		"""
-		self.eventTree = ttk.Treeview(lower_left_frame, show='headings')
-		self.eventTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
-		eventTree_scrollbar = ttk.Scrollbar(lower_left_frame, orient="vertical", command = self.eventTree.yview)
-		eventTree_scrollbar.grid(row=0, column=0, sticky='nse', padx=myPadding, pady=myPadding)
-		self.eventTree.configure(yscrollcommand=eventTree_scrollbar.set)
-		"""
 		if self.configDict['showEvents']:
 			pass
 			#self.eventTree.grid()
 		else:
 			self.eventTree.grid_remove()
-		# btree switch
-		"""
-		self.populateEvents(doInit=True)
-		"""
-		#self.eventTree.populateEvents(self.eventList, doInit=True)
 		
 		#
 		# video
@@ -411,20 +364,6 @@ class VideoApp:
 		#
 		# video frame
 		
-		# tried extra frame, 
-		#videoFrame2 = ttk.Frame(self.lower_right_frame, borderwidth=0, width=200, height=200)
-		#videoFrame2.grid(row=2, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
-		#videoFrame2.grid_rowconfigure(0, weight=1)
-		#videoFrame2.grid_columnconfigure(0, weight=1)
-
-		#self.pad_frame = ttk.Frame(self.lower_right_frame, borderwidth=0, width=200, height=200)
-		#self.pad_frame = ttk.Frame(self.root, borderwidth=0, width=200, height=200)
-		#self.pad_frame = ttk.Frame(videoFrame2, borderwidth=0, width=200, height=200)
-		# when in lower_right_frame
-		#self.pad_frame.grid(row=2, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
-		# when in root
-		#self.pad_frame.grid(row=0, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
-	
 		contentBorderWidth = 1
 		self.content_frame = ttk.Frame(self.lower_right_frame, borderwidth=contentBorderWidth) # PARENT IS ROOT
 		self.content_frame.grid(row=2, column=0, sticky="nsew") #, padx=5, pady=5)
@@ -477,12 +416,7 @@ class VideoApp:
 		self.video_frame_slider.bind("<Button-1>", self.buttonDownInSlider_callback)
 		self.video_frame_slider.bind("<ButtonRelease-1>", self.buttonUpInSlider_callback)
 		#self.video_frame_slider.bind("<B1-Motion>", self.buttonMotionInSlider_callback)
-		
-		#
-		# set aspect of video frame
-		#self.set_aspect(self.lower_right_frame, self.content_frame, self.pad_frame, self.video_control_frame, aspect_ratio=myApectRatio) 
-		#self.set_aspect(self.hPane, self.lower_right_frame, self.content_frame, self.pad_frame, self.video_control_frame, self.videoLabel) #, aspect_ratio=myApectRatio) 
-				
+						
 		#
 		# do this at very end
 		self.root.update()
@@ -520,6 +454,9 @@ class VideoApp:
 	###################################################################################
 
 	def hijackInterface(self, onoff):
+		"""
+		Limit video controls to a chunk (for blinding)
+		"""
 		#print('\n=== hijackInterface() onoff:', onoff)
 		if onoff:
 			self.myCurrentChunk, randomIdx = self.chunkView.getCurrentChunk()
@@ -536,27 +473,16 @@ class VideoApp:
 			self.chunkFirstFrame = startFrame # -inf when off
 			self.chunkLastFrame = stopFrame # +inf when off
 			
-			#self.video_frame_slider['from_'] = startFrame
-			#self.video_frame_slider['to'] = stopFrame
-			#self.video_frame_slider.value = startFrame
-			
 			self.video_frame_slider.config(from_=startFrame)
 			self.video_frame_slider.config(to=stopFrame)
-			#self.video_frame_slider.set(startFrame)
-			
-			# WHAT THE FUCK IS GOING ON ??????????
-			#self.buttonDownInSlider = True
 			
 			#print('   hijackInterface calling self.setFrame() startFrame:', startFrame)
 			self.setFrame(startFrame)
 			
-			#self.buttonDownInSlider = False
-			
-			# need to limit event tree to just events in this chunk!!!
-			# todo: write event tree filter(chunkIndex)
+			# limit event tree to just events in this chunk!!!
 			self.eventTree.filter(randomIdx) # randomIdx is index into random list of chunks
 
-			# set feedback frame
+			# set feedback frame relative to chunk duration
 			tmpNumFrames = self.myCurrentChunk['stopFrame'] - self.myCurrentChunk['startFrame'] + 1
 			self.numFrameLabel['text'] = 'of ' + str(tmpNumFrames)
 			tmpNumSeconds = round(tmpNumFrames / self.vs.getParam('fps'), 2)
@@ -730,9 +656,11 @@ class VideoApp:
 			
 		# figuring out 'tab' between widgets
 		# i am intercepting all keystrokes at app level, not widget level
+		"""
 		if theKey == '\t':
 			focused_widget = self.root.focus_get()
 			print('focused_widget.name:', focused_widget)
+		"""
 			
 	def setSeconds(self, seconds):
 		"""
@@ -760,10 +688,8 @@ class VideoApp:
 	def setStartFrame(self, frame):
 		print('setStartFrame() frame:', frame)
 		self.eventTree.set('frameStart', frame)
-		#self.eventTree.sort_column('frameStart', False)
 		
 		# sort events
-		#print('todo: implement sort events')
 		self.eventTree.sort_column('frameStart', False)
 		
 	def setEndFrame(self, frame):
@@ -773,21 +699,6 @@ class VideoApp:
 	def setNote(self):
 		"""
 		Open modal dialog to set note of selected event
-		"""
-		print('VideoApp.setNote()')
-		
-		# btree switch
-		"""
-		# get selection from event list
-		item = self.eventTree.focus()
-		if item == '':
-			print('Please select an event')
-			return
-			
-		d = bNoteDialog.bNoteDialog(self)
-		
-		if d is not None:
-			self.root.wait_window(d.top)
 		"""
 		self.eventTree.editNote()
 		
@@ -836,7 +747,7 @@ class VideoApp:
 	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
 		#print('=== switchvideo() videoPath:', videoPath, 'paused:', paused, 'gotoFrame:', gotoFrame)
 
-		self.switchingVideo = True
+		self.switchingVideo = True # temporarily shit down videoLoop
 		
 		if self.vs is None:
 			print('   switchvideo() is instantiating stream')
@@ -849,11 +760,8 @@ class VideoApp:
 			self.vs.switchStream(videoPath, paused, gotoFrame)
 			time.sleep(0.02)
 		
+		# so (paused) videoLoop loop will update
 		self.switchedVideo = True
-		"""
-		self.pausedAtFrame = None
-		self.myCurrentFrame = gotoFrame
-		"""
 		
 		# select in video file tree view
 		self.videoFileTree._selectTreeViewRow('path', videoPath)
@@ -865,9 +773,6 @@ class VideoApp:
 		self.numSecondsLabel['text'] = 'of ' + str(self.vs.getParam('numSeconds'))
 		
 		# set frame slider
-		#print('~~~ switchvideo() is setting frame slider from_ to to 0,', self.vs.getParam('numFrames') - 1)
-		#self.video_frame_slider['from_'] = 0
-		#self.video_frame_slider['to'] = self.vs.getParam('numFrames') - 1
 		self.video_frame_slider.config(from_=0)
 		self.video_frame_slider.config(to=self.vs.getParam('numFrames') - 1)
 
@@ -879,8 +784,6 @@ class VideoApp:
 			pass
 		if self.vs is not None and self.vs.gotoFrame is not None:
 			pass
-		#if self.switchingFrame:
-		#	pass
 		else:
 			if self.vs is not None and self.vs.paused:
 				self.videoLabel.configure(text="Paused")
@@ -978,59 +881,17 @@ class VideoApp:
 				#self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
 				self.currentFramePerScondLabel['text'] ='playback fps:' + str(self.myFramesPerSecond)
 			
-				"""
-				if not self.buttonDownInSlider:
-					if not self.vs.paused:
-						self.frameSliderVar.set(self.myCurrentFrame)
-						#self.video_frame_slider.value = self.myCurrentFrame
-						#self.video_frame_slider.set(self.myCurrentFrame)
-				else:
-					pass
-					#print('xxx self.buttonDownInSlider:', self.buttonDownInSlider)
-				"""
-				
-			# leave this here -- CRITICAL
+		# leave this here -- CRITICAL
 		self.videoLoopID = self.root.after(self.myFrameInterval, self.videoLoop)
 		
 	def onClose(self, event=None):
-
-		# set the stop event, cleanup the camera, and allow the rest of
-		# the quit process to continue
 		print("VideoApp.onClose()")
 		self.isRunning = False
 		self.vs.stop()
-		
 		self.saveOptions()
-		
+
 		self.root.quit()
 
-###
-"""
-frozen = 'not'
-if getattr(sys, 'frozen', False):
-		# we are running in a bundle
-		frozen = 'ever so'
-		bundle_dir = sys._MEIPASS
-else:
-		# we are running in a normal Python environment
-		bundle_dir = os.path.dirname(os.path.abspath(__file__))
-print('~~~')
-print( 'we are',frozen,'frozen')
-print( 'bundle dir is', bundle_dir )
-print( 'sys.argv[0] is', sys.argv[0] )
-print( 'sys.executable is', sys.executable )
-print( 'os.getcwd is', os.getcwd() )
-print('~~~')
-"""
-###
-
-"""
-# test saving a file in bundle_dir
-tmpOptions = os.path.join(bundle_dir, 'myTest.json')
-with open(tmpOptions, 'w') as tmpFile:
-	tmpFile.write('xxx')
-"""
-	
 if __name__ == '__main__':
 	print('VideoApp.__main__() sys.argv:', sys.argv)
 	pba = VideoApp()

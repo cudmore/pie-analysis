@@ -6,4 +6,4 @@
 # Build a stand-alone app using pyinstaller
 
 rm -rf build dist
-pyinstaller --windowed --icon=icons/videoapp.icns VideoApp.py
+pyinstaller --windowed --icon=icons/videoapp.icns -n VideoAnnotate VideoApp.py

@@ -24,7 +24,7 @@ class bMenus:
 		menubar = tkinter.Menu(self.root)
 		
 		appmenu = tkinter.Menu(menubar, name='apple')
-		appmenu.add_command(label="About Video Player", command=self.about)
+		appmenu.add_command(label="About Video Annotate", command=self.about)
 		appmenu.add_separator()
 		appmenu.add_command(label="Preferences...", command=self.preferences)
 		menubar.add_cascade(menu=appmenu)
