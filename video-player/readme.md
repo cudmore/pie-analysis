@@ -181,10 +181,14 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 ## To Do (important)
 
  - [done] Implement second layer of blinding with 'parts' to evenly distribute random chunks through file
+ - Update numEvents in video list as we add/delete events
+ - Select and go to next event when event is deleted (if next event exists)
+ - Add option to turn off delete event warning
  - Make menu interface to create random chunks file from folder. So we can do it in stand-alone app
  - Add dIndex to events so we can always show events in list with 'index' column as 1,2,3,...
  - When editing chunks, do not allow video list selection
  - Recalculate chunkIndex when setting event startFrame with keyboard 'f'.
+ - [hard] switch event list interface when editing chunks. Show frame start/stop relative to start of current chunk
  
 ## To Do
 
