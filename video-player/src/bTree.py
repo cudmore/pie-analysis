@@ -90,6 +90,11 @@ class bTree(ttk.Frame):
 			#self.treeview.insert("" , position, text=str(idx+1), values=values)
 			self.treeview.move(itemList[i], '', idx)
 			
+		# if sorted by frameStart then flag each item for out of order
+		if col == 'frameStart':
+			for idx, i in enumerate(sortOrder):
+				self.flagOverlap(itemList[i])
+
 		# re-select original selection
 		#print('selectedIndex:', selectedIndex, type(selectedIndex))
 		"""
@@ -97,6 +102,7 @@ class bTree(ttk.Frame):
 			selectedIndex = int(selectedIndex)
 			self._selectTreeViewRow('index', selectedIndex)
 		"""
+		
 		
 		# reverse sort next time
 		self.treeview.heading(col, command=lambda:self.sort_column(col, not reverse))
@@ -456,7 +462,7 @@ class bEventTree(bTree):
 		
 		if col in ['frameStart']:
 			self.sort_column('frameStart', False)
-			self.flagOverlap(item)
+			#self.flagOverlap(item)
 		if col in ['frameStop']:
 			self.flagOverlap(item)
 		"""
@@ -492,17 +498,24 @@ class bEventTree(bTree):
 			tags = list(tags) # list('') yields []
 			if this in tags:
 				tags.remove(this)
+			print('   removeFromTags() setting tags:', tags)
 			self.treeview.item(item, tags=tags)
 		def addToTags(item, this):
 			tags = self.treeview.item(item)['tags']
 			tags = list(tags) # list('') yields []
 			if not this in tags:
 				tags.append(this)
+			print('   addToTags() setting tags:', tags)
 			self.treeview.item(item, tags=tags)
 			
+		print('=== flagOverlap()')
+		
 		children = self.treeview.get_children()
 		itemIndex = children.index(theItem)
 		
+		self.treeview.tag_configure('itemRed', background='red')
+		self.treeview.tag_configure('itemOrange', background='orange')
+
 		#returns item as dict which includes ['tags']
 		#print('self.treeview.item(theItem):', self.treeview.item(theItem))
 		# returns item 'values' as dict
@@ -513,7 +526,6 @@ class bEventTree(bTree):
 		frameStop = self.treeview.set(theItem)['frameStop']
 		if frameStart and frameStop:
 			#self.treeview.tag_configure('itemOrange', background='orange')
-			self.treeview.tag_configure('itemOrange', font=('italic',))
 			if int(frameStop) < int(frameStart):
 				print('   colorize -- out of order')
 				origTags = self.treeview.item(theItem)['tags']
@@ -521,7 +533,7 @@ class bEventTree(bTree):
 			else:
 				print('   colorize -- not out of order')
 				removeFromTags(theItem, 'itemOrange')
-				
+						
 		# make sure does not overlap with previous
 		if itemIndex > 0:
 			# todo: use treeview.prev() instead
@@ -534,10 +546,12 @@ class bEventTree(bTree):
 			thisFrameStart = theItemStruct['frameStart'] # str?
 			
 			if prevFrameStop and thisFrameStart:
-				self.treeview.tag_configure('itemRed', background='red')
+				
 				if int(thisFrameStart) <= int(prevFrameStop):
+					print('   addToTags -->> itemRed')
 					addToTags(theItem, 'itemRed')
 				else:
+					print('   addToTags -->> NOT itemRed')
 					removeFromTags(theItem, 'itemRed')
 
 		# make sure it does not overlap with next
@@ -552,13 +566,12 @@ class bEventTree(bTree):
 			thisFrameStop = theItemStruct['frameStop'] # str?
 			
 			if nextFrameStart and thisFrameStop:
-				self.treeview.tag_configure('itemRed', background='red')
 				if int(thisFrameStop) >= int(nextFrameStart):
-					print('flagOverlap() setting NEXT red thisFrameStop:', thisFrameStop, 'nextFrameStart:', nextFrameStart)
-					addToTags(theItem, 'itemRed')
+					print('   addToTags -->> NEXT itemRed')
+					addToTags(nextItem, 'itemRed')
 				else:
-					print('setting normal')
-					removeFromTags(theItem, 'itemRed')
+					print('   addToTags -->> NEXT NOT itemRed')
+					removeFromTags(nextItem, 'itemRed')
 					
 	def editNote(self):
 
