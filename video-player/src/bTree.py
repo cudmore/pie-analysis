@@ -487,80 +487,44 @@ class bEventTree(bTree):
 			set frame stop (look at next)
 		"""
 		
-		#
-		#
-		# this is fucked up by empty string
-		#
-		#
-		#
-		#
-		#
-		#
-		#
-		# this almost works, make it remove/add to 'item' tags
 		def removeFromTags(item, this):
 			tags = self.treeview.item(item)['tags']
-			tags = (tags,)
-			print('\nremoveFromTags() tags:', tags, 'type(tags):', type(tags))
+			tags = list(tags) # list('') yields []
 			if this in tags:
-				tagList = list(tags)
-				tagList.remove(this)
-				tags = tuple(tagList)
+				tags.remove(this)
 			self.treeview.item(item, tags=tags)
-			print('   ', self.treeview.item(item)['tags'])
 		def addToTags(item, this):
 			tags = self.treeview.item(item)['tags']
-			tags = (tags,)
-			print('\naddToTags() tags:', tags, 'type(tags):', type(tags))
+			tags = list(tags) # list('') yields []
 			if not this in tags:
-				tags = tags + (this,)
+				tags.append(this)
 			self.treeview.item(item, tags=tags)
-			print('   ', self.treeview.item(item)['tags'])
 			
 		children = self.treeview.get_children()
 		itemIndex = children.index(theItem)
 		
 		#returns item as dict which includes ['tags']
-		print('self.treeview.item(theItem):', self.treeview.item(theItem))
+		#print('self.treeview.item(theItem):', self.treeview.item(theItem))
 		# returns item 'values' as dict
-		print('self.treeview.set(theItem):', self.treeview.set(theItem))
+		#print('self.treeview.set(theItem):', self.treeview.set(theItem))
 		
 		# colorize if start/stop out of order
 		frameStart = self.treeview.set(theItem)['frameStart']
 		frameStop = self.treeview.set(theItem)['frameStop']
 		if frameStart and frameStop:
-			self.treeview.tag_configure('itemOrange', background='orange')
+			#self.treeview.tag_configure('itemOrange', background='orange')
+			self.treeview.tag_configure('itemOrange', font=('italic',))
 			if int(frameStop) < int(frameStart):
 				print('   colorize -- out of order')
 				origTags = self.treeview.item(theItem)['tags']
-				print('origTags:', origTags)
-				#self.treeview.item(theItem, tags='itemOrange')
-				#addToTags(theItem, 'itemOrange')
+				addToTags(theItem, 'itemOrange')
 			else:
-				#self.treeview.item(theItem, tags='')
-				#removeFromTags(theItem, 'itemOrange')
+				print('   colorize -- not out of order')
+				removeFromTags(theItem, 'itemOrange')
 				
-		"""
-		if col in ['frameStart', 'frameStop']:
-			#print('treeview.set() colorize start/stop order')
-			frameStart, item = self._getTreeViewSelection('frameStart')
-			frameStop, item = self._getTreeViewSelection('frameStop')
-			#print('   frameStart:', frameStart, type(frameStart))
-			#print('   frameStop:', frameStop, type(frameStop))
-			if frameStart and frameStop:
-				self.treeview.tag_configure('itemOrange', background='orange')
-				#print('   item:', item)
-				frameStart = int(frameStart)
-				frameStop = int(frameStop)
-				if frameStop < frameStart:
-					print('   colorize -- out of order')
-					self.treeview.item(item, tags='itemOrange')
-				else:
-					self.treeview.item(item, tags='')
-		"""
-
 		# make sure does not overlap with previous
 		if itemIndex > 0:
+			# todo: use treeview.prev() instead
 			previousItemIndex = itemIndex - 1
 			previousItem = children[previousItemIndex]
 			prevItemDict = self.treeview.set(previousItem)
@@ -572,16 +536,13 @@ class bEventTree(bTree):
 			if prevFrameStop and thisFrameStart:
 				self.treeview.tag_configure('itemRed', background='red')
 				if int(thisFrameStart) <= int(prevFrameStop):
-					print('flagOverlap() setting THIS red thisFrameStart:', thisFrameStart, 'prevFrameStop:', prevFrameStop)
-					#self.treeview.item(theItem, tags='itemRed')
-					#addToTags(theItem, 'itemRed')
+					addToTags(theItem, 'itemRed')
 				else:
-					print('setting normal')
-					#self.treeview.item(theItem, tags='')
-					#removeFromTags(theItem, 'itemRed')
+					removeFromTags(theItem, 'itemRed')
 
 		# make sure it does not overlap with next
 		if itemIndex < len(children) - 1:
+			# todo: use treeview.next() instead
 			nextItemIndex = itemIndex + 1
 			nextItem = children[nextItemIndex]
 			nextItemDict = self.treeview.set(nextItem)
@@ -594,11 +555,11 @@ class bEventTree(bTree):
 				self.treeview.tag_configure('itemRed', background='red')
 				if int(thisFrameStop) >= int(nextFrameStart):
 					print('flagOverlap() setting NEXT red thisFrameStop:', thisFrameStop, 'nextFrameStart:', nextFrameStart)
-					self.treeview.item(nextItem, tags='itemRed')
+					addToTags(theItem, 'itemRed')
 				else:
-					#print('setting normal')
-					self.treeview.item(nextItem, tags='')
-		
+					print('setting normal')
+					removeFromTags(theItem, 'itemRed')
+					
 	def editNote(self):
 
 		print('bEventTree.editNote()')
