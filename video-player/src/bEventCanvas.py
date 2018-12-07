@@ -1,23 +1,8 @@
-# canvas
+# Robert H Cudmore
+# 20181206
 
 import tkinter
 from tkinter import ttk
-
-"""
-0,/Users/cudmore/Dropbox/PiE/scrambled/s_4022.mp4,1544068926.995682,2018-12-05,23:02:06,1,a,2891,5685,2793,96.46,189.69,93.23,None,None,,,
-1,/Users/cudmore/Dropbox/PiE/scrambled/s_4022.mp4,1544068933.7629151,2018-12-05,23:02:13,3,c,45986,49491,3504,1534.4,1651.35,116.95,None,None,,,
-2,/Users/cudmore/Dropbox/PiE/scrambled/s_4022.mp4,1544102886.373027,2018-12-06,08:28:06,1,a,17073,,None,569.67,,None,None,None,,
-3,/Users/cudmore/Dropbox/PiE/scrambled/s_4022.mp4,1544102888.576926,2018-12-06,08:28:08,2,b,17143,,None,572.0,,None,None,None,,
-4,/Users/cudmore/Dropbox/PiE/scrambled/s_4022.mp4,1544102890.894222,2018-12-06,08:28:10,3,c,17256,,None,575.78,,None,None,None,,
-"""
-videoFile = {
-	'vs': {},
-	'events': [
-	{'startFrame':2891, 'stopFrame':5685},
-	{'startFrame':17073, 'stopFrame':19000},
-	{'startFrame':45986, 'stopFrame':49491}
-	]
-}
 
 # a subclass of Canvas for dealing with resizing of windows
 class bEventCanvas(tkinter.Canvas):
@@ -28,111 +13,199 @@ class bEventCanvas(tkinter.Canvas):
 		self.numFrames = 54000
 		
 		tkinter.Canvas.__init__(self,parent,width=width, height=height, **kwargs)
-		self.bind("<Configure>", self.on_resize)
+		#self.bind("<Configure>", self.on_resize)
 		self.height = self.winfo_reqheight()
 		self.width = self.winfo_reqwidth()
 
 		self.rowHeight = 10
 
+		self.frameSliderLeft = None
 		self.myEventRectList = []
+		self.chunkFrameOffset = 0
+		self.selectedEventRectID = None
 		
-	def on_resize(self,event):
+	def on_resize2(self, width, height):
 		# determine the ratio of old width/height to new width/height
-		wscale = float(event.width)/self.width
-		hscale = float(event.height)/self.height
-		hscale = 1.0
-		self.width = event.width
-		self.height = event.height
-		# resize the canvas 
-		self.config(width=self.width, height=self.height)
-		# rescale all the objects tagged with the "all" tag
-		self.scale("all",0,0,wscale,hscale)
-
-	def setFrame(self, theFrame):
-		pass
-	
-	def populateVideoFile(self, videoFile):
-		events = videoFile['events']
+		wscale = float(width)/self.width
+		hscale = float(height)/self.height
 		
+		if self.width==width and self.height==height:
+			return 0
+		
+		#print('bEventCanvas.on_resize2()')
+		self.width = width
+		self.height = height
+		
+		# resize the canvas 
+		#self.config(width=self.width, height=self.height)
+		
+		# rescale all the objects tagged with the "all" tag
+		self.scale("all", 0, 0, wscale, hscale)
+			
+	def refreshWithEventTree(self, eventTree):
+		print('=== bEventCanvas.refreshWithEventTree()')
+
+		self.delete("all")
+		
+		self.eventTree = eventTree
+		
+		myCurrentChunk = self.eventTree.myParentApp.myCurrentChunk
+		print('   myCurrentChunk:', myCurrentChunk)
+		if myCurrentChunk is not None:
+			self.chunkFrameOffset = myCurrentChunk['startFrame']
+			self.numFrames = myCurrentChunk['stopFrame'] - myCurrentChunk['startFrame'] + 1
+		else:
+			self.chunkFrameOffset = 0
+			self.numFrames = self.eventTree.myParentApp.vs.getParam('numFrames')
+
+		events = self.eventTree.treeview.get_children()
+
 		t = 0
 		b = t + self.rowHeight
 		canvas_height = len(events) * self.rowHeight
 
 		self.eventRectDict = {}
 		
-		for idx, event in enumerate(events):
-			print(event)
-			l = event['startFrame'] * self.width / self.numFrames
-			r = event['stopFrame'] * self.width / self.numFrames
-			currentTag = 'e' + str(idx)
+		# frame slider
+		top = 0
+		bottom = b
+		frameSliderWidth = 5
+		if self.frameSliderLeft is not None:
+			left = self.frameSliderLeft
+			right = self.frameSliderLeft
+		else:
+			left = frameSliderWidth
+			right = frameSliderWidth
+		self.myFrameSlider = self.create_line(left, top, right, bottom, fill="gold", width=frameSliderWidth, tags='frameSlider')
+		self.tag_bind(self.myFrameSlider, "<Button-1>", lambda x: self.frameSlider_Callback)
 
+		for idx, event in enumerate(events):
+			eventDict = eventTree.treeview.set(event)
+			
+			frameStart0 = int(eventDict['frameStart']) #- self.chunkFrameOffset
+			frameStart = int(eventDict['frameStart']) - self.chunkFrameOffset
+			if eventDict['frameStop']:
+				frameStop0 = int(eventDict['frameStop']) #- self.chunkFrameOffset
+				frameStop = int(eventDict['frameStop']) - self.chunkFrameOffset
+			else:
+				frameStop0 = None
+				frameStop = None
+				
+			l = frameStart * self.width / self.numFrames
+			if frameStop is not None:
+				r = frameStop * self.width / self.numFrames
+			else:
+				r = l
+
+			genericDict = {
+				'idx': idx,
+				'typeNum': eventDict['typeNum'],
+				'frameStart': frameStart0,
+				'frameStop': frameStop0,
+				'eventListIdx': int(eventDict['index']),
+				'l': l,
+				't': t,
+				'r': r,
+				'b': b
+			}
+			
+			# event rectangle
+			currentTag = 'e' + str(idx)
 			id = self.create_rectangle(l, t, r, b, fill="gray", width=0, tags=currentTag)
-			print('id:', id)
-			self.myEventRectList.append(id)
-			self.eventRectDict[id] = idx
-			
-			# lambda c=column: self.sort_column(c, False)
-			#self.tag_bind(currentTag, "<Button-1>", self.onObjectClick)
-			#self.tag_bind(tmp, "<Button-1>", lambda currentTag: self.onObjectClick2(currentTag))
 			self.tag_bind(id, "<Button-1>", self.onObjectClick)
+			self.myEventRectList.append(id)
+			self.eventRectDict[id] = genericDict
 			
+			# event number
+			if myCurrentChunk is not None:
+				textTop = t + ( (b-t) / 2 )
+				textLeft = l + ( (r-l) / 2 )
+				id = self.create_text(textLeft, textTop, anchor="w", text=genericDict['typeNum'])
+				self.tag_bind(id, "<Button-1>", self.onObjectClick)
+				self.myEventRectList.append(id)
+				self.eventRectDict[id] = genericDict
+			
+			# vertical line at start of event
+			id = self.create_line(l, t, l, b, fill="green", width=2)
+			self.tag_bind(id, "<Button-1>", self.onObjectClick)
+			self.myEventRectList.append(id)
+			self.eventRectDict[id] = genericDict
+
+
 			# vertical line at end of event
-			self.create_line(r, t, r, b, fill="red", width=2)
+			if frameStop is not None:
+				id = self.create_line(r, t, r, b, fill="red", width=2)
+				self.tag_bind(id, "<Button-1>", self.onObjectClick)
+				self.myEventRectList.append(id)
+				self.eventRectDict[id] = genericDict
 
 			# horizontal line below
 			left = 1
 			right = self.width
-			self.create_line(left, b, right, b, fill="gray", width=1)
+			id = self.create_line(left, b, right, b, fill="gray", width=1)
+			#self.tag_bind(id, "<Button-1>", self.onObjectClick)
+			#self.myEventRectList.append(id)
+			#self.eventRectDict[id] = genericDict
 
 			t += self.rowHeight
 			b += self.rowHeight
 		
-		# frame slider
-		self.myFrameSlider = self.create_line(0, t, 0, b, fill="green", width=5, tags='frameSlider')
-		self.tag_bind(self.myFrameSlider, "<Button-1>", lambda x: self.onObjectClick2('xxx'))
+		# gold selection
+		"""
+		self.selectedEventRectID = self.create_rectangle(0, 0, 0, 0, fill="gold", width=0, tags='eventSelection')
+		self.tag_bind(self.selectedEventRectID, "<Button-1>", self.onObjectClick)
+		self.myEventRectList.append(self.selectedEventRectID)
+		self.eventRectDict[self.selectedEventRectID] = genericDict
+		"""
 
 		self.addtag_all("all")
+			
 		
-	def onObjectClick2(self, idx):
-		print('onObjectClick2() idx:', idx)
+	def setFrame(self, theFrame):
+		theFrame -= self.chunkFrameOffset
+		left = int(theFrame) * self.width / self.numFrames
+		#print('=== bEventCanvas.setFrame() left:', left, 'self.chunkFrameOffset:', self.chunkFrameOffset)
+
+		self.frameSliderLeft = left
+		
+		top = 0
+		bottom = top + 200
+		self.coords('frameSlider', left, top, left, bottom)
+		
 	
-	def onObjectClick(self, event):                  
-		print('Got object click', event.x, event.y)
+	def frameSlider_Callback(self):
+		print('=== bEventCanvas.frameSlider_Callback()')
+	
+	def onObjectClick(self, event):
 		id = event.widget.find_closest(event.x, event.y)
-		print(id, self.type(id))
+		print('=== bEventCanvas.onObjectClick()', event.x, event.y, 'id:', id)
 	
+		if len(id) < 1:
+			return 0
+		
 		id = id[0]
 		print(self.eventRectDict[id])
 		
-def main():
-
-	
-	root = tkinter.Tk()
-	root.columnconfigure(0, weight=1)
-	root.rowconfigure(0, weight=1)
-
-	myFrame = tkinter.Frame(root)
-	myFrame.grid(row=0, column=0, sticky="nsew")
-	myFrame.columnconfigure(0, weight=1)
-	myFrame.rowconfigure(0, weight=1)
-	
-	#myCanvas = bEventCanvas(myFrame,bg="gray", highlightthickness=0)
-	myCanvas = bEventCanvas(myFrame,highlightthickness=0)
-	myCanvas.grid(row=0, column=0, sticky="nsew")
-
-	# add some widgets to the canvas
-	"""
-	myCanvas.create_line(0, 0, 200, 100)
-	myCanvas.create_line(0, 100, 200, 0, fill="red", dash=(4, 4))
-	myCanvas.create_rectangle(50, 25, 150, 75, fill="blue")
-	"""
-
-	myCanvas.populateVideoFile(videoFile)
-	
-	# tag all of the drawn widgets
-	#myCanvas.addtag_all("all")
-	
-	root.mainloop()
-
+		# make a rectangle selection
+		"""
+		if self.selectedEventRectID is not None:
+			self.delete(self.selectedEventRectID)
+		"""
+		l = self.eventRectDict[id]['l']
+		t = self.eventRectDict[id]['t']
+		r = self.eventRectDict[id]['r']
+		b = self.eventRectDict[id]['b']
+		self.selectedEventRectID = self.create_rectangle(l, t, r, b, fill="gold", width=0, tags='eventSelection')
+		"""
+		print('ltrb:', l, t, r, b)
+		self.coords(self.selectedEventRectID, l, t, l, b)
+		"""
+		
+		newFrame = self.eventRectDict[id]['frameStart']
+		
+		#self.eventTree.myParentApp.setFrame(newFrame)
+		eventListIdx = self.eventRectDict[id]['eventListIdx']
+		self.eventTree._selectTreeViewRow('index', eventListIdx)
+		
 if __name__ == "__main__":
-	main()
+	pass

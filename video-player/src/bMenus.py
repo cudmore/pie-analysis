@@ -32,8 +32,6 @@ class bMenus:
 		filemenu = tkinter.Menu(menubar, tearoff=0)
 		filemenu.add_command(label="Open Folder ...", command=self.open_folder)
 		filemenu.add_separator()
-		filemenu.add_command(label="Generate Chunks ...", command=self.generateChunks)
-		filemenu.add_separator()
 		#filemenu.add_command(label="Open Random Chunks ...", command=self.open_random)
 		#filemenu.add_separator()
 		filemenu.add_command(label="Save Options", command=self.app.saveOptions)
@@ -41,6 +39,12 @@ class bMenus:
 		#filemenu.add_command(label="Quit", command=self.root.quit)
 		filemenu.add_command(label="Quit", command=self.app.onClose) #, accelerator="Command-P")
 
+		chunkmenu = tkinter.Menu(menubar, tearoff=0)
+		chunkmenu.add_command(label="Limit Video Controls", command=self.limitvideocontrols)
+		chunkmenu.add_command(label="Limit Interface", command=self.limitInterface)
+		chunkmenu.add_separator()
+		chunkmenu.add_command(label="Generate Chunks ...", command=self.generateChunks)
+		
 		windowmenu = tkinter.Menu(menubar, tearoff=0)
 		windowmenu.add_command(label="Toggle Video Files", command=self.togglevideofiles)
 		windowmenu.add_command(label="Toggle Events", command=self.toggleevents)
@@ -49,6 +53,7 @@ class bMenus:
 		windowmenu.add_command(label="Toggle Random Chunks", command=self.togglerandomchunks)
 		
 		menubar.add_cascade(menu=filemenu, label='File')
+		menubar.add_cascade(menu=chunkmenu, label='Chunks')
 		menubar.add_cascade(menu=windowmenu, label='Window')
 
 		# display the menu
@@ -72,6 +77,12 @@ class bMenus:
 	def generateChunks(self):
 		print('not implemented')
 	
+	def limitvideocontrols(Self):
+		pass
+		
+	def limitInterface(Self):
+		pass
+		
 	"""
 	def open_random(self):
 		print("open a random chunks file")

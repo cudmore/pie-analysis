@@ -280,6 +280,11 @@ class bEventTree(bTree):
 
 		self.sort_column('frameStart', False)
 		
+	def sort_column(self, col, reverse):
+		super(bEventTree, self).sort_column(col, reverse=reverse)
+		if self.myParentApp.myEventCanvas is not None:
+			self.myParentApp.myEventCanvas.refreshWithEventTree(self)
+		
 	def key(self, event):
 		print('\n=== bEventTree.key() event.char: "' +  event.char + '"')
 		theKey = event.char
@@ -356,6 +361,9 @@ class bEventTree(bTree):
 		
 		item = self.treeview.focus()
 		self.flagOverlap(item)
+
+		if self.myParentApp.myEventCanvas is not None:
+			self.myParentApp.myEventCanvas.refreshWithEventTree(self)
 		
 	def deleteEvent(self):
 		print('=== bEventTree.deleteEvent()')
@@ -465,6 +473,11 @@ class bEventTree(bTree):
 			#self.flagOverlap(item)
 		if col in ['frameStop']:
 			self.flagOverlap(item)
+		
+		if col in ['frameStart', 'frameStop']:
+			if self.myParentApp.myEventCanvas is not None:
+				self.myParentApp.myEventCanvas.refreshWithEventTree(self)
+
 		"""
 			if index>0:
 				prevIndex = index - 1
