@@ -32,20 +32,20 @@ class bChunkView:
 		# previous chunk
 		self.previousChunkButton = ttk.Button(random_chunks_frame, width=4, text="<Prev", command=self.chunk_previous)
 		self.previousChunkButton.grid(row=0, column=2, sticky="w")
-		self.previousChunkButton.bind("<Key>", self.ignore)
+		self.previousChunkButton.bind("<Key>", self.keyPress)
 
 		self.startOfChunkButton = ttk.Button(random_chunks_frame, width=1, text="|<", command=self.chunk_start)
 		self.startOfChunkButton.grid(row=0, column=3, sticky="w")
-		self.startOfChunkButton.bind("<Key>", self.ignore)
+		self.startOfChunkButton.bind("<Key>", self.keyPress)
 
 		# next chunk
 		self.nextChunkButton = ttk.Button(random_chunks_frame, width=4, text="Next>", command=self.chunk_next)
 		self.nextChunkButton.grid(row=0, column=4, sticky="w")
-		self.nextChunkButton.bind("<Key>", self.ignore)
+		self.nextChunkButton.bind("<Key>", self.keyPress)
 		
 		self.gotoChunkButton = ttk.Button(random_chunks_frame, width=4, text="Go To", command=self.chunk_goto2)
 		self.gotoChunkButton.grid(row=0, column=5, sticky="w")
-		self.gotoChunkButton.bind("<Key>", self.ignore)
+		self.gotoChunkButton.bind("<Key>", self.keyPress)
 
 		# did not work because all key strokes are being grabbed to make events
 		"""
@@ -59,15 +59,17 @@ class bChunkView:
 														command=self.checkbox_callback)
 		self.hijackControlsCheckbox.state(['!alternate'])
 		self.hijackControlsCheckbox.state(['!selected'])
-		self.hijackControlsCheckbox.grid(row=1, column=0, columnspan=2, sticky="w")
-		self.hijackControlsCheckbox.bind("<Key>", self.ignore)
+		#self.hijackControlsCheckbox.grid(row=1, column=0, columnspan=2, sticky="w")
+		self.hijackControlsCheckbox.grid(row=0, column=6, sticky="w")
+		self.hijackControlsCheckbox.bind("<Key>", self.keyPress)
 		
 		self.limitInterfaceCheckbox = ttk.Checkbutton(random_chunks_frame, text='Limit Interface', 
 														command=self.checkbox_callback2)
 		self.limitInterfaceCheckbox.state(['!alternate'])
 		self.limitInterfaceCheckbox.state(['!selected'])
-		self.limitInterfaceCheckbox.grid(row=1, column=2, columnspan=4, sticky="w") # +1 col because hijackControlsCheckbox has columnspan=2
-		self.limitInterfaceCheckbox.bind("<Key>", self.ignore)
+		#self.limitInterfaceCheckbox.grid(row=1, column=2, columnspan=4, sticky="w") # +1 col because hijackControlsCheckbox has columnspan=2
+		self.limitInterfaceCheckbox.grid(row=0, column=7, sticky="w") # 
+		self.limitInterfaceCheckbox.bind("<Key>", self.keyPress)
 		
 	"""
 	def _gotoChunkEntry(self, event):
@@ -76,12 +78,13 @@ class bChunkView:
 		return 'break'
 	"""
 		
-	def ignore(self, event):
+	def keyPress(self, event):
 		"""
 		This function will take all key-presses (except \r) and pass to main app.
 		return "break" is critical to stop propogation of event
 		"""
-		#print('bChunkView.ignore() event.char:', event.char)
+		#print('bChunkView.keyPress() event.char:', event.char)
+			
 		if event.char == '\r':
 			pass
 		else:

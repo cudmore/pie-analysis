@@ -374,10 +374,11 @@ class bEventTree(bTree):
 			return 0
 			
 		# ask user
-		result = messagebox.askyesno("Delete Event","Do you want to delete event " + str(index) + "?", icon='warning')
-		if not result:
-			print('   deleteEvent cancelled by user')
-			return 0
+		if self.myParentApp.configDict['warnOnEventDelete']:
+			result = messagebox.askyesno("Delete Event","Do you want to delete event " + str(index) + "?", icon='warning')
+			if not result:
+				print('   deleteEvent cancelled by user')
+				return 0
 			
 		print('   deleteEvent() is deleting event index:', index)
 		

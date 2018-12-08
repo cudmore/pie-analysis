@@ -12,12 +12,12 @@ class bEventCanvas(tkinter.Canvas):
 		
 		self.numFrames = 54000
 		
-		tkinter.Canvas.__init__(self,parent,width=width, height=height, **kwargs)
+		tkinter.Canvas.__init__(self,parent,width=width, height=height, background='snow4', **kwargs)
 		#self.bind("<Configure>", self.on_resize)
 		self.height = self.winfo_reqheight()
 		self.width = self.winfo_reqwidth()
 
-		self.rowHeight = 10
+		self.rowHeight = 18
 
 		self.frameSliderLeft = None
 		self.myEventRectList = []
@@ -37,7 +37,9 @@ class bEventCanvas(tkinter.Canvas):
 		self.height = height
 		
 		# resize the canvas 
+		# the width is controlle by grid, if set here, canvas will grow like an animation
 		#self.config(width=self.width, height=self.height)
+		self.config(height=self.height)
 		
 		# rescale all the objects tagged with the "all" tag
 		self.scale("all", 0, 0, wscale, hscale)
@@ -45,6 +47,7 @@ class bEventCanvas(tkinter.Canvas):
 	def refreshWithEventTree(self, eventTree):
 		print('=== bEventCanvas.refreshWithEventTree()')
 
+		# delete all existing canvas objects
 		self.delete("all")
 		
 		self.eventTree = eventTree
@@ -60,6 +63,9 @@ class bEventCanvas(tkinter.Canvas):
 
 		events = self.eventTree.treeview.get_children()
 
+		if len(events) > 0:
+			self.rowHeight = int(self.height / len(events))
+		
 		t = 0
 		b = t + self.rowHeight
 		canvas_height = len(events) * self.rowHeight
@@ -69,7 +75,7 @@ class bEventCanvas(tkinter.Canvas):
 		# frame slider
 		top = 0
 		bottom = b
-		frameSliderWidth = 5
+		frameSliderWidth = 3
 		if self.frameSliderLeft is not None:
 			left = self.frameSliderLeft
 			right = self.frameSliderLeft
@@ -118,26 +124,27 @@ class bEventCanvas(tkinter.Canvas):
 			
 			# event number
 			if myCurrentChunk is not None:
+				textTag = 'textTag' + str(idx)
 				textTop = t + ( (b-t) / 2 )
-				textLeft = l + ( (r-l) / 2 )
-				id = self.create_text(textLeft, textTop, anchor="w", text=genericDict['typeNum'])
+				textLeft = l + ( (r-l) / 2 ) - 5 # -6 for width of text
+				id = self.create_text(textLeft, textTop, anchor="w", text=genericDict['typeNum'], tags=textTag)
 				self.tag_bind(id, "<Button-1>", self.onObjectClick)
 				self.myEventRectList.append(id)
 				self.eventRectDict[id] = genericDict
 			
-			# vertical line at start of event
-			id = self.create_line(l, t, l, b, fill="green", width=2)
-			self.tag_bind(id, "<Button-1>", self.onObjectClick)
-			self.myEventRectList.append(id)
-			self.eventRectDict[id] = genericDict
-
-
 			# vertical line at end of event
 			if frameStop is not None:
 				id = self.create_line(r, t, r, b, fill="red", width=2)
 				self.tag_bind(id, "<Button-1>", self.onObjectClick)
 				self.myEventRectList.append(id)
 				self.eventRectDict[id] = genericDict
+
+			# vertical line at start of event
+			id = self.create_line(l, t, l, b, fill="green", width=2)
+			self.tag_bind(id, "<Button-1>", self.onObjectClick)
+			self.myEventRectList.append(id)
+			self.eventRectDict[id] = genericDict
+
 
 			# horizontal line below
 			left = 1
@@ -160,22 +167,6 @@ class bEventCanvas(tkinter.Canvas):
 
 		self.addtag_all("all")
 			
-		
-	def setFrame(self, theFrame):
-		theFrame -= self.chunkFrameOffset
-		left = int(theFrame) * self.width / self.numFrames
-		#print('=== bEventCanvas.setFrame() left:', left, 'self.chunkFrameOffset:', self.chunkFrameOffset)
-
-		self.frameSliderLeft = left
-		
-		top = 0
-		bottom = top + 200
-		self.coords('frameSlider', left, top, left, bottom)
-		
-	
-	def frameSlider_Callback(self):
-		print('=== bEventCanvas.frameSlider_Callback()')
-	
 	def onObjectClick(self, event):
 		id = event.widget.find_closest(event.x, event.y)
 		print('=== bEventCanvas.onObjectClick()', event.x, event.y, 'id:', id)
@@ -185,27 +176,61 @@ class bEventCanvas(tkinter.Canvas):
 		
 		id = id[0]
 		print(self.eventRectDict[id])
+		eventIndex= self.eventRectDict[id]['idx']
 		
 		# make a rectangle selection
-		"""
 		if self.selectedEventRectID is not None:
 			self.delete(self.selectedEventRectID)
+
+		eventRectangle = 'e' + str(eventIndex)
+		eventCoords = self.coords(eventRectangle)
+		l = eventCoords[0]
+		t = eventCoords[1]
+		r = eventCoords[2]
+		b = eventCoords[3]
+		
+		# can not use these as they are not scaled when widget resizes
 		"""
 		l = self.eventRectDict[id]['l']
 		t = self.eventRectDict[id]['t']
 		r = self.eventRectDict[id]['r']
 		b = self.eventRectDict[id]['b']
-		self.selectedEventRectID = self.create_rectangle(l, t, r, b, fill="gold", width=0, tags='eventSelection')
+		"""
+		self.selectedEventRectID = self.create_rectangle(l, t, r, b, fill="yellow", width=0, tags='eventSelection')
 		"""
 		print('ltrb:', l, t, r, b)
 		self.coords(self.selectedEventRectID, l, t, l, b)
 		"""
 		
+		# raise text tag of selected event
+		textTag = 'textTag' + str(eventIndex)
+		self.tag_raise(textTag)
+		
+		# go to first frame of event
 		newFrame = self.eventRectDict[id]['frameStart']
 		
 		#self.eventTree.myParentApp.setFrame(newFrame)
 		eventListIdx = self.eventRectDict[id]['eventListIdx']
 		self.eventTree._selectTreeViewRow('index', eventListIdx)
+
+	def setFrame(self, theFrame):
+		theFrame -= self.chunkFrameOffset
+		left = int(theFrame) * self.width / self.numFrames
+		#print('=== bEventCanvas.setFrame() left:', left, 'self.chunkFrameOffset:', self.chunkFrameOffset)
+
+		if left<=0:
+			left = 5
+		
+		self.frameSliderLeft = left
+		
+		top = 0
+		bottom = self.height #top + 200
+		self.coords('frameSlider', left, top, left, bottom)
+		
+	
+	def frameSlider_Callback(self):
+		print('=== bEventCanvas.frameSlider_Callback()')
+	
 		
 if __name__ == "__main__":
 	pass
