@@ -24,6 +24,8 @@ class bEventCanvas(tkinter.Canvas):
 		self.chunkFrameOffset = 0
 		self.selectedEventRectID = None
 		
+		self.chunkList = None
+		
 	def on_resize2(self, yPos, width, height):
 		# determine the ratio of old width/height to new width/height
 		wscale = float(width)/self.width
@@ -42,6 +44,7 @@ class bEventCanvas(tkinter.Canvas):
 		
 		#self.config(y=yPos, width=self.width, height=self.height)
 		self.place(y=yPos, width=self.width, height=self.height)
+		#self.place(width=self.width, height=self.height)
 		
 		# rescale all the objects tagged with the "all" tag
 		self.scale("all", 0, 0, wscale, hscale)
@@ -57,12 +60,22 @@ class bEventCanvas(tkinter.Canvas):
 		myCurrentChunk = self.eventTree.myParentApp.myCurrentChunk
 		print('   myCurrentChunk:', myCurrentChunk)
 		if myCurrentChunk is not None:
+			# show one chunk
 			self.chunkFrameOffset = myCurrentChunk['startFrame']
 			self.numFrames = myCurrentChunk['stopFrame'] - myCurrentChunk['startFrame'] + 1
 		else:
+			# show entire file
 			self.chunkFrameOffset = 0
 			self.numFrames = self.eventTree.myParentApp.vs.getParam('numFrames')
-
+			
+			# build a list of chunk start/stop frame in this file
+			filePath = self.eventTree.myParentApp.vs.getParam('path')
+			self.chunkList = []
+			if self.eventTree.myParentApp.chunkView.chunkData is not None:
+				for chunk in self.eventTree.myParentApp.chunkView.chunkData['chunks']:
+					if chunk['path'] == filePath:
+						self.chunkList.append(chunk)
+					
 		events = self.eventTree.treeview.get_children()
 
 		if len(events) > 0:
@@ -74,6 +87,16 @@ class bEventCanvas(tkinter.Canvas):
 
 		self.eventRectDict = {}
 		
+		# append all chunk in file
+		if myCurrentChunk is None:
+			for idx, chunk in enumerate(self.chunkList):
+				l = chunk['startFrame'] * self.width / self.numFrames
+				t = 0
+				r = chunk['stopFrame'] * self.width / self.numFrames
+				b = self.height
+				currentTag = 'chunk' + str(idx)
+				id = self.create_rectangle(l, t, r, b, fill='darkslategray', width=0, tags=currentTag)
+			
 		# frame slider
 		top = 0
 		bottom = b
@@ -87,6 +110,7 @@ class bEventCanvas(tkinter.Canvas):
 		self.myFrameSlider = self.create_line(left, top, right, bottom, fill="gold", width=frameSliderWidth, tags='frameSlider')
 		self.tag_bind(self.myFrameSlider, "<Button-1>", lambda x: self.frameSlider_Callback)
 
+		# append all events
 		for idx, event in enumerate(events):
 			eventDict = eventTree.treeview.set(event)
 			
@@ -119,7 +143,11 @@ class bEventCanvas(tkinter.Canvas):
 			
 			# event rectangle
 			currentTag = 'e' + str(idx)
-			id = self.create_rectangle(l, t, r, b, fill="gray", width=0, tags=currentTag)
+			if r < l:
+				eventColor = 'indianred1'
+			else:
+				eventColor='gray'
+			id = self.create_rectangle(l, t, r, b, fill=eventColor, width=0, tags=currentTag)
 			self.tag_bind(id, "<Button-1>", self.onObjectClick)
 			self.myEventRectList.append(id)
 			self.eventRectDict[id] = genericDict

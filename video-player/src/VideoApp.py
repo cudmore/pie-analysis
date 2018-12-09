@@ -210,10 +210,15 @@ class VideoApp:
 	def saveOptions(self):
 		print('saveOptions()')
 
+		"""
 		if self.vPane.sashpos(0) > 0:
 			self.configDict['videoFileSash'] = self.vPane.sashpos(0)
 		if self.hPane.sashpos(0) > 0:
 			self.configDict['eventSash'] = self.hPane.sashpos(0)
+		"""
+		self.configDict['videoFileSash'] = self.vPane.sashpos(0)
+		self.configDict['eventSash'] = self.hPane.sashpos(0)
+		
 		geometryStr = str(self.root.winfo_width()) + "x" + str(self.root.winfo_height())
 		self.configDict['appWindowGeometry'] = geometryStr
 		
@@ -291,6 +296,11 @@ class VideoApp:
 		self.videoFileTree = bTree.bVideoFileTree(upper_frame, self, videoFileList='')
 		self.videoFileTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		self.videoFileTree.populateVideoFiles(self.videoList, doInit=True)
+		if self.configDict['showVideoFiles']:
+			pass
+			#self.videoFileTree.grid()
+		else:
+			self.videoFileTree.grid_remove()
 
 		#
 		lower_frame = ttk.Frame(self.vPane, borderwidth=myBorderWidth, relief="sunken")
@@ -304,6 +314,9 @@ class VideoApp:
 		# checking to see if panedWindow is causing crash -->> no it does not
 		#self.hPane = ttk.Frame(lower_frame)
 		self.hPane.grid(row=0, column=0, sticky="nsew")
+
+		#self.hPane.state(['disabled'])
+
 		#hPane.bind("<Configure>", self.set_aspect2) # causing crash?
 		#
 		# PUT BACK IN - CRASHING?
@@ -450,8 +463,19 @@ class VideoApp:
 		video_ff_button = ttk.Button(self.video_control_frame, width=1, text=">>", command=lambda: self.doCommand('fast-forward'))
 		video_ff_button.grid(row=0, column=4, sticky="w")
 		video_ff_button.bind("<Key>", self._ignore)
-	
-		sliderPadding = 10 # shared by video_frame_slider and myEventCanvas
+
+		#
+		self.currentSecondsLabel = ttk.Label(self.video_control_frame, width=9, anchor="w", text='Sec:')
+		self.currentSecondsLabel.grid(row=0, column=5, sticky="w")
+		
+		self.numSecondsLabel = ttk.Label(self.video_control_frame, width=8, anchor="w", text='of ')
+		self.numSecondsLabel.grid(row=0, column=6, sticky="w")
+
+		self.currentFramePerScondLabel = ttk.Label(self.video_control_frame, width=20, anchor="w", text='fps:')
+		self.currentFramePerScondLabel.grid(row=0, column=7, sticky="w")
+		#
+		
+		sliderPadding = 50 # shared by video_frame_slider and myEventCanvas
 
 		#
 		# frame slider
@@ -484,7 +508,7 @@ class VideoApp:
 		self.myEventCanvas = bEventCanvas.bEventCanvas(self.lower_right_frame)
 		# was this
 		#self.myEventCanvas.grid(row=2, column=0, columnspan=5, sticky="nsew", padx=sliderPadding)
-		self.myEventCanvas.grid(row=eventCanvasRow, column=0, sticky="sew", padx=sliderPadding)
+		self.myEventCanvas.grid(row=eventCanvasRow, column=0, sticky="ew", padx=sliderPadding)
 		
 		# add to horizontal pane
 		self.hPane.add(self.lower_right_frame) #, stretch="always")
@@ -866,6 +890,9 @@ class VideoApp:
 	
 		#print('   self.lower_right_frame.coords():', self.lower_right_frame.coords())
 		
+		if self.vs is None:
+			return 0
+		
 		aspectRatio = self.vs.getParam('aspectRatio')
 		if self.configDict['showRandomChunks']:
 			chunksHeight = self.random_chunks_frame.winfo_height()
@@ -882,7 +909,7 @@ class VideoApp:
 		height = event.height
 		
 		myBorder = 20
-		newWidth = width - myBorder#- eventCanvasHeight
+		newWidth = width - myBorder #- eventCanvasHeight
 		newHeight = int(newWidth * aspectRatio)
 
 		if newHeight > height:
@@ -899,19 +926,26 @@ class VideoApp:
 		yPos = newHeight #+ chunksHeight + feedbackHeight #+ buttonHeight
 		self.video_control_frame.place(y=yPos, width=newWidth)
 
+		"""
+		yPos += feedbackHeight
+		self.video_feedback_frame.place(y=yPos)
+		"""
+		
 		yPos += buttonHeight
 		self.video_frame_slider.place(y=yPos, width=newWidth)
 
 		yPos += buttonHeight
-		newCanvasHeight = height - newHeight - buttonHeight - buttonHeight - chunksHeight
+		newCanvasHeight = height - newHeight - buttonHeight - buttonHeight - feedbackHeight
+		#newCanvasHeight -= 100
 		print('   newCanvasHeight:', newCanvasHeight)
+		#self.myEventCanvas.on_resize2(yPos, newWidth, newCanvasHeight)		
 		self.myEventCanvas.on_resize2(yPos, newWidth, newCanvasHeight)		
-
-		self.video_feedback_frame.place(y=yPos)
 		
-		yPos += newCanvasHeight
+		"""
+		yPos += newCanvasHeight + buttonHeight
+		yPos = 100
 		self.random_chunks_frame.place(y=yPos)
-		
+		"""
 	####################################################################################
 	def videoLoop(self):
 		
@@ -988,7 +1022,7 @@ class VideoApp:
 					tmpWidth = int(tmpHeight / aspectRatio)
 					#print('   swapping width/height NOW tmpWidth:', tmpWidth, 'tmpHeight:', tmpHeight)
 
-				# remaining after setting height with aspect, use to set height of myEventCanvas
+				# remaining after setting height with aspect, use to set height of g
 				heightRemaining = contentFrameHeight - tmpHeight
 				
 				#print('contentFrameWidth:', contentFrameWidth, 'height:', height, 'heightRemaining:', heightRemaining)

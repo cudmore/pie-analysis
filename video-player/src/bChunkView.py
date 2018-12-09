@@ -63,6 +63,7 @@ class bChunkView:
 		self.hijackControlsCheckbox.grid(row=0, column=6, sticky="w")
 		self.hijackControlsCheckbox.bind("<Key>", self.keyPress)
 		
+		"""
 		self.limitInterfaceCheckbox = ttk.Checkbutton(random_chunks_frame, text='Limit Interface', 
 														command=self.checkbox_callback2)
 		self.limitInterfaceCheckbox.state(['!alternate'])
@@ -70,6 +71,7 @@ class bChunkView:
 		#self.limitInterfaceCheckbox.grid(row=1, column=2, columnspan=4, sticky="w") # +1 col because hijackControlsCheckbox has columnspan=2
 		self.limitInterfaceCheckbox.grid(row=0, column=7, sticky="w") # 
 		self.limitInterfaceCheckbox.bind("<Key>", self.keyPress)
+		"""
 		
 	"""
 	def _gotoChunkEntry(self, event):
@@ -95,6 +97,7 @@ class bChunkView:
 		#print('self.hijackControlsCheckbox.state:', self.hijackControlsCheckbox.state)
 		self.app.hijackInterface(self.isHijacking())
 
+	"""
 	def checkbox_callback2(self):
 		if self.limitInterfaceCheckbox.instate(['selected']):
 			print('hiding video list and feedback')
@@ -102,6 +105,7 @@ class bChunkView:
 		else:
 			print('showing video list and feedback')
 			self.app.limitInterface(False)
+	"""
 		
 
 	def isHijacking(self):
