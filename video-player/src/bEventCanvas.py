@@ -24,7 +24,7 @@ class bEventCanvas(tkinter.Canvas):
 		self.chunkFrameOffset = 0
 		self.selectedEventRectID = None
 		
-	def on_resize2(self, width, height):
+	def on_resize2(self, yPos, width, height):
 		# determine the ratio of old width/height to new width/height
 		wscale = float(width)/self.width
 		hscale = float(height)/self.height
@@ -39,7 +39,9 @@ class bEventCanvas(tkinter.Canvas):
 		# resize the canvas 
 		# the width is controlle by grid, if set here, canvas will grow like an animation
 		#self.config(width=self.width, height=self.height)
-		self.config(height=self.height)
+		
+		#self.config(y=yPos, width=self.width, height=self.height)
+		self.place(y=yPos, width=self.width, height=self.height)
 		
 		# rescale all the objects tagged with the "all" tag
 		self.scale("all", 0, 0, wscale, hscale)
