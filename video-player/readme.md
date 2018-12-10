@@ -188,16 +188,14 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 ## Known bugs
 
  - [fixed] Has some problems when it reaches end of file.
- - [fixed] Resizing window will sometimes cause a crash.
+ - [bug is back!!!] Resizing window will sometimes cause a crash.
  - Check that avconv (used by PiE server on Pi) always generates valid mp4 files. See [here](https://trac.ffmpeg.org/ticket/7365). In at least one file, getting errors like 'Invalid NAL unit size' and 'Error splitting the input into NAL'. Maybe save original .h264 on Pi so we can convert later if neccessary.
 
 ## To Do (important)
 
- - Streamline interface for blinding. Make a system where wehen handed to a scorer, they can not activate non-blinded interface (they are locked into blinding). Try and add a password to switch between one and the other.
- - [done] Implement second layer of blinding with 'parts' to evenly distribute random chunks through file
+ - Clicking on a chunk (gray bar) should select chunk (in chunk view).
+ - Streamline interface for blinding. Make a system where when handed to a scorer, they can not activate non-blinded interface (they are locked into blinding). Try and add a password to switch between one and the other.
  - Update numEvents in video list as we add/delete events
- - Select and go to next event when event is deleted (if next event exists)
- - Add option to turn off delete event warning
  - Make menu interface to create random chunks file from folder. So we can do it in stand-alone app
  - Add dIndex to events so we can always show events in list with 'index' column as 1,2,3,...
  - When editing chunks, do not allow video list selection
@@ -210,15 +208,18 @@ The options are saved in a json file 'options.json' and can be manually edited. 
  - Implement options dialog to set small/big keyboard steps (Seconds) 
  - Finish 'about dialog'
  - Make fps a spin box to easily increase/descrease.
- - Highlight most recent event in list as video is played. Need to sort by startFrame.
+ - [solved] Highlight most recent event in list as video is played. Need to sort by startFrame.
+ - [solved] Add option to warn when event frame start/stop is out of order, e.g. frameStart>frameStop.
  - Add note to video file by putting it in event list header. Finish 'right-click' popup menu in video list.
- - Add option to warn when event frame start/stop is out of order, e.g. frameStart>frameStop.
  - [bug] Make sure toggle of video file and event list do not trash interface on next run. Need to add code to HIDE video and event list, currently setting sashpos==0 (remove this).
  - [bug] When increasing/decreasing fps with +/-, sometimes can not get back to orignal fps. Fix this. This is now fixed but minimum fps is no longer 1 fps.
- - [big idea] Make a visual bar for each video file showing: duration (black) overlaid .with position of chunks (gray), and position of events (bright colors). 
+ - [big idea - done] Make a visual bar for each video file showing: duration (black) overlaid .with position of chunks (gray), and position of events (bright colors). 
  
 ## To Do (done)
 
+ - [done] In event tree, select and go to next event when event is deleted (if next event exists)
+ - [done] Add option to turn off delete event warning
+ - [done] Implement second layer of blinding with 'parts' to evenly distribute random chunks through file
  - [done] Finish sorting event columns when clicked. Need to insert str(), int(), float() to do this.
  - [done] Just always sort events by frameStart.
  - [done] Implement 'delete event'. Add dialog to ask if ok.
