@@ -51,6 +51,7 @@ class VideoApp:
 		self.currentWidth = 640
 		self.currentHeight = 480
 		 
+		self.inConfigure = False
 		self.switchingVideo = False
 		self.switchingFrame = False
 		
@@ -784,7 +785,8 @@ class VideoApp:
 				self.setFrameWhenPaused = theFrame
 				#print('   self.setFrameWhenPaused:', self.setFrameWhenPaused)
 			if withDelay:
-				time.sleep(0.1)
+				print('VideoApp.setFrame() is pausing')
+				#time.sleep(0.01)
 				
 			self.myEventCanvas.setFrame(theFrame)
 		else:
@@ -893,6 +895,8 @@ class VideoApp:
 		if self.vs is None:
 			return 0
 		
+		self.inConfigure = True
+		
 		aspectRatio = self.vs.getParam('aspectRatio')
 		if self.configDict['showRandomChunks']:
 			chunksHeight = self.random_chunks_frame.winfo_height()
@@ -946,9 +950,13 @@ class VideoApp:
 		yPos = 100
 		self.random_chunks_frame.place(y=yPos)
 		"""
+
+		self.inConfigure = False
 	####################################################################################
 	def videoLoop(self):
 		
+		if self.inConfigure:
+			pass
 		if self.switchingVideo:
 			pass
 		if self.vs is not None and self.vs.gotoFrame is not None:

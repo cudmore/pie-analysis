@@ -140,10 +140,11 @@ Here is an example of the results of the blinding algorithm for 6 video files, 3
 
 ### Event Analysis
 
+ - For each file, sum duration (sec) of each event type (1..9)
  - flag events that have start/stop frame out of order
  - flag events that overlap with previous event (if previous has duration)
  - flag events outside of a chunk
- 
+
 ### Blinding analysis
 
  - Make plot of chunks with each file in a list of files. See [Analysis/chunkAnalysis](https://github.com/cudmore/pie-analysis/blob/master/video-player/analysis/chunkAnalysis.ipynb).
