@@ -419,8 +419,8 @@ class VideoApp:
 		self.content_frame = ttk.Frame(self.lower_right_frame, borderwidth=contentBorderWidth) #
 		self.content_frame.grid(row=contentFrameRow, column=0, sticky="nsew") #, padx=5, pady=5)
 		# 20181207 10:30
-		self.content_frame.grid_rowconfigure(0, weight=1)
-		self.content_frame.grid_columnconfigure(0, weight=1)
+		#self.content_frame.grid_rowconfigure(0, weight=1)
+		#self.content_frame.grid_columnconfigure(0, weight=1)
 
 		self.content_frame.bind("<Configure>", self._configureContentFrame) # causing crash?
 	
@@ -431,7 +431,7 @@ class VideoApp:
 		self.videoLabel = ttk.Label(self.content_frame, text="xxx", font=("Helvetica", 48), compound="center", foreground="green")
 		
 		# ???
-		self.videoLabel.grid(row=0, column=0, sticky="nsew")
+		self.videoLabel.grid(row=0, column=0) #, sticky="nsew")
 		
 		self.videoLabel.configure(image=tmpImage)
 		self.videoLabel.image = tmpImage
@@ -920,12 +920,15 @@ class VideoApp:
 			newHeight = height - myBorder #- eventCanvasHeight
 			newWidth = int(newHeight / aspectRatio)
 		
-		#self.content_frame.place(width=newWidth, height=newHeight)
 
 		self.currentVideoWidth = newWidth
 		self.currentVideoHeight = newHeight
 		
+		print('    newWidth:', newWidth, 'newHeight:', newHeight)
+		# crashes
 		self.videoLabel.place(width=newWidth, height=newHeight)
+		# causes to 'animate' to 0
+		#self.content_frame.place(width=newWidth, height=newHeight)
 		
 		yPos = newHeight #+ chunksHeight + feedbackHeight #+ buttonHeight
 		self.video_control_frame.place(y=yPos, width=newWidth)
