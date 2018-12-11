@@ -534,7 +534,7 @@ class VideoApp:
 		#self.videoLabel.bind("<Configure>", self.mySetAspect)
 		#self.mySetAspect()
 
-		self.lower_right_frame.bind("<Configure>", self._configureContentFrame) # causing crash?
+		#self.lower_right_frame.bind("<Configure>", self._configureContentFrame) # causing crash?
 
 		self.root.bind('<ButtonRelease-1>', self.myButtonUp)
 		self.root.bind('<Button-1>', self.myButtonDown)
@@ -979,7 +979,7 @@ class VideoApp:
 		"""
 		if newCanvasHeight < 50:
 			newCanvasHeight = 50
-			print('   LIMITING newCanvasHeight:', newCanvasHeight)
+			print('    LIMITING newCanvasHeight:', newCanvasHeight)
 		self.myEventCanvas.on_resize2(yPos, newWidth, newCanvasHeight)		
 		
 		# chunks
@@ -987,13 +987,15 @@ class VideoApp:
 		self.random_chunks_frame.place(y=yPos, width=newWidth)
 
 		# turned off in myButtonUp() when button is released
-		#self.inConfigure = False
+		self.inConfigure = False
+		
+		print('    done')
 		
 	####################################################################################
 	def videoLoop(self):
 		
 		myContinue = True
-		if 1 and self.inConfigure:
+		if 0 and self.inConfigure:
 			myContinue = False
 		if self.switchingVideo:
 			pass
@@ -1053,14 +1055,12 @@ class VideoApp:
 						#tmpImage = tmpImage.resize((tmpWidth, tmpHeight), Image.ANTIALIAS)
 						tmpImage = ImageTk.PhotoImage(tmpImage)
 	
-						"""
 						lrWidth = self.lower_right_frame.winfo_width()
 						lrHeight = self.lower_right_frame.winfo_height()
 						if lrWidth != self.lrWidth or lrHeight != lrHeight:
 							self.lrWidth = lrWidth
 							self.lrHeight = lrHeight
 							self._configureContentFrame(width=lrWidth, height=lrHeight)
-						"""
 							
 						# crash may be because image is coming from other thread
 						#tmpImage = np.zeros((480,640,3), np.uint8)
@@ -1072,9 +1072,12 @@ class VideoApp:
 						#self.myCurrentImage = tmpImage
 						#print('=== swapping image')
 						if 1:
+							print('  setting image')
 							self.videoLabel.configure(image=tmpImage)
 							self.videoLabel.image = tmpImage
+							print('  done setting image', time.time())
 						
+					"""
 					#self.myEventCanvas.on_resize2(tmpWidth, heightRemaining - int(1.5*buttonHeight))
 					self.myEventCanvas.setFrame(self.myCurrentFrame)
 
@@ -1095,7 +1098,7 @@ class VideoApp:
 						self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
 					#self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
 					self.currentFramePerScondLabel['text'] ='playback fps:' + str(self.myFramesPerSecond)
-			
+					"""
 				
 		# leave this here -- CRITICAL
 		self.videoLoopID = self.root.after(self.myFrameInterval, self.videoLoop)
