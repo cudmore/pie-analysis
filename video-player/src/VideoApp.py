@@ -43,10 +43,13 @@ class VideoApp:
 		path: path to folder with video files (only works with mp4)
 		"""
 		
+		#self.needsUpdate = False
+		self.lastUpdateSeconds = None
 		self.buttonIsDown = False
 		#self.myCurrentImage = None
 		self.lrWidth = None
 		self.rHeight = None
+		self.videoLoopID = None
 		
 		self.path = path
 		self.vs = None # FileVideoStream
@@ -426,10 +429,6 @@ class VideoApp:
 		# 20181207 10:30
 		#self.content_frame.grid_rowconfigure(0, weight=1)
 		#self.content_frame.grid_columnconfigure(0, weight=1)
-
-		#self.content_frame.bind("<Configure>", self._configureContentFrame) # causing crash?
-		# was this
-	
 	
 		# insert image into content frame
 		tmpImage = np.zeros((480,640,3), np.uint8)
@@ -485,6 +484,10 @@ class VideoApp:
 
 		self.currentFramePerScondLabel = ttk.Label(self.video_control_frame, width=20, anchor="w", text='fps:')
 		self.currentFramePerScondLabel.grid(row=0, column=7, sticky="w")
+
+		self.actualFramesPerSecondLabel = ttk.Label(self.video_control_frame, width=20, anchor="w", text='actual fps:')
+		self.actualFramesPerSecondLabel.grid(row=0, column=8, sticky="w")
+
 		#
 		
 		sliderPadding = 50 # shared by video_frame_slider and myEventCanvas
@@ -534,16 +537,10 @@ class VideoApp:
 		#self.videoLabel.bind("<Configure>", self.mySetAspect)
 		#self.mySetAspect()
 
-		#self.lower_right_frame.bind("<Configure>", self._configureContentFrame) # causing crash?
-
 		self.root.bind('<ButtonRelease-1>', self.myButtonUp)
 		self.root.bind('<Button-1>', self.myButtonDown)
+		self.lower_right_frame.bind('<Configure>', self._configureContentFrame) # causing crash?
 
-	"""
-	def buttonMotionInSlider_callback(self, event):
-		print('buttonMotionInSlider_callback() event:', event)
-	"""
-	
 	def _ignore(self, event):
 		"""
 		This function will take all key-presses (except \r) and pass to main app.
@@ -758,7 +755,7 @@ class VideoApp:
 		# faster, decrease frame interval
 		if theKey in ['+', '=']:
 			newFramesPerSecond = self.myFramesPerSecond + self.configDict['fpsIncrement']
-			if newFramesPerSecond>90:
+			if newFramesPerSecond>120:
 				newFramesPerSecond -= self.configDict['fpsIncrement']
 			self.setFramesPerSecond(newFramesPerSecond)
 			
@@ -859,14 +856,15 @@ class VideoApp:
 		# make sure I cancel using the same widget at end of videoloop()
 		# cancel existing after()
 		
-		print('   shutting down video loop')
-		self.root.after_cancel(self.videoLoopID)
+		if self.videoLoopID is not None:
+			print('   shutting down video loop')
+			self.root.after_cancel(self.videoLoopID)
 		
-		self.myFrameInterval = math.floor(1000 / newFramesPerSecond)
-		self.myFramesPerSecond = round(newFramesPerSecond,2)
-		print('   self.myFrameInterval:', self.myFrameInterval, 'self.myFramesPerSecond:', self.myFramesPerSecond)
-		print('   starting video loop with self.myFrameInterval:', self.myFrameInterval)
-		self.videoLoop()
+			self.myFrameInterval = math.floor(1000 / newFramesPerSecond)
+			self.myFramesPerSecond = round(newFramesPerSecond,2)
+			print('   self.myFrameInterval:', self.myFrameInterval, 'self.myFramesPerSecond:', self.myFramesPerSecond)
+			print('   starting video loop with self.myFrameInterval:', self.myFrameInterval)
+			self.videoLoop()
 		
 	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
 		#print('=== switchvideo() videoPath:', videoPath, 'paused:', paused, 'gotoFrame:', gotoFrame)
@@ -904,27 +902,35 @@ class VideoApp:
 		
 	####################################################################################
 	def myButtonDown(self, event):
-		print('myButtonDown()')
+		print('~~~ myButtonDown()')
 		self.buttonIsDown = True
 		#self.inConfigure = True
+		#return 'break'
+		print('    returning')
 	def myButtonUp(self, event):
 		print('myButtonUp()')
 		self.buttonIsDown = False
 		self.inConfigure = False
 	
 	def _configureContentFrame(self, event=None, width=None, height=None):
-		print('=== _configureContentFrame() event:', event)
-	
+		print('\n=== _configureContentFrame() event:', event)
+		print('                                                                 *************')
+		
 		#print('   self.lower_right_frame.coords():', self.lower_right_frame.coords())
 		
-		if 1 and not self.buttonIsDown:
+		if 0 and not self.buttonIsDown:
 			print('_configureContentFrame() returning - button is not down')
 			return 0
 		
 		if self.vs is None:
 			return 0
 		
+		#self.needsUpdate = True
+
 		self.inConfigure = True
+		
+		#print('_configureContentFrame is doing nothing')
+		#return 0
 		
 		aspectRatio = self.vs.getParam('aspectRatio')
 		if self.configDict['showRandomChunks']:
@@ -945,11 +951,15 @@ class VideoApp:
 		
 		myBorder = 20
 		newWidth = width - myBorder #- eventCanvasHeight
+		if newWidth < 0:
+			newWidth = 1
 		newHeight = int(newWidth * aspectRatio)
 
 		print('    newWidth:', newWidth, 'newHeight:', newHeight)
 		if newHeight > height:
 			newHeight = height - myBorder #- eventCanvasHeight
+			if newHeight < 0:
+				newHeight = 1
 			newWidth = int(newHeight / aspectRatio)
 			print('    swapped w/h newHeight:', newHeight, 'newWidth:', newWidth)
 
@@ -987,13 +997,20 @@ class VideoApp:
 		self.random_chunks_frame.place(y=yPos, width=newWidth)
 
 		# turned off in myButtonUp() when button is released
-		self.inConfigure = False
+		#self.inConfigure = False
+
+		# does not work here
+		#self.root.update_idletasks()
+		
+		#self.root.update_idletasks()
+
 		
 		print('    done')
 		
 	####################################################################################
 	def videoLoop(self):
 		
+		#print('videoLoop()', time.time())
 		myContinue = True
 		if 0 and self.inConfigure:
 			myContinue = False
@@ -1003,7 +1020,7 @@ class VideoApp:
 			if self.vs is not None and self.vs.gotoFrame is not None:
 				pass
 			else:
-				#print('videoLoop()', time.time())
+				#print('inner videoLoop()', time.time())
 				if self.vs is not None and self.vs.paused:
 					self.videoLabel.configure(text="Paused")
 					if (self.pausedAtFrame is None or (self.pausedAtFrame != self.myCurrentFrame) or self.switchedVideo or self.setFrameWhenPaused is not None):
@@ -1047,37 +1064,45 @@ class VideoApp:
 					tmpImage = self.frame
 			
 					# self.currentVideoWidth set in _configureContentFrame
+					#this works, best we can do is 33-35 fps
 					tmpImage = cv2.resize(self.frame, (self.currentVideoWidth, self.currentVideoHeight))
 				
 					if tmpImage is not None:
 						tmpImage = cv2.cvtColor(tmpImage, cv2.COLOR_BGR2RGB)
 						tmpImage = Image.fromarray(tmpImage)
-						#tmpImage = tmpImage.resize((tmpWidth, tmpHeight), Image.ANTIALIAS)
+						# this works too, best we can do is 18 fps
+						#tmpImage = tmpImage.resize((self.currentVideoWidth, self.currentVideoHeight), Image.ANTIALIAS)
 						tmpImage = ImageTk.PhotoImage(tmpImage)
 	
+						# call _configureContentFrame() directly, do not use bind('<Configure'>)
+						"""
 						lrWidth = self.lower_right_frame.winfo_width()
 						lrHeight = self.lower_right_frame.winfo_height()
-						if lrWidth != self.lrWidth or lrHeight != lrHeight:
+						if lrWidth != self.lrWidth or lrHeight != self.lrHeight:
 							self.lrWidth = lrWidth
 							self.lrHeight = lrHeight
+							print('    videoloop() calling _configureContentFrame')
 							self._configureContentFrame(width=lrWidth, height=lrHeight)
+						"""
 							
 						# crash may be because image is coming from other thread
 						#tmpImage = np.zeros((480,640,3), np.uint8)
+						"""
 						tmpImage = np.random.randint(0, 255, (480,640,3)).astype('uint8')
 						tmpImage = Image.fromarray(tmpImage)
 						tmpImage = tmpImage.resize((self.currentVideoWidth, self.currentVideoHeight), Image.ANTIALIAS)
 						tmpImage = ImageTk.PhotoImage(tmpImage)
-
+						"""
+						
 						#self.myCurrentImage = tmpImage
 						#print('=== swapping image')
 						if 1:
-							print('  setting image')
+							#print('  setting image width:', self.currentVideoWidth, 'height:', self.currentVideoHeight)
 							self.videoLabel.configure(image=tmpImage)
 							self.videoLabel.image = tmpImage
-							print('  done setting image', time.time())
+							#print('  done setting image', time.time())
+						#self.lastUpdateSeconds = time.time()
 						
-					"""
 					#self.myEventCanvas.on_resize2(tmpWidth, heightRemaining - int(1.5*buttonHeight))
 					self.myEventCanvas.setFrame(self.myCurrentFrame)
 
@@ -1098,11 +1123,43 @@ class VideoApp:
 						self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
 					#self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
 					self.currentFramePerScondLabel['text'] ='playback fps:' + str(self.myFramesPerSecond)
-					"""
+					
+					nowUpdateSeconds = time.time()
+					if self.lastUpdateSeconds is not None:
+						actualFramesPerSecond = round(1/(nowUpdateSeconds - self.lastUpdateSeconds),2)
+						#actualFramesPerSecond = nowUpdateSeconds - self.lastUpdateSeconds
+						self.actualFramesPerSecondLabel['text'] ='actual fps:' + str(actualFramesPerSecond)
+					#self.lastUpdateSeconds = nowUpdateSeconds
+					
+					#self.root.update()
 				
+		#print('    videoloop() done')
+
+		#
+		# HOLY FUCKING SHIT - update() SOLVES WINDOW SIZING CRASH !!!!!!!!!!!!!!!!!!
+		#
+		# see: http://effbot.org/tkinterbook/widget.htm
+		#self.root.update_idletasks()
+		# update() is faster - but should only be called after _configureContentFrame
+		# this does not work
+		"""
+		if self.needsUpdate:
+			self.root.update()
+			self.needsUpdate = False
+		"""
+		self.root.update()
+			
+		self.lastUpdateSeconds = time.time()
+		
 		# leave this here -- CRITICAL
-		self.videoLoopID = self.root.after(self.myFrameInterval, self.videoLoop)
+		actualInterval = int(self.myFrameInterval)
+		#self.videoLoopID = self.root.after(actualInterval, self.videoLoop)
+		# was this
+		self.videoLoopID = self.lower_right_frame.after(actualInterval, self.videoLoop)
+		
+		#self.root.after_idle(self.videoLoop)
 		#self.videoLoopID = self.root.after_idle(self.videoLoop)
+		#self.vPane.after_idle(self.videoLoop)
 		
 	def onClose(self, event=None):
 		print("VideoApp.onClose()")
