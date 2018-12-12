@@ -10,6 +10,10 @@ Video files are listed on top, events of current video on the left. Selecting an
 
 <IMG SRC="img/v2-interface.png" width=800>
 
+Example screenshot of editing a video 'chunk'. All events within the chunk are shown schematically below the video. The number in the event is the event type (1..9). Selecting an event will snap the video to the first frame of the event. In this case, the 4th event is selected. Once selected the event start/stop frame can be edited with keyboard 'f' and 'l'.
+
+<IMG SRC="img/v3-interface.png" width=800>
+
 ## Install on macOS
 
 **Coming Soon**. We will provide a stand-alone macOS app that does not require any special installation, just download and run.
@@ -46,7 +50,7 @@ Chunks
 | [			| Previous Chunk
 | ]			| Next Chunk
 
-There are currently 9 different event types corresponding to keyboard 1, 2, 3, 4, 5, 6, 7, 8, 9.
+There are currently 9 event types corresponding to keyboard 1, 2, 3, 4, 5, 6, 7, 8, 9.
 
 ## Menus
 
@@ -174,7 +178,7 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 ## Known bugs
 
  - [fixed] Has some problems when it reaches end of file.
- - [bug is back!!!] Resizing window will sometimes cause a crash.
+ - [fixed] Resizing window will sometimes cause a crash.
  - Check that avconv (used by PiE server on Pi) always generates valid mp4 files. See [here](https://trac.ffmpeg.org/ticket/7365). In at least one file, getting errors like 'Invalid NAL unit size' and 'Error splitting the input into NAL'. Maybe save original .h264 on Pi so we can convert later if neccessary.
 
 ## To Do (important)
@@ -236,16 +240,13 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 ### Standalone app
 
  - Right-click the .app and select 'Show Package Contents'
-
  - Run the app directly by double-clicking 'Contents - macOS - VideoAnnotate'.
  
 This will run the app with a text console showing feedback on the state of the program. If there are errors, they will appear in the text console.
 
 ### Running from source
 
-If there are errors when running, check the versions.
-
-The video-player requires:
+If there are errors when running, check the versions. The video-player requires:
 
  - Python 3.7 (includes tkinter 8.x)
  - numpy
@@ -261,9 +262,9 @@ numpy==1.15.4
 Pillow==5.3.0
 ```
 
-If having problems with opencv, try both installing into Python 'pip3 install opencv-python' and/or installing with brew with 'brew install opencv'.
+If having problems with opencv, try both installing into Python 'pip3 install opencv-python' and/or installing with brew with 'brew install opencv3 --with-python3'.
 
-In general, the opencv version is 'opencv-python==3.4.3.18'.
+The opencv version should be 'opencv-python==3.4.3.18' or newer.
 
 <a name="install"></a>
 ## Install
