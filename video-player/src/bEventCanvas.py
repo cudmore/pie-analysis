@@ -50,6 +50,10 @@ class bEventCanvas(tkinter.Canvas):
 		self.scale("all", 0, 0, wscale, hscale)
 			
 	def refreshWithEventTree(self, eventTree):
+		"""
+		the original chunk json data is in
+		self.eventTree.myParentApp.chunkView.chunkData['chunks']
+		"""
 		print('=== bEventCanvas.refreshWithEventTree()')
 
 		# delete all existing canvas objects
@@ -87,6 +91,8 @@ class bEventCanvas(tkinter.Canvas):
 
 		self.eventRectDict = {}
 		
+		genericDict = {}
+		
 		# append all chunk in file
 		if myCurrentChunk is None:
 			for idx, chunk in enumerate(self.chunkList):
@@ -96,7 +102,10 @@ class bEventCanvas(tkinter.Canvas):
 				b = self.height
 				currentTag = 'chunk' + str(idx)
 				id = self.create_rectangle(l, t, r, b, fill='darkslategray', width=0, tags=currentTag)
-			
+				self.tag_bind(id, "<Button-1>", self.onObjectClick)
+				self.myEventRectList.append(id)
+				self.eventRectDict[id] = genericDict
+				
 		# frame slider
 		top = 0
 		bottom = b
@@ -131,6 +140,7 @@ class bEventCanvas(tkinter.Canvas):
 
 			genericDict = {
 				'idx': idx,
+				#'chunkIdx': myCurrentChunk.
 				'typeNum': eventDict['typeNum'],
 				'frameStart': frameStart0,
 				'frameStop': frameStop0,
@@ -241,7 +251,8 @@ class bEventCanvas(tkinter.Canvas):
 		
 		#self.eventTree.myParentApp.setFrame(newFrame)
 		eventListIdx = self.eventRectDict[id]['eventListIdx']
-		self.eventTree._selectTreeViewRow('index', eventListIdx)
+		if eventListIdx is not None:
+			self.eventTree._selectTreeViewRow('index', eventListIdx)
 
 	def setFrame(self, theFrame):
 		theFrame -= self.chunkFrameOffset

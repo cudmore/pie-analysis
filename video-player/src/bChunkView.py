@@ -198,7 +198,7 @@ class bChunkView:
 		#print('chunk_next()')
 		if self.numChunks > 0:
 			self.currentChunkIndex += 1
-			if self.currentChunkIndex > self.numChunks:
+			if self.currentChunkIndex > self.numChunks - 1:
 				self.currentChunkIndex = self.numChunks - 1
 			self.chunk_goto(self.currentChunkIndex)
 		

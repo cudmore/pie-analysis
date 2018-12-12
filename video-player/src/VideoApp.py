@@ -1129,7 +1129,7 @@ class VideoApp:
 						actualFramesPerSecond = round(1/(nowUpdateSeconds - self.lastUpdateSeconds),2)
 						#actualFramesPerSecond = nowUpdateSeconds - self.lastUpdateSeconds
 						self.actualFramesPerSecondLabel['text'] ='actual fps:' + str(actualFramesPerSecond)
-					#self.lastUpdateSeconds = nowUpdateSeconds
+					self.lastUpdateSeconds = nowUpdateSeconds
 					
 					#self.root.update()
 				
@@ -1149,7 +1149,7 @@ class VideoApp:
 		"""
 		self.root.update()
 			
-		self.lastUpdateSeconds = time.time()
+		#self.lastUpdateSeconds = time.time()
 		
 		# leave this here -- CRITICAL
 		actualInterval = int(self.myFrameInterval)

@@ -14,28 +14,7 @@ Video files are listed on top, events of current video on the left. Selecting an
 
 **Coming Soon**. We will provide a stand-alone macOS app that does not require any special installation, just download and run.
 
-This install recipe assumes you have Python 3.7, pip, virtualenv, homebrew, and git installed on your computer. If you do not have these things or have no idea what we are talking about, then please see the [Step-By-Step-Install](#advanced_install) section below.
-
- 1. Clone repository
-
-```
-cd ~
-git clone https://github.com/cudmore/pie-analysis.git
-```
-
- 2. Install video-player
-
-```
-cd pie-analysis/video-player
-./install-player
-```
-
- 3. Run
-
-```
-cd pie-analysis/video-player
-./player
-```
+To manually install from source, see [Install](#install) section below.
 
 ## Keyboard commands
 
@@ -59,6 +38,13 @@ Editing events
 | f				| Set first frame of selected event
 | l				| Set last frame of selected event
 | n				| Set note of current selected event
+
+Chunks
+
+| Keyboard	| Action 
+| -----		| -----
+| [			| Previous Chunk
+| ]			| Next Chunk
 
 There are currently 9 different event types corresponding to keyboard 1, 2, 3, 4, 5, 6, 7, 8, 9.
 
@@ -247,28 +233,69 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 
 ## Troubleshooting
 
+### Standalone app
+
+ - Right-click the .app and select 'Show Package Contents'
+
+ - Run the app directly by double-clicking 'Contents - macOS - VideoAnnotate'.
+ 
+This will run the app with a text console showing feedback on the state of the program. If there are errors, they will appear in the text console.
+
+### Running from source
+
 If there are errors when running, check the versions.
 
 The video-player requires:
 
- - Python 3.7.0 (includes tkinter 8.x)
+ - Python 3.7 (includes tkinter 8.x)
  - numpy
  - opencv 3
  - Pillow
 
 Check Python version with 'python --version'.
 
-Check Python libraries with 'pip freeze'.
+Check Python libraries with 'pip3 freeze'.
 
 ```
 numpy==1.15.4
-opencv-python==3.4.3.18
 Pillow==5.3.0
 ```
 
-### Intermediate Install
+If having problems with opencv, try both installing into Python 'pip3 install opencv-python' and/or installing with brew with 'brew install opencv'.
 
-Requires Python 3.7.0, Open CV 3, Pillow (PIL), Numpy
+In general, the opencv version is 'opencv-python==3.4.3.18'.
+
+<a name="install"></a>
+## Install
+
+### Install - Using 'install-player' script
+
+This install recipe assumes you have Python 3.7, pip, virtualenv, homebrew, and git installed on your computer. If you do not have these things or have no idea what we are talking about, then please see the [Install - Step By Step](#step_by_step_install) section below.
+
+ 1. Clone repository
+
+```
+cd ~
+git clone https://github.com/cudmore/pie-analysis.git
+```
+
+ 2. Install video-player
+
+```
+cd pie-analysis/video-player
+./install-player
+```
+
+ 3. Run
+
+```
+cd pie-analysis/video-player
+./player
+```
+
+### Install - Using requirements file
+
+Requires Python 3.7, Open CV 3, Pillow (PIL), Numpy
 
 ```
 git clone https://github.com/cudmore/pie-analysis.git
@@ -277,10 +304,14 @@ mkdir player_env
 virtualenv -p python3 --no-site-packages player_env
 source player_env/bin/activate
 pip install -r requirements.txt
+
+# run the player
+cd src
+python3 VideoApp.py
 ```
 
-<a name="advanced_install"></a>
-### Step By Step Install
+<a name="step_by_step_install"></a>
+### Install - Step By Step
 
 You will install the following
 
