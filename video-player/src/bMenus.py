@@ -34,7 +34,7 @@ class bMenus:
 		filemenu.add_separator()
 		#filemenu.add_command(label="Open Random Chunks ...", command=self.open_random)
 		#filemenu.add_separator()
-		filemenu.add_command(label="Save Options", command=self.app.saveOptions)
+		filemenu.add_command(label="Save Preferences", command=self.app.saveOptions)
 		filemenu.add_separator()
 		#filemenu.add_command(label="Quit", command=self.root.quit)
 		filemenu.add_command(label="Quit", command=self.app.onClose) #, accelerator="Command-P")
@@ -75,7 +75,7 @@ class bMenus:
 		self.app.loadFolder(path)
 		
 	def generateChunks(self):
-		print('not implemented')
+		bDialog.bGenerateChunksDialog(self.app)
 	
 	def limitvideocontrols(Self):
 		pass

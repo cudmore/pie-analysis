@@ -13,11 +13,14 @@ import cv2
 from PIL import Image
 
 class FileVideoStream:
-	def __init__(self, path, paused=False, gotoFrame=None, queueSize=256):
+	def __init__(self, path, paused=False, gotoFrame=None, queueSize=128):
 		print('FileVideoStream() path:', path, 'paused:', paused, 'gotoFrame:', gotoFrame, 'queueSize:', queueSize)
 		
 		self.switchingStream = False
 		self.stream = None
+		
+		self.scaleWidth = None
+		self.scaleHeight = None
 		
 		# initialize the queue used to store frames read from the video file
 		self.Q = Queue(maxsize=queueSize)
@@ -130,6 +133,20 @@ class FileVideoStream:
 		"""
 		self.stopped = True
 
+	def setScale(self, width, height):
+		self.scaleWidth = width
+		self.scaleHeight = height
+		with self.Q.mutex:
+			self.Q.queue.clear()
+		
+	def scaleFrame(self, frame):
+		#print('scaleFrame() self.scaleWidth:', self.scaleWidth, 'self.scaleHeight:', self.scaleHeight)
+		if self.scaleWidth is not None and self.scaleHeight is not None:
+			#print('FileVideoStream scaling:', self.scaleWidth, self.scaleHeight)
+			return cv2.resize(frame, (self.scaleWidth, self.scaleHeight))
+		else:
+			return frame
+			
 	# the actual thread function
 	def update(self):
 
@@ -167,6 +184,7 @@ class FileVideoStream:
 					self.seconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC)/1000,2)
 					print('   self.currentFrame:', self.currentFrame)
 					"""
+					frame = self.scaleFrame(frame)
 					self.Q.put([frame, self.currentFrame, self.seconds])
 					#print('FileVideoStream.update() self.Q.put(frame) done')
 				else:
@@ -197,6 +215,7 @@ class FileVideoStream:
 					# reached the end of the video file
 					if grabbed:
 						# add the frame to the queue
+						frame = self.scaleFrame(frame)
 						self.Q.put([frame, self.currentFrame, self.seconds])
 					else:
 						#self.stop()

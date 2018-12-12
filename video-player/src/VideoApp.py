@@ -970,6 +970,10 @@ class VideoApp:
 		#self.videoLabel.place(width=newWidth, height=newHeight)
 		self.content_frame.place(width=newWidth, height=newHeight)
 		
+		# scale background filevideostream
+		if self.vs is not None:
+			self.vs.setScale(newWidth, newHeight)
+		
 		yPos = newHeight #+ chunksHeight + feedbackHeight #+ buttonHeight
 		self.video_control_frame.place(y=yPos, width=newWidth)
 
@@ -1020,6 +1024,9 @@ class VideoApp:
 			if self.vs is not None and self.vs.gotoFrame is not None:
 				pass
 			else:
+				#self.vs.scaleWidth = self.currentVideoWidth
+				#self.vs.scaleHeight = self.currentVideoHeight
+
 				#print('inner videoLoop()', time.time())
 				if self.vs is not None and self.vs.paused:
 					self.videoLabel.configure(text="Paused")
@@ -1062,10 +1069,13 @@ class VideoApp:
 					eventCanvasHeight = 100
 				
 					tmpImage = self.frame
-			
+								
+					#self.vs.scaleWidth = self.currentVideoWidth
+					#self.vs.scaleHigth = self.currentVideoHeight
+					
 					# self.currentVideoWidth set in _configureContentFrame
 					#this works, best we can do is 33-35 fps
-					tmpImage = cv2.resize(self.frame, (self.currentVideoWidth, self.currentVideoHeight))
+					#tmpImage = cv2.resize(self.frame, (self.currentVideoWidth, self.currentVideoHeight))
 				
 					if tmpImage is not None:
 						tmpImage = cv2.cvtColor(tmpImage, cv2.COLOR_BGR2RGB)
