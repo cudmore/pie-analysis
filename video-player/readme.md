@@ -12,7 +12,7 @@ Video files are listed on top, events of current video on the left. Selecting an
 
 Example screenshot of editing a video 'chunk'. All events within the chunk are shown schematically below the video. The number in the event is the event type (1..9). Selecting an event will snap the video to the first frame of the event. In this case, the 4th event is selected. Once selected the event start/stop frame can be edited with keyboard 'f' and 'l'.
 
-<IMG SRC="img/v3-interface.png" width=800>
+<IMG SRC="img/v3-interface.png" width=600>
 
 ## Install on macOS
 
@@ -184,6 +184,7 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 ## To Do (important)
 
  - Clicking on a chunk (gray bar) should select chunk (in chunk view).
+ - Selecting event in event list should highlight event in event canvas.
  - Streamline interface for blinding. Make a system where when handed to a scorer, they can not activate non-blinded interface (they are locked into blinding). Try and add a password to switch between one and the other.
  - Update numEvents in video list as we add/delete events
  - Make menu interface to create random chunks file from folder. So we can do it in stand-alone app
