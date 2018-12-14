@@ -305,8 +305,8 @@ class bEventCanvas(tkinter.Canvas):
 
 		# two kinds of selection: chunks and events
 		if randomIndex is not None:
-			print('=== user selected random chunk:', randomIndex)
 			# select a chunk
+			print('=== user selected random chunk:', randomIndex)
 			chunkRectangle = 'chunk' + str(eventIndex)
 			chunkCoords = self.coords(chunkRectangle)
 			l = chunkCoords[0]
