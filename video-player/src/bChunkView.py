@@ -268,9 +268,11 @@ class bChunkView:
 			chunk (bChunk): Current Chunk
 			idx (int): Index into list of random chunks
 		"""
+		print('getCurrentChunk()')
 		if self.chunkData is not None:
 			actualChunkNumber = self.chunkData['chunkOrder'][self.currentChunkIndex]
 			chunk = self.chunkData['chunks'][actualChunkNumber]
+			print('    chunk:', chunk, 'self.currentChunkIndex:', self.currentChunkIndex)
 			return chunk, self.currentChunkIndex
 		else:
 			return None, None

@@ -568,7 +568,7 @@ class VideoApp:
 		"""
 		Limit video controls to a chunk (for blinding)
 		"""
-		#print('\n=== hijackInterface() onoff:', onoff)
+		print('\n=== hijackInterface() onoff:', onoff)
 		if onoff:
 			self.myCurrentChunk, randomIdx = self.chunkView.getCurrentChunk()
 			if self.myCurrentChunk is None:
