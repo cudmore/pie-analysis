@@ -361,8 +361,9 @@ class VideoApp:
 		videoFrameSlider = 3
 		eventCanvasRow = 4
 		
+		lowerRightPadding = 0 # was myPadding
 		self.lower_right_frame = ttk.Frame(self.hPane, borderwidth=myBorderWidth, relief="sunken")
-		self.lower_right_frame.grid(row=0, column=1, sticky="nsew", padx=myPadding, pady=myPadding)
+		self.lower_right_frame.grid(row=0, column=1, sticky="nsew", padx=lowerRightPadding, pady=lowerRightPadding)
 
 		self.lower_right_frame.grid_rowconfigure(0, weight=0) # row 0 col 0 is random_chunks_frame
 		self.lower_right_frame.grid_rowconfigure(1, weight=0) # row 1 col 0 is video_feedback_frame
@@ -423,7 +424,7 @@ class VideoApp:
 		#
 		# video frame
 		
-		contentBorderWidth = 5
+		contentBorderWidth = 0 # was 5
 		self.content_frame = ttk.Frame(self.lower_right_frame, borderwidth=contentBorderWidth, relief="groove") #
 		self.content_frame.grid(row=contentFrameRow, column=0, sticky="nsew") #, padx=5, pady=5)
 		# 20181207 10:30
@@ -520,7 +521,7 @@ class VideoApp:
 		#
 		# event canvas
 		#self.myEventCanvas = bEventCanvas.bEventCanvas(self.video_control_frame)
-		self.myEventCanvas = bEventCanvas.bEventCanvas(self.lower_right_frame)
+		self.myEventCanvas = bEventCanvas.bEventCanvas(self, self.lower_right_frame)
 		# was this
 		#self.myEventCanvas.grid(row=2, column=0, columnspan=5, sticky="nsew", padx=sliderPadding)
 		self.myEventCanvas.grid(row=eventCanvasRow, column=0, sticky="ew", padx=sliderPadding)
@@ -974,7 +975,7 @@ class VideoApp:
 		if self.vs is not None:
 			self.vs.setScale(newWidth, newHeight)
 		
-		yPos = newHeight #+ chunksHeight + feedbackHeight #+ buttonHeight
+		yPos = newHeight + int(buttonHeight/2) #+ chunksHeight + feedbackHeight #+ buttonHeight
 		self.video_control_frame.place(y=yPos, width=newWidth)
 
 		yPos += buttonHeight
@@ -983,7 +984,7 @@ class VideoApp:
 		chunkHeight = self.random_chunks_frame.winfo_height()
 		
 		yPos += buttonHeight
-		newCanvasHeight = height - newHeight - buttonHeight - buttonHeight - feedbackHeight - chunkHeight
+		newCanvasHeight = height - newHeight - buttonHeight - buttonHeight - feedbackHeight - 2*chunkHeight - int(buttonHeight/2)
 		"""
 		print('    height:', height)
 		print('    newHeight:', newHeight)
@@ -997,7 +998,7 @@ class VideoApp:
 		self.myEventCanvas.on_resize2(yPos, newWidth, newCanvasHeight)		
 		
 		# chunks
-		yPos += newCanvasHeight
+		yPos += newCanvasHeight + int(chunkHeight/2)
 		self.random_chunks_frame.place(y=yPos, width=newWidth)
 
 		# turned off in myButtonUp() when button is released

@@ -73,6 +73,8 @@ class bChunkView:
 		self.limitInterfaceCheckbox.bind("<Key>", self.keyPress)
 		"""
 		
+		#self.chunk_goto(0)
+		
 	"""
 	def _gotoChunkEntry(self, event):
 		print('_gotoChunkEntry event:', event)
@@ -116,9 +118,10 @@ class bChunkView:
 		"""
 		Open a chunks file and populate interface
 		"""
+		print('chunkInterface_populate()')
+
 		self.currentChunkIndex = 0
 
-		print('chunkInterface_populate()')
 		initialdir = self.app.videoList.path # get folder from video list
 		defaultFile = 'randomChunks.txt' # look for default file in video folder
 		filepath = os.path.join(initialdir,defaultFile)
@@ -137,6 +140,8 @@ class bChunkView:
 		with open(filepath) as f:
 			self.chunkData = json.load(f) # data is a dict of {'chunks', 'chunkOrder'}
 				
+		#self.chunk_goto(0)
+
 		# interface
 		#self.chunkFileLabel['text'] = 'File:' + os.path.basename(filepath)
 		#self.chunkFileLabel['width'] = len(os.path.basename(filepath)) + 5
@@ -150,7 +155,7 @@ class bChunkView:
 		else:
 			self.gotoChunkEntry['to'] = 0
 		"""
-		
+				
 	def findChunk(self, path, startFrame):
 		"""
 		Return: retChunkIdx, retRandomIdx
@@ -221,11 +226,12 @@ class bChunkView:
 		print('chunk_goto() chunkNumber:', chunkNumber)
 		
 		if self.numChunks == 0:
+			print('    no chunks')
 			return 0
 		
 		# check valid chunkNumber
 		if chunkNumber > self.numChunks-1:
-			print('chunk_goto() error')
+			print('    error, chunkNumber > numChunks')
 			return
 			
 		self.currentChunkIndex = chunkNumber
@@ -234,7 +240,9 @@ class bChunkView:
 		#chunk = self.chunkData['chunks'][actualChunkNumber]
 		chunk, randomIdx = self.getCurrentChunk()
 		
-		if chunk is None: return 0
+		if chunk is None:
+			print('    chunk is none?')
+			return 0
 		
 		path = chunk['path']
 		startFrame = chunk['startFrame']

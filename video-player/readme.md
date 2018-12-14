@@ -81,55 +81,11 @@ index,path,cSeconds,cDate,cTime,typeNum,typeStr,frameStart,frameStop,numFrames,s
 3,/Users/cudmore/Dropbox/PiE/video/1-homecage-movie.mp4,1543552306.8971589,2018-11-29,23:31:46,4,d,2479,,None,165.27,None,None,4,,,
 ```
 
-<a name="blind_scoring"></a>
-## Blind Scoring
-
-<IMG SRC="img/chunks-interface.png" width=600>
-
-| Button	| Action 
-| -----		| -----
-| <		| Go to previous chunk
-| \|<		| Go to start of current chunk
-| >		| Go to next chunk
-| Go To	| Go to chunk number specified in the edit/spin box.
-| Limit Video Controls	| Limit the video frame slider and all video controls (including keyboard) to stay within the current chunk. In addition, when checked, the event list will only show events within the current chunk.
-| Limit Interface		| Show/hide video file list and video feedback. Turn this on for true blinding.
-
-Blind scoring is done with a user created 'chunks' file. Once created, blinding is achieved by stepping through a number of (random) video chunks of a specified length.
-
-Use the following code to generate a chunks file. Once created, rename it 'randomChunks.txt' and it will automatically be loaded when the video-player is run.
-
-```
-	# full path to your video folder
-	path = '/Users/cudmore/Dropbox/PiE/video'
-	chunks = bChunk(path)
-	
-	chunkIntervalSeconds = 300 #frames
-	chunksPerFile = 5
-	chunks.generate(chunkIntervalSeconds, chunksPerFile)
-```
-
-Blinding Algorithm
-
- - **video file duration (30 min)**
- - **pieceDur (10 min)** gives us numPieces = dur / pieceDur
- - **totalNumChunks (30)** is total number of chunks for one video
- - **chunkDur (10 sec)** is duration of each chunk
- 1. split video into a large number of chunks numChunks = (dur/chunkDur)
- 2. partition video into a number of 'pieces' numPieces = (dur/pieceDur)
- 3. chunksPerPiece = totalNumChunks/numPieces
- 4. for each 'piece', randomly choose chunksPerPiece without replacement. Can do this by stepping through all chunks and only considering chunks with a piece using chunksPerPiece.
- 
- - Add 'pieceIndex' to each chunk in output chunk list
- 
-Here is an example of the results of the blinding algorithm for 6 video files, 30 chunks each. Each colored symbol is a different random chunk (duration 10 sec) and the color scale shows the order the chunks are visited. There are 180 chunks spread across the 6 files.
- 
- <IMG src="img/chunk-order.png" width=700>
-
 ## Analysis
 
 ### Event Analysis
 
+ - See [Analysis/eventAnalysis](https://github.com/cudmore/pie-analysis/blob/master/video-player/analysis/eventAnalysis.ipynb).
  - For each file, sum duration (sec) of each event type (1..9)
  - flag events that have start/stop frame out of order
  - flag events that overlap with previous event (if previous has duration)
@@ -138,6 +94,93 @@ Here is an example of the results of the blinding algorithm for 6 video files, 3
 ### Blinding analysis
 
  - Make plot of chunks with each file in a list of files. See [Analysis/chunkAnalysis](https://github.com/cudmore/pie-analysis/blob/master/video-player/analysis/chunkAnalysis.ipynb).
+
+
+<a name="blind_scoring"></a>
+## Blind Scoring
+
+<IMG SRC="img/chunks-interface.png" width=600>
+
+| Button	| Action 
+| -----		| -----
+| <		| Go to previous chunk (keyboard '[')
+| \|<		| Go to start of current chunk
+| >		| Go to next chunk (keyboard ']')
+| Go To	| Go to chunk number specified in the edit/spin box.
+| Limit Video Controls	| Limit the video frame slider and all video controls (including keyboard) to stay within the current chunk. In addition, when checked, the event list will only show events within the current chunk.
+
+Blind scoring is done with a user created 'chunks' file. Once created, blinding is achieved by stepping through a number of (random) video chunks of a specified length.
+
+Use the following code to generate a chunks file for a folder of video files. Once created, rename the output file to 'randomChunks.txt' and it will automatically be loaded when the folder of video is loaded into the video-player.
+
+```
+	# full path to your video folder
+	path = '/Users/cudmore/Dropbox/PiE/video'
+	
+	chunks = bChunk(path)
+	
+	pieceDurationSeconds = 10 * 60 # seconds
+	chunkDurationSeconds = 10 # seconds
+	chunksPerFile = 30
+	outFile = chunks.generate(pieceDurationSeconds, chunkDurationSeconds, chunksPerFile)
+```
+
+Blinding Algorithm
+
+ - **video file duration (30 min)** 
+ - **pieceDur (10 min)** gives us numPieces = dur / pieceDur
+ - **totalNumChunks (30)** is total number of chunks for one video
+ - **chunkDur (10 sec)** is duration of each chunk
+ 1. split video into a large number of chunks numChunks = (dur/chunkDur)
+ 2. partition video into a number of 'pieces' numPieces = (dur/pieceDur)
+ 3. chunksPerPiece = totalNumChunks/numPieces
+ 4. for each 'piece', randomly choose chunksPerPiece without replacement. Can do this by stepping through all chunks and only considering chunks with a piece using chunksPerPiece.
+  
+Here is an example of the results of the blinding algorithm for 6 video files, 30 chunks each. Each colored symbol is a different random chunk (duration 10 sec) and the color scale shows the order the chunks are visited. There are 180 chunks spread across the 6 files.
+ 
+ <IMG src="img/chunk-order.png" width=700>
+
+Blinding file format
+
+ - params: dict of parameters used to generate random chunks
+  - chunkDurationSeconds:
+  - chunksPerFile:
+  - pieceDurationSeconds:
+  - generated:
+ - chunkOrder: integer list of random chunk order
+ - chunks: dict list of chunks
+
+chunks
+
+```
+        {
+            "index": 0,
+            "numFrames": 299,
+            "path": "/Users/cudmore/Dropbox/PiE/scrambled/s_1831.mp4",
+            "piece": 0,
+            "randomIndex": 55,
+            "startFrame": 5083,
+            "stopFrame": 5381
+        },
+        {
+            "index": 1,
+            "numFrames": 299,
+            "path": "/Users/cudmore/Dropbox/PiE/scrambled/s_1831.mp4",
+            "piece": 0,
+            "randomIndex": 29,
+            "startFrame": 11362,
+            "stopFrame": 11660
+        },
+        {
+            "index": 2,
+            "numFrames": 299,
+            "path": "/Users/cudmore/Dropbox/PiE/scrambled/s_1831.mp4",
+            "piece": 0,
+            "randomIndex": 16,
+            "startFrame": 13156,
+            "stopFrame": 13454
+        },
+```
 
 <a name="options_file"></a>
 ## Options file
@@ -183,6 +226,7 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 
 ## To Do (important)
 
+ - When starting app and chunk file is loaded, make sure we are in chunk 0. When user first clicks 'limit', we need to be in a chunk!!!
  - Clicking on a chunk (gray bar) should select chunk (in chunk view).
  - Selecting event in event list should highlight event in event canvas.
  - Streamline interface for blinding. Make a system where when handed to a scorer, they can not activate non-blinded interface (they are locked into blinding). Try and add a password to switch between one and the other.

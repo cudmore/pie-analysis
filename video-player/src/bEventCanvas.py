@@ -6,13 +6,15 @@ from tkinter import ttk
 
 # a subclass of Canvas for dealing with resizing of windows
 class bEventCanvas(tkinter.Canvas):
-	def __init__(self,parent,**kwargs):
+	def __init__(self, parentApp, parent,**kwargs):
+		self.parentApp = parentApp
+		
 		width = 1000
 		height = 100
 		
 		self.numFrames = 54000
 		
-		tkinter.Canvas.__init__(self,parent,width=width, height=height, background='snow4', **kwargs)
+		tkinter.Canvas.__init__(self, parent, width=width, height=height, background='snow4', **kwargs)
 		#self.bind("<Configure>", self.on_resize)
 		self.height = self.winfo_reqheight()
 		self.width = self.winfo_reqwidth()
@@ -20,11 +22,11 @@ class bEventCanvas(tkinter.Canvas):
 		self.rowHeight = 18
 
 		self.frameSliderLeft = None
-		self.myEventRectList = []
 		self.chunkFrameOffset = 0
 		self.selectedEventRectID = None
 		
 		self.chunkList = None
+		self.myEventRectList = [] # not used
 		
 	def on_resize2(self, yPos, width, height):
 		# determine the ratio of old width/height to new width/height
@@ -61,7 +63,11 @@ class bEventCanvas(tkinter.Canvas):
 		
 		self.eventTree = eventTree
 		
-		myCurrentChunk = self.eventTree.myParentApp.myCurrentChunk
+		# self.chunkList
+		# self.eventRectDict
+		
+		#myCurrentChunk = self.eventTree.myParentApp.myCurrentChunk
+		myCurrentChunk = self.parentApp.myCurrentChunk
 		print('   myCurrentChunk:', myCurrentChunk)
 		if myCurrentChunk is not None:
 			# show one chunk
@@ -70,16 +76,30 @@ class bEventCanvas(tkinter.Canvas):
 		else:
 			# show entire file
 			self.chunkFrameOffset = 0
-			self.numFrames = self.eventTree.myParentApp.vs.getParam('numFrames')
+			self.numFrames = self.parentApp.vs.getParam('numFrames')
 			
 			# build a list of chunk start/stop frame in this file
-			filePath = self.eventTree.myParentApp.vs.getParam('path')
+			filePath = self.parentApp.vs.getParam('path')
 			self.chunkList = []
-			if self.eventTree.myParentApp.chunkView.chunkData is not None:
-				for chunk in self.eventTree.myParentApp.chunkView.chunkData['chunks']:
+			#if self.eventTree.myParentApp.chunkView.chunkData is not None:
+			if self.parentApp.chunkView.chunkData is not None:
+				#for chunk in self.eventTree.myParentApp.chunkView.chunkData['chunks']:
+				# don't iterate absolut chunk
+				#for chunk in self.parentApp.chunkView.chunkData['chunks']:
+				# iterate random chunk order
+				"""
+				for idx, chunkIndex in enumerate(self.parentApp.chunkView.chunkData['chunkOrder']):
+					print('chunkIndex:', chunkIndex)
+					chunk = self.parentApp.chunkView.chunkData['chunks'][chunkIndex]
 					if chunk['path'] == filePath:
+						#print('appending chunk:', chunk)
 						self.chunkList.append(chunk)
-					
+				"""
+				for chunk in self.parentApp.chunkView.chunkData['chunks']:
+					if chunk['path'] == filePath:
+						#print('appending chunk:', chunk)
+						self.chunkList.append(chunk)
+				
 		events = self.eventTree.treeview.get_children()
 
 		if len(events) > 0:
@@ -91,20 +111,55 @@ class bEventCanvas(tkinter.Canvas):
 
 		self.eventRectDict = {}
 		
-		genericDict = {}
-		
+		#
 		# append all chunk in file
+		genericDict = {}
 		if myCurrentChunk is None:
+			textTop = 0
 			for idx, chunk in enumerate(self.chunkList):
-				l = chunk['startFrame'] * self.width / self.numFrames
+				randomIndex = chunk['randomIndex'] # random chunk interface, shown in interface
+				startFrame = chunk['startFrame']
+				stopFrame = chunk['stopFrame']
+				l = startFrame * self.width / self.numFrames
 				t = 0
-				r = chunk['stopFrame'] * self.width / self.numFrames
+				r = stopFrame * self.width / self.numFrames
 				b = self.height
+
+				genericDict = {
+					'idx': idx,
+					'randomIndex': randomIndex,
+					'typeNum': None,
+					'frameStart': startFrame,
+					'frameStop': stopFrame,
+					'eventListIdx': None,
+					'l': l,
+					't': t,
+					'r': r,
+					'b': b
+				}
+
 				currentTag = 'chunk' + str(idx)
 				id = self.create_rectangle(l, t, r, b, fill='darkslategray', width=0, tags=currentTag)
 				self.tag_bind(id, "<Button-1>", self.onObjectClick)
 				self.myEventRectList.append(id)
 				self.eventRectDict[id] = genericDict
+
+				# hold off on this, my list of chunks (in randomChunks.txt) are in 'file' order but not 'frame order'
+				"""
+				# chunk number
+				print('text l:', l)
+				textTag = 'textTag' + str(idx)
+				#textTop = t + ( (b-t) / 2 )
+				textTop += 12
+				if textTop > self.height:
+					print('resetting textTop self.height:', self.height)
+					textTop = 0
+				textLeft = l + ( (r-l) / 2 ) - 5 # -6 for width of text
+				id = self.create_text(textLeft, textTop, anchor="w", text=genericDict['randomIndex'], tags=textTag)
+				self.tag_bind(id, "<Button-1>", self.onObjectClick)
+				self.myEventRectList.append(id)
+				self.eventRectDict[id] = genericDict
+				"""
 				
 		# frame slider
 		top = 0
@@ -120,8 +175,9 @@ class bEventCanvas(tkinter.Canvas):
 		self.tag_bind(self.myFrameSlider, "<Button-1>", lambda x: self.frameSlider_Callback)
 
 		# append all events
+		prevEventDict = None
 		for idx, event in enumerate(events):
-			eventDict = eventTree.treeview.set(event)
+			eventDict = eventTree.treeview.set(event) # set is actually get
 			
 			frameStart0 = int(eventDict['frameStart']) #- self.chunkFrameOffset
 			frameStart = int(eventDict['frameStart']) - self.chunkFrameOffset
@@ -140,7 +196,7 @@ class bEventCanvas(tkinter.Canvas):
 
 			genericDict = {
 				'idx': idx,
-				#'chunkIdx': myCurrentChunk.
+				'randomIndex': None,
 				'typeNum': eventDict['typeNum'],
 				'frameStart': frameStart0,
 				'frameStop': frameStop0,
@@ -162,6 +218,28 @@ class bEventCanvas(tkinter.Canvas):
 			self.myEventRectList.append(id)
 			self.eventRectDict[id] = genericDict
 			
+			# rectangle showing overlap
+			if prevEventDict is not None:
+				# only if prev and this have frameStop
+				if eventDict['frameStop'] and prevEventDict['frameStop']:
+					#prevEventDict = eventTree.treeview.set(prevEvent) # set is actually get
+					rPrev = max(int(float(prevEventDict['frameStart'])), int(float(prevEventDict['frameStop'])))
+					rPrev -= self.chunkFrameOffset
+					#print(eventDict['frameStart'])
+					#print(eventDict['frameStop'])
+					lThis = min(int(float(eventDict['frameStart'])), int(float(eventDict['frameStop'])))
+					lThis -= self.chunkFrameOffset
+					if lThis < rPrev:
+						# colorize
+						rPrev = rPrev * self.width / self.numFrames
+						lThis = lThis * self.width / self.numFrames
+						eventColor = 'blue'
+						currentTag = 'overlap' + str(idx)
+						id = self.create_rectangle(lThis, t, rPrev, b, fill=eventColor, width=0, tags=currentTag)
+						self.tag_bind(id, "<Button-1>", self.onObjectClick)
+						self.myEventRectList.append(id)
+						self.eventRectDict[id] = genericDict
+						
 			# event number
 			if myCurrentChunk is not None:
 				textTag = 'textTag' + str(idx)
@@ -196,7 +274,8 @@ class bEventCanvas(tkinter.Canvas):
 
 			t += self.rowHeight
 			b += self.rowHeight
-		
+			prevEventDict = eventDict
+			
 		# gold selection
 		"""
 		self.selectedEventRectID = self.create_rectangle(0, 0, 0, 0, fill="gold", width=0, tags='eventSelection')
@@ -216,18 +295,36 @@ class bEventCanvas(tkinter.Canvas):
 		
 		id = id[0]
 		print(self.eventRectDict[id])
+		#frameStart= self.eventRectDict[id]['frameStart']
 		eventIndex= self.eventRectDict[id]['idx']
+		randomIndex = self.eventRectDict[id]['randomIndex'] # will be None for events
 		
 		# make a rectangle selection
 		if self.selectedEventRectID is not None:
 			self.delete(self.selectedEventRectID)
 
-		eventRectangle = 'e' + str(eventIndex)
-		eventCoords = self.coords(eventRectangle)
-		l = eventCoords[0]
-		t = eventCoords[1]
-		r = eventCoords[2]
-		b = eventCoords[3]
+		# two kinds of selection: chunks and events
+		if randomIndex is not None:
+			print('=== user selected random chunk:', randomIndex)
+			# select a chunk
+			chunkRectangle = 'chunk' + str(eventIndex)
+			chunkCoords = self.coords(chunkRectangle)
+			l = chunkCoords[0]
+			t = chunkCoords[1]
+			r = chunkCoords[2]
+			b = chunkCoords[3]
+			
+			# todo: need to fill in randomIndex in chunk view
+			self.parentApp.chunkView._chunk_goto2(randomIndex)
+			
+		else:
+			# select an event
+			eventRectangle = 'e' + str(eventIndex)
+			eventCoords = self.coords(eventRectangle)
+			l = eventCoords[0]
+			t = eventCoords[1]
+			r = eventCoords[2]
+			b = eventCoords[3]
 		
 		# can not use these as they are not scaled when widget resizes
 		"""
@@ -236,6 +333,8 @@ class bEventCanvas(tkinter.Canvas):
 		r = self.eventRectDict[id]['r']
 		b = self.eventRectDict[id]['b']
 		"""
+		
+		# todo: make tag reflect either (chunk or event)
 		self.selectedEventRectID = self.create_rectangle(l, t, r, b, fill="yellow", width=0, tags='eventSelection')
 		"""
 		print('ltrb:', l, t, r, b)
@@ -248,11 +347,13 @@ class bEventCanvas(tkinter.Canvas):
 		
 		# go to first frame of event
 		newFrame = self.eventRectDict[id]['frameStart']
-		
-		#self.eventTree.myParentApp.setFrame(newFrame)
-		eventListIdx = self.eventRectDict[id]['eventListIdx']
-		if eventListIdx is not None:
-			self.eventTree._selectTreeViewRow('index', eventListIdx)
+		if randomIndex is not None:
+			#self.eventTree.myParentApp.setFrame(newFrame)
+			self.parentApp.setFrame(newFrame)
+		else:
+			eventListIdx = self.eventRectDict[id]['eventListIdx']
+			if eventListIdx is not None:
+				self.eventTree._selectTreeViewRow('index', eventListIdx)
 
 	def setFrame(self, theFrame):
 		theFrame -= self.chunkFrameOffset

@@ -116,3 +116,7 @@ python commander_app.py
  
 ```
 
+See following for how to make a .plist to run at boot and for command line to start/stop service on macOS
+
+https://stackoverflow.com/questions/29338066/mac-osx-execute-a-python-script-at-startup
+

@@ -68,6 +68,9 @@ class bChunk:
 			numChunksPerPiece = math.floor(numChunksInFile / numPiecesInFile) # total # of chunks per piece
 			chooseNumChunksPerPiece = math.floor(chunksPerFile / numPiecesInFile)
 			
+			# todo: expand outChunkList so we can insert in order using outChunkList[i]
+			#		make sure outChunkOrder still works
+			
 			print('file:', file)
 			print('   input:pieceDurationSeconds', pieceDurationSeconds)
 			print('   input:chunkDurationSeconds', chunkDurationSeconds)
@@ -85,6 +88,7 @@ class bChunk:
 				randomChunksInPiece = np.random.choice(range(numChunksPerPiece), chooseNumChunksPerPiece, replace=False)
 				for chunkIdx in randomChunksInPiece:
 					newEntry = OrderedDict()
+					#newEntry['randomIndex'] = xxx # assigned below
 					newEntry['index'] = totalChunkIndex
 					newEntry['path'] = path
 					newEntry['piece'] = pieceIdx
@@ -93,6 +97,7 @@ class bChunk:
 					newEntry['stopFrame'] = startFrame + chunkDurationFrames - 1
 					newEntry['numFrames'] = chunkDurationFrames
 					#print('newEntry:', newEntry)
+
 					outChunkList.append(newEntry)
 
 					# 2) we need to RANDOMLY iterate through all selected chunks in all files
@@ -105,32 +110,17 @@ class bChunk:
 			# randomly select chunksPerFile without replacement
 			# r is a list of chunk number
 			
-			"""
-			# this was before adding pieces
-			r = np.random.choice(range(numChunksInFile), chunksPerFile, replace=False)
-			print(r)
-			
-			for i in r:
-				newEntry = OrderedDict()
-				newEntry['index'] = totalChunkIndex
-				newEntry['path'] = path
-				newEntry['startFrame'] = int(i * chunkDurationFrames)
-				newEntry['stopFrame'] = newEntry['startFrame'] + chunkDurationFrames - 1
-				newEntry['numFrames'] = chunkDurationFrames
-				#print('newEntry:', newEntry)
-				outChunkList.append(newEntry)
-
-				# 2) we need to RANDOMLY iterate through all selected chunks in all files
-				outChunkOrder.append(totalChunkIndex)
-
-				totalChunkIndex += 1 # across all files		
-			"""
-		
 			#print('generated', totalChunkIndex, 'total chunks')
 		
 		# randomize outChunkOrder
 		shuffle(outChunkOrder)
 		
+		# mark each original chunk with its position in random sort order
+		for idx, randomIndex in enumerate(outChunkOrder):
+			print(idx, randomIndex)
+			outChunkList[randomIndex]['randomIndex'] = idx
+			
+		# save the results
 		now = datetime.datetime.now()
 		timeStampStr = now.strftime('%Y%m%d_%H%M%S')
 
@@ -142,7 +132,7 @@ class bChunk:
 			'chunksPerFile': chunksPerFile
 		}
 		
-		# package chunk list and chunk order into a dict
+		# package params, chunk list and chunk order into a dict
 		outDict = {'params':params, 'chunks':outChunkList, 'chunkOrder':outChunkOrder}
 		
 		dateTimeFile = "chunks_" + now.strftime("%Y%m%d_%H%M%S.txt")
@@ -151,6 +141,8 @@ class bChunk:
 		with open(outFilePath, 'w') as outfile:
 			json.dump(outDict, outfile, indent=4, sort_keys=True)
     
+    	return outFilePath
+    	
 	def load(self, path=''):
 		with open(path) as f:
 			data = json.load(f)
@@ -169,7 +161,7 @@ if __name__ == '__main__':
 	pieceDurationSeconds = 10 * 60 # seconds
 	chunkDurationSeconds = 10 # seconds
 	chunksPerFile = 30
-	chunks.generate(pieceDurationSeconds, chunkDurationSeconds, chunksPerFile)
+	outFile = chunks.generate(pieceDurationSeconds, chunkDurationSeconds, chunksPerFile)
 		
 	#chunks.load(path=path + '/' + 'chunks_20184319_221111.txt')
 
