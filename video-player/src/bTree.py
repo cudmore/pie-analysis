@@ -212,7 +212,8 @@ class bEventTree(bTree):
 			# configure columns
 			self.treeview['columns'] = eventColumns
 			displaycolumns_ = ['index', 'typeNum', 'sStart', 'sStop', 'numSeconds', 'rChunkIndex', 'note']
-			displaycolumns_ = ['index', 'typeNum', 'frameStart', 'frameStop', 'sStart', 'sStop', 'numSeconds', 'rChunkIndex', 'note']
+			# for debugging
+			#displaycolumns_ = ['index', 'typeNum', 'frameStart', 'frameStop', 'sStart', 'sStop', 'numSeconds', 'rChunkIndex', 'note']
 			displaycolumns = [] # build a list of columns not in hideColumns
 			for column in eventColumns:
 				self.treeview.column(column, width=20)
@@ -258,7 +259,7 @@ class bEventTree(bTree):
 		Only show events with chunkIdx (int).
 		Pass chunkIdx as None to show all
 		"""
-		print('filter() chunkIdx:', chunkIdx, type(chunkIdx))
+		#print('filter() chunkIdx:', chunkIdx, type(chunkIdx))
 		
 		# first delete entries
 		for i in self.treeview.get_children():
@@ -267,15 +268,14 @@ class bEventTree(bTree):
 		# todo: make bEventList iterable
 		for idx, event in enumerate(self.eventList.eventList):
 			currentChunkIndex = self.eventList.get(idx, 'rChunkIndex')
-			#print('filter() chunkIdx:', chunkIdx, 'currentChunkIndex:', currentChunkIndex, type(currentChunkIndex))
-			print('filter() idx:', idx, 'currentChunkIndex:', currentChunkIndex, type(currentChunkIndex))
+			#print('filter() idx:', idx, 'currentChunkIndex:', currentChunkIndex, type(currentChunkIndex))
 			if currentChunkIndex is not None and currentChunkIndex != 'None':
 				currentChunkIndex = int(float(currentChunkIndex))
 			#print('currentChunkIndex:', type(currentChunkIndex), 'chunkIdx:', type(chunkIdx))
 			if chunkIdx is None:
 				self.treeview.insert("" , "end", text=str(idx+1), values=event.asTuple())
 			elif currentChunkIndex == chunkIdx:
-				print('todo: insert with start/stop frame relative to start of chunk')
+				print('todo: bTree.filter() insert with start/stop frame relative to start of chunk')
 				self.treeview.insert("" , "end", text=str(idx+1), values=event.asTuple())
 
 		self.sort_column('frameStart', False)
@@ -512,14 +512,14 @@ class bEventTree(bTree):
 			tags = list(tags) # list('') yields []
 			if this in tags:
 				tags.remove(this)
-			print('   removeFromTags() setting tags:', tags)
+			#print('   removeFromTags() setting tags:', tags)
 			self.treeview.item(item, tags=tags)
 		def addToTags(item, this):
 			tags = self.treeview.item(item)['tags']
 			tags = list(tags) # list('') yields []
 			if not this in tags:
 				tags.append(this)
-			print('   addToTags() setting tags:', tags)
+			#print('   addToTags() setting tags:', tags)
 			self.treeview.item(item, tags=tags)
 			
 		#print('=== flagOverlap()')

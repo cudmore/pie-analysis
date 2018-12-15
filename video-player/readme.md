@@ -226,6 +226,9 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 
 ## To Do (important)
 
+ - [done] Implement single menu to turn blinding on/off
+ - [bug] turning blinding on, the video stream is not paused???
+ - scrolling up/down with arrow keys through video file list is NOT updating to next video. Clicking in list DOES work.
  - When starting app and chunk file is loaded, make sure we are in chunk 0. When user first clicks 'limit', we need to be in a chunk!!!
  - Clicking on a chunk (gray bar) should select chunk (in chunk view).
  - Selecting event in event list should highlight event in event canvas.

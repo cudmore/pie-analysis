@@ -16,7 +16,7 @@ class bChunkView:
 		self.currentChunkIndex = None # index into random list of chunks (chunkData['chunkOrder'])
 		self.chunkData = None # loaded from file, data is a dict of {'chunks', 'chunkOrder'}
 		
-		# insert into random_chunks_frame
+		self.myWidgetList = []
 
 		"""
 		self.chunkFileLabel = ttk.Label(random_chunks_frame, width=6, anchor="w", text='File:')
@@ -25,27 +25,33 @@ class bChunkView:
 		
 		self.currentChunkLabel = ttk.Label(random_chunks_frame, anchor="w", text='chunk none')
 		self.currentChunkLabel.grid(row=0, column=0, sticky="w")
-	
+		self.myWidgetList.append(self.currentChunkLabel)
+		
 		self.numChunksLabel = ttk.Label(random_chunks_frame, anchor="w", text='')
 		self.numChunksLabel.grid(row=0, column=1, sticky="w")
+		self.myWidgetList.append(self.numChunksLabel)
 	
 		# previous chunk
 		self.previousChunkButton = ttk.Button(random_chunks_frame, width=4, text="<Prev", command=self.chunk_previous)
 		self.previousChunkButton.grid(row=0, column=2, sticky="w")
 		self.previousChunkButton.bind("<Key>", self.keyPress)
+		self.myWidgetList.append(self.previousChunkButton)
 
 		self.startOfChunkButton = ttk.Button(random_chunks_frame, width=1, text="|<", command=self.chunk_start)
 		self.startOfChunkButton.grid(row=0, column=3, sticky="w")
 		self.startOfChunkButton.bind("<Key>", self.keyPress)
+		self.myWidgetList.append(self.startOfChunkButton)
 
 		# next chunk
 		self.nextChunkButton = ttk.Button(random_chunks_frame, width=4, text="Next>", command=self.chunk_next)
 		self.nextChunkButton.grid(row=0, column=4, sticky="w")
 		self.nextChunkButton.bind("<Key>", self.keyPress)
+		self.myWidgetList.append(self.nextChunkButton)
 		
 		self.gotoChunkButton = ttk.Button(random_chunks_frame, width=4, text="Go To", command=self.chunk_goto2)
 		self.gotoChunkButton.grid(row=0, column=5, sticky="w")
 		self.gotoChunkButton.bind("<Key>", self.keyPress)
+		self.myWidgetList.append(self.gotoChunkButton)
 
 		# did not work because all key strokes are being grabbed to make events
 		"""
@@ -56,16 +62,17 @@ class bChunkView:
 		"""
 		
 		self.hijackControlsCheckbox = ttk.Checkbutton(random_chunks_frame, text='Limit Video Controls', 
-														command=self.checkbox_callback)
+														command=self.limitVideoControls_callback)
 		self.hijackControlsCheckbox.state(['!alternate'])
 		self.hijackControlsCheckbox.state(['!selected'])
 		#self.hijackControlsCheckbox.grid(row=1, column=0, columnspan=2, sticky="w")
 		self.hijackControlsCheckbox.grid(row=0, column=6, sticky="w")
 		self.hijackControlsCheckbox.bind("<Key>", self.keyPress)
+		self.myWidgetList.append(self.hijackControlsCheckbox)
 		
 		"""
 		self.limitInterfaceCheckbox = ttk.Checkbutton(random_chunks_frame, text='Limit Interface', 
-														command=self.checkbox_callback2)
+														command=self.limitVideoControls_callback2)
 		self.limitInterfaceCheckbox.state(['!alternate'])
 		self.limitInterfaceCheckbox.state(['!selected'])
 		#self.limitInterfaceCheckbox.grid(row=1, column=2, columnspan=4, sticky="w") # +1 col because hijackControlsCheckbox has columnspan=2
@@ -82,6 +89,26 @@ class bChunkView:
 		return 'break'
 	"""
 		
+	def enableInterface(self, onoff):
+		if self.chunkData is None:
+			print('bChunkView.enableInterface() is forcing off, self.chunkData is None')
+			onoff = False
+		
+		if onoff:
+			state = 'enabled'
+		else:
+			state = 'disabled'
+		
+		for item in self.myWidgetList:
+			#item['state'] = state
+			#item['state'] = ['!alternate']
+			
+			# tkinter is kind of shit here
+			# need to use dictionary ['state'] to enable/disable
+			# and use .state() to make sure it does not go to alternate
+			item['state'] = state
+			item.state(['!alternate'])
+			
 	def keyPress(self, event):
 		"""
 		This function will take all key-presses (except \r) and pass to main app.
@@ -95,9 +122,33 @@ class bChunkView:
 			self.app.keyPress(event)
 			return 'break'
 
-	def checkbox_callback(self):
+	def blindInterface(self, onoff, gotoFirstChunk=False):
+		if self.chunkData is None:
+			print('bChunkView.blindInterface() did nothing, self.chunkData is None')
+			return 0
+			
+		if onoff:
+			self.hijackControlsCheckbox['state'] = "disabled"
+
+			self.hijackControlsCheckbox.state(['!alternate'])
+			self.hijackControlsCheckbox.state(['selected'])
+
+			"""
+			if gotoFirstChunk:
+				self.chunk_goto(self.currentChunkIndex)
+			"""
+			
+		else:
+			self.hijackControlsCheckbox['state'] = "normal"
+			self.hijackControlsCheckbox.state(['!alternate'])
+				
+			
+	def limitVideoControls_callback(self):
 		#print('self.hijackControlsCheckbox.state:', self.hijackControlsCheckbox.state)
-		self.app.hijackInterface(self.isHijacking())
+		
+		self.chunk_goto(self.currentChunkIndex)
+		
+		#self.app.hijackInterface(self.isHijacking())
 
 	"""
 	def checkbox_callback2(self):
@@ -120,6 +171,7 @@ class bChunkView:
 		"""
 		print('chunkInterface_populate()')
 
+		self.chunkData = None
 		self.currentChunkIndex = 0
 
 		initialdir = self.app.videoList.path # get folder from video list
@@ -133,6 +185,7 @@ class bChunkView:
 		
 		if not os.path.isfile(filepath):
 			print('   did not find chunk file')
+			self.enableInterface(False)
 			return
 		
 		#chunkFile = bRandomChunks(filename).open()
@@ -140,21 +193,10 @@ class bChunkView:
 		with open(filepath) as f:
 			self.chunkData = json.load(f) # data is a dict of {'chunks', 'chunkOrder'}
 				
-		#self.chunk_goto(0)
-
-		# interface
-		#self.chunkFileLabel['text'] = 'File:' + os.path.basename(filepath)
-		#self.chunkFileLabel['width'] = len(os.path.basename(filepath)) + 5
-		
 		self.currentChunkLabel['text'] = 'chunk ' + str(self.currentChunkIndex)
 		self.numChunksLabel['text'] = 'of ' + str(self.numChunks)
-		
-		"""
-		if self.numChunks >= 1:
-			self.gotoChunkEntry['to'] = self.numChunks - 1
-		else:
-			self.gotoChunkEntry['to'] = 0
-		"""
+
+		self.enableInterface(True)
 				
 	def findChunk(self, path, startFrame):
 		"""
@@ -227,7 +269,7 @@ class bChunkView:
 		
 		if self.numChunks == 0:
 			print('    no chunks')
-			return 0
+			return False
 		
 		# check valid chunkNumber
 		if chunkNumber > self.numChunks-1:
@@ -256,6 +298,8 @@ class bChunkView:
 		# update chunk interface
 		self.currentChunkLabel['text'] = 'chunk ' + str(self.currentChunkIndex)
 	
+		return True
+		
 	def printChunk(self, chunk):
 		print('   index:', chunk['index'])
 		print('   path:', chunk['path'])

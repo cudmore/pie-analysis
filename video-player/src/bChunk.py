@@ -58,9 +58,18 @@ class bChunk:
 			fps = videoFile.dict['fps']
 			numFrames = videoFile.dict['frames']
 			
+			print('    path:', path)
+			print('    file:', file)
+			print('    fps:', fps)
+			print('    numFrames:', numFrames)
+			
 			pieceDurationFrame = math.floor(pieceDurationSeconds * fps)
 			numPiecesInFile = math.floor(numFrames / pieceDurationFrame) # constrain to integer
 			
+			if numPiecesInFile < 1:
+				# error
+				print('ERROR: bChunk.generate() numPiecesInFile:', numPiecesInFile)
+				
 			chunkDurationFrames = math.floor(chunkDurationSeconds * fps) # constrain to integer
 			numChunksInFile = math.floor(numFrames / chunkDurationFrames) # constrain to integer
 
@@ -85,6 +94,7 @@ class bChunk:
 			print('   chooseNumChunksPerPiece:', chooseNumChunksPerPiece)
 			
 			for pieceIdx in range(numPiecesInFile):
+				# chooseNumChunksPerPiece can not be more than numChunksPerPiece
 				randomChunksInPiece = np.random.choice(range(numChunksPerPiece), chooseNumChunksPerPiece, replace=False)
 				for chunkIdx in randomChunksInPiece:
 					newEntry = OrderedDict()
@@ -140,9 +150,9 @@ class bChunk:
 		print('writing file:', outFilePath)
 		with open(outFilePath, 'w') as outfile:
 			json.dump(outDict, outfile, indent=4, sort_keys=True)
-    
-    	return outFilePath
-    	
+	
+		return outFilePath
+		
 	def load(self, path=''):
 		with open(path) as f:
 			data = json.load(f)

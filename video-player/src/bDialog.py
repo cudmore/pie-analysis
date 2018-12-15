@@ -9,6 +9,7 @@ import tkinter
 from tkinter import ttk
 
 import VideoApp
+import bChunk
 
 """
 	path = '/Users/cudmore/Dropbox/PiE/video'
@@ -108,6 +109,39 @@ class bGenerateChunksDialog:
 
 	def okButton_Callback(self):
 		print('todo: actually generate')
+
+		if self.myParentApp.path:
+			pass
+		else:
+			# error
+			print('okButton_Callback() did not find app path, there is no loaded folder')
+			return 0
+		
+		chunks = bChunk.bChunk(self.myParentApp.path)
+	
+		# pieces is 10 min
+		# chunk duration is 10 seconds
+		# chunksPerVideo is 30
+	
+		
+		# was this for jessie 'scrambled' folder
+		pieceDurationSeconds = 10 * 60 # seconds
+		chunkDurationSeconds = 10 # seconds
+		chunksPerFile = 30
+
+		# is this for my 'video' folder
+		pieceDurationSeconds = 35
+		chunkDurationSeconds = 10 # seconds
+		chunksPerFile = 2
+
+		outFile = chunks.generate(pieceDurationSeconds, chunkDurationSeconds, chunksPerFile)
+
+		print('okButton_Callback() generated:', outFile)
+		
+		# user needs to rename the file 'randomChunks.txt'
+		# user needs to load folder again
+		
+		# keep here
 		self.top.destroy() # destroy *this, the modal
 
 ##################################################################################

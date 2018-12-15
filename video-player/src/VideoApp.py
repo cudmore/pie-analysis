@@ -44,7 +44,11 @@ class VideoApp:
 		"""
 		
 		#self.needsUpdate = False
+		self.pausedNeedsUpdate = False
+
 		self.lastUpdateSeconds = None
+		self.thisUpdateSeconds = None
+
 		self.buttonIsDown = False
 		#self.myCurrentImage = None
 		self.lrWidth = None
@@ -59,7 +63,7 @@ class VideoApp:
 		self.currentWidth = 640
 		self.currentHeight = 480
 		 
-		self.inConfigure = False
+		#self.inConfigure = False
 		self.switchingVideo = False
 		self.switchingFrame = False
 		
@@ -81,33 +85,41 @@ class VideoApp:
 		self.configDict = {}
 		# load config file
 		# todo: put this in a 'loadOption' function
-		frozen = 'not'
 		if getattr(sys, 'frozen', False):
-			# we are running in a bundle
-			frozen = 'ever so'
+			# we are running in a bundle (frozen)
 			bundle_dir = sys._MEIPASS
 		else:
 			# we are running in a normal Python environment
 			bundle_dir = os.path.dirname(os.path.abspath(__file__))
 
+		# load preferences
 		self.optionsFile = os.path.join(bundle_dir, 'options.json')
 		
 		if os.path.isfile(self.optionsFile):
-			print('loading options file:', self.optionsFile)
+			print('    loading options file:', self.optionsFile)
 			with open(self.optionsFile) as f:
 				self.configDict = json.load(f)
 		else:
-			print('using program provided default options')
-			self.optionsDefaults()
+			print('    using program provided default options')
+			self.preferencesDefaults()
+
+		# path to video file list, can be None
 		if os.path.isdir(self.configDict['lastPath']):
 			self.path = self.configDict['lastPath']
 		
+		# video file list
+		# HANDLED BY loadFolder
+		"""
 		self.videoList = bVideoList.bVideoList(self.path)		
-
+		"""
+		
+		# HANDLED BY loadFolder
+		"""
 		# initialize with first video in path
 		firstVideoPath = ''
 		if len(self.videoList.videoFileList) > 0:
 			firstVideoPath = self.videoList.videoFileList[0].dict['path']
+		"""
 		
 		self.myFrameInterval = 30 # ms per frame
 		self.myFramesPerSecond = round(1 / self.myFrameInterval * 1000, 2) # frames/second
@@ -115,43 +127,57 @@ class VideoApp:
 		#
 		# tkinter interface
 		self.root = tkinter.Tk()
+		
+		# hide while building
+		#self.root.withdraw()
+		
 		self.root.title('Video Annotate')
 		
+		self.root.bind("<Key>", self.keyPress)
+		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
+		self.root.bind('<Command-q>', self.onClose)		
 		# remove the default behavior of invoking the button with the space key
 		self.root.unbind_class("Button", "<Key-space>")
 
-		self.root.geometry(self.configDict['appWindowGeometry'])
+		# position root window
+		x = self.configDict['appWindowGeometry_x']
+		y = self.configDict['appWindowGeometry_y']
+		w = self.configDict['appWindowGeometry_w']
+		h = self.configDict['appWindowGeometry_h']
+		self.root.geometry('%dx%d+%d+%d' % (w, h, x, y))
 
 		self.buildInterface()
 
+		# HANDLED BY loadFolder
+		"""
 		self.chunkView.chunkInterface_populate()
+		"""
 		
-		bMenus.bMenus(self)
-
-		self.root.bind("<Key>", self.keyPress)
+		self.myMenus = bMenus.bMenus(self)
 
 		# fire up a video stream
+		# this is redundant with above
+		#self.loadFolder(self.path)
+		"""
 		if len(firstVideoPath) > 0:
 			self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
-
+		"""
+			
 		# this will return but run in background using tkinter after()
 		self.videoLoop()
 		
-		# set a callback to handle when the window is closed
-		self.root.wm_protocol("WM_DELETE_WINDOW", self.onClose)
-
-		self.root.bind('<Command-q>', self.onClose)		
-
-		if os.path.isfile(firstVideoPath):
-			pass
-		else:
-			pass
-			#self.loadFolder()
-			
-		self.root.mainloop()
+		if os.path.isdir(self.path):
+			self.loadFolder(self.path)
 		
-	def showAboutDialog(self):
-		myAboutDialog = bDialog.bAboutDialog(self.root)
+		self.blindInterface(self.configDict['blindInterface'], gotoFirstChunk=True)
+
+		# show at very end, paired with self.root.withdraw()
+		#self.root.update()
+		#self.root.deiconify()
+
+
+		# this will not return until we quit
+		self.root.mainloop()
 		
 	def loadFolder(self, path=''):
 		if len(path) < 1:
@@ -175,20 +201,44 @@ class VideoApp:
 		self.chunkView.chunkInterface_populate()
 
 		# fire up a video stream
-		# removed when adding loadFolder
-		if len(firstVideoPath) > 0:
+		"""
+		if len(firstVideoPath) > 0:	
 			self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
-
+		"""
+		
+		# removed when adding loadFolder
+		if self.configDict['blindInterface']:
+			print('*** VideoApp.loadFolder() is blinded, going to chunk 0')
+			wentToChunk0 = self.chunkView.chunk_goto(0) # if the new folder has no random chunks, this makes no sense
+			if wentToChunk0:
+				# done
+				self.hijackInterface(True)
+				# this (Self) interface will remain blinded, make sure chunk view is also blinded
+				self.chunkView.blindInterface(True)
+			else:
+				if len(firstVideoPath) > 0:	
+					self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
+		else:
+			print('*** VideoApp.loadFolder() is not blinded and calling switchvideo()')
+			if len(firstVideoPath) > 0:	
+				self.switchvideo(firstVideoPath, paused=True, gotoFrame=0)
+			# no matter what, turn this off
+			self.chunkView.hijackControlsCheckbox.state(['!selected'])
+			self.hijackInterface(False)
+			
 	def getEventTypeStr(self, type):
 		return self.configDict['eventTypes'][type]
 		
-	def optionsDefaults(self):
-		self.configDict['appWindowGeometry'] = "1100x700"
+	def preferencesDefaults(self):
+		self.configDict['appWindowGeometry_w'] = 1100
+		self.configDict['appWindowGeometry_h'] = 700
+		self.configDict['appWindowGeometry_x'] = 100
+		self.configDict['appWindowGeometry_y'] = 100
 		self.configDict['showVideoFiles'] = True
 		self.configDict['showEvents'] = True
 		self.configDict['videoFileSash'] = 200 # pixels
 		self.configDict['eventSash'] = 400 # pixels
-		self.configDict['showRandomChunks'] = True
+		#self.configDict['showRandomChunks'] = True
 		self.configDict['showVideoFeedback'] = True
 		self.configDict['smallSecondsStep'] = 10 # seconds
 		self.configDict['largeSecondsStep'] = 60 # seconds
@@ -197,6 +247,7 @@ class VideoApp:
 		self.configDict['fpsIncrement'] = 5 # seconds
 		self.configDict['warnOnEventDelete'] = False
 		self.configDict['lastPath'] = self.path
+		self.configDict['blindInterface'] = False
 		# map event number 1..9 to a string
 		self.configDict['eventTypes'] = {
 			'1': 'a',
@@ -216,71 +267,65 @@ class VideoApp:
 			'setEventFrameStop': 'l'
 		}
 		
-	def saveOptions(self):
-		print('saveOptions()')
+	def savePreferences(self):
+		print('=== VideoApp.savePreferences() file:', self.optionsFile)
 
-		"""
-		if self.vPane.sashpos(0) > 0:
-			self.configDict['videoFileSash'] = self.vPane.sashpos(0)
-		if self.hPane.sashpos(0) > 0:
-			self.configDict['eventSash'] = self.hPane.sashpos(0)
-		"""
-		self.configDict['videoFileSash'] = self.vPane.sashpos(0)
-		self.configDict['eventSash'] = self.hPane.sashpos(0)
-		
-		geometryStr = str(self.root.winfo_width()) + "x" + str(self.root.winfo_height())
-		self.configDict['appWindowGeometry'] = geometryStr
-		
-		print('   saving self.optionsFile:', self.optionsFile)
+		x = self.root.winfo_x()
+		y = self.root.winfo_y()
+		w = self.root.winfo_width()
+		h = self.root.winfo_height()
+
+		self.configDict['appWindowGeometry_x'] = x
+		self.configDict['appWindowGeometry_y'] = y
+		self.configDict['appWindowGeometry_w'] = w
+		self.configDict['appWindowGeometry_h'] = h
+
 		with open(self.optionsFile, 'w') as outfile:
 			json.dump(self.configDict, outfile, indent=4, sort_keys=True)
 	
 	###################################################################################
-	def limitInterface(self, onoff):
-		"""turn video list and controls on/off"""
-		if onoff:
-			self.vPane.sashpos(0, 0) # video file list
-			#self.video_feedback_frame.grid_remove()
-		else:
-			self.vPane.sashpos(0, self.configDict['videoFileSash'])
-			#self.video_feedback_frame.grid()
-			
-	def toggleInterface(self, this):
+	def blindInterface(self, onoff, gotoFirstChunk=False):
 		"""
-		toggle window panel/frames on and off, including
-			videofiles
-			events
-			chunks
+		turn video list and controls on/off
+		"""
+
+		# video file and event sash are opposite, use 'not onoff'
+		self.toggleInterface('videofiles', not onoff)
+		self.toggleInterface('events', not onoff)
+		
+		# turns on 'limit' checkbox and deactive(s) it
+		self.chunkView.blindInterface(onoff, gotoFirstChunk=gotoFirstChunk)
+		
+		# turns off some 'windows' menus
+		self.myMenus.blindMenus(onoff)
+		
+		self.configDict['blindInterface'] = onoff
+		
+		#self.myMenus.setState('Video Files', not onoff)
+		#self.myMenus.setState('Events', not onoff)
+		
+	def toggleInterface(self, this, onoff):
+		"""
+		toggle window panel/frames on and off, including (videofiles, events)
 		"""
 		if this == 'videofiles':
-			self.configDict['showVideoFiles'] = not self.configDict['showVideoFiles']
-			if self.configDict['showVideoFiles']:
+			self.configDict['showVideoFiles'] = onoff
+			if onoff:
+				print("self.configDict['videoFileSash']:", self.configDict['videoFileSash'])
 				self.vPane.sashpos(0, self.configDict['videoFileSash'])
 				self.videoFileTree.grid()
 			else:
 				self.vPane.sashpos(0, 0)
 				self.videoFileTree.grid_remove()
 		if this == 'events':
-			self.configDict['showEvents'] = not self.configDict['showEvents']
-			if self.configDict['showEvents']:
+			self.configDict['showEvents'] = onoff
+			if onoff:
 				self.hPane.sashpos(0, self.configDict['eventSash'])
 				self.eventTree.grid()
 			else:
 				self.hPane.sashpos(0, 10)
 				self.eventTree.grid_remove()
-		if this == 'randomchunks':
-			self.configDict['showRandomChunks'] = not self.configDict['showRandomChunks']
-			if self.configDict['showRandomChunks']:
-				self.random_chunks_frame.grid()
-			else:
-				self.random_chunks_frame.grid_remove()
-		if this == 'videofeedback':
-			self.configDict['showVideoFeedback'] = not self.configDict['showVideoFeedback']
-			if self.configDict['showVideoFeedback']:
-				self.video_feedback_frame.grid()
-			else:
-				self.video_feedback_frame.grid_remove()
-						
+
 	###################################################################################
 	def buildInterface(self):
 		myPadding = 5
@@ -293,7 +338,7 @@ class VideoApp:
 		self.root.grid_columnconfigure(0, weight=1)
 
 		#
-		self.vPane = ttk.PanedWindow(self.root, orient="vertical")
+		self.vPane = ttk.PanedWindow(self.root, orient="vertical") #, showhandle=True)
 		self.vPane.grid(row=0, column=0, sticky="nsew")
 
 		upper_frame = ttk.Frame(self.vPane, borderwidth=myBorderWidth, relief="sunken")
@@ -304,7 +349,8 @@ class VideoApp:
 
 		self.videoFileTree = bTree.bVideoFileTree(upper_frame, self, videoFileList='')
 		self.videoFileTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
-		self.videoFileTree.populateVideoFiles(self.videoList, doInit=True)
+		# HANDLED BY loadfolder
+		#self.videoFileTree.populateVideoFiles(self.videoList, doInit=True)
 		if self.configDict['showVideoFiles']:
 			pass
 			#self.videoFileTree.grid()
@@ -326,16 +372,6 @@ class VideoApp:
 
 		#self.hPane.state(['disabled'])
 
-		#hPane.bind("<Configure>", self.set_aspect2) # causing crash?
-		#
-		# PUT BACK IN - CRASHING?
-		#
-		"""
-		self.hPane.grid_rowconfigure(0, weight=1)
-		self.hPane.grid_columnconfigure(0, weight=0)
-		self.hPane.grid_columnconfigure(1, weight=1)
-		"""
-		
 		lower_left_frame = ttk.Frame(self.hPane, borderwidth=myBorderWidth, relief="sunken")
 		lower_left_frame.grid(row=0, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		lower_left_frame.grid_rowconfigure(0, weight=1)
@@ -343,7 +379,7 @@ class VideoApp:
 
 		self.hPane.add(lower_left_frame) #, stretch="always")
 		
-		# bTree switch
+		# event tree
 		self.eventTree = bTree.bEventTree(lower_left_frame, self, videoFilePath='')
 		self.eventTree.grid(row=0,column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		if self.configDict['showEvents']:
@@ -354,12 +390,12 @@ class VideoApp:
 		
 		#
 		# video
-		randomChunkRow = 5
-		videoFeedbackRow = 2
+		randomChunkRow = 4
+		#videoFeedbackRow = 2
 		contentFrameRow = 0 # contains video label
 		videoControlRow = 1
-		videoFrameSlider = 3
-		eventCanvasRow = 4
+		videoFrameSlider = 2
+		eventCanvasRow = 3
 		
 		lowerRightPadding = 0 # was myPadding
 		self.lower_right_frame = ttk.Frame(self.hPane, borderwidth=myBorderWidth, relief="sunken")
@@ -368,13 +404,13 @@ class VideoApp:
 		self.lower_right_frame.grid_rowconfigure(0, weight=0) # row 0 col 0 is random_chunks_frame
 		self.lower_right_frame.grid_rowconfigure(1, weight=0) # row 1 col 0 is video_feedback_frame
 		###
-		self.lower_right_frame.grid_rowconfigure(2, weight=0) # row 2 col 0 is content_frame -->> content_frame causing crash
+		#self.lower_right_frame.grid_rowconfigure(2, weight=0) # row 2 col 0 is content_frame -->> content_frame causing crash
 		###
-		self.lower_right_frame.grid_rowconfigure(3, weight=0) # row 3 col 0 is video_control_frame
-		self.lower_right_frame.grid_rowconfigure(4, weight=0) # row 4 col 0 is video_frame_slider
-		self.lower_right_frame.grid_rowconfigure(5, weight=0) # row 5 col 0 is myEventCanvas
+		self.lower_right_frame.grid_rowconfigure(2, weight=0) # row 3 col 0 is video_control_frame
+		self.lower_right_frame.grid_rowconfigure(3, weight=0) # row 4 col 0 is video_frame_slider
+		self.lower_right_frame.grid_rowconfigure(4, weight=0) # row 5 col 0 is myEventCanvas
 		
-		#self.lower_right_frame.grid_columnconfigure(0, weight=1)
+		self.lower_right_frame.grid_columnconfigure(0, weight=1)
 
 		#self.lower_right_frame.bind("<Configure>", self._configureLowerRightFrame) # causing crash?
 
@@ -386,14 +422,20 @@ class VideoApp:
 		self.random_chunks_frame = ttk.Frame(self.lower_right_frame)
 		tmpPad = 0
 		self.random_chunks_frame.grid(row=randomChunkRow, column=0, sticky="w", padx=tmpPad, pady=tmpPad)
+		"""
 		if self.configDict['showRandomChunks']:
-			self.random_chunks_frame.grid()
+			print('buildInterface() is SHOWING random_chunks_frame')
+			pass
+			#self.random_chunks_frame.grid()
 		else:
+			print('buildInterface() is HIDING random_chunks_frame')
 			self.random_chunks_frame.grid_remove()
+		"""
 		self.chunkView = bChunkView.bChunkView(self, self.random_chunks_frame)
 		
 		#
 		# video feedback
+		"""
 		self.video_feedback_frame = ttk.Frame(self.lower_right_frame)
 		self.video_feedback_frame.grid(row=videoFeedbackRow, column=0, sticky="nw")
 
@@ -412,7 +454,7 @@ class VideoApp:
 		#self.currentFrameIntervalLabel = ttk.Label(self.video_feedback_frame, width=20, anchor="w", text='Frame Interval (ms):')
 		#self.currentFrameIntervalLabel.grid(row=0, column=4, sticky="w")
 
-		self.currentFramePerScondLabel = ttk.Label(self.video_feedback_frame, width=20, anchor="w", text='fps:')
+		self.currentFramePerScondLabel = ttk.Label(self.video_feedback_frame, width=20, anchor="w", text='file FPS')
 		self.currentFramePerScondLabel.grid(row=0, column=4, sticky="w")
 
 		if self.configDict['showVideoFeedback']:
@@ -420,7 +462,8 @@ class VideoApp:
 			pass
 		else:
 			self.video_feedback_frame.grid_remove()
-
+		"""
+		
 		#
 		# video frame
 		
@@ -437,7 +480,7 @@ class VideoApp:
 		tmpImage = ImageTk.PhotoImage(tmpImage)
 		#self.myCurrentImage = tmpImage
 
-		self.videoLabel = ttk.Label(self.content_frame, text="xxx", font=("Helvetica", 48), compound="center", foreground="green")
+		self.videoLabel = ttk.Label(self.content_frame, text="No Folder", font=("Helvetica", 48), compound="center", foreground="green")
 		self.videoLabel.grid(row=0, column=0, sticky="nsew")
 		
 		self.videoLabel.configure(image=tmpImage)
@@ -458,23 +501,23 @@ class VideoApp:
 
 		video_fr_button = ttk.Button(self.video_control_frame, width=1, text="<<", command=lambda: self.doCommand('fast-backward'))
 		video_fr_button.grid(row=0, column=0, sticky="w")
-		video_fr_button.bind("<Key>", self._ignore)
+		video_fr_button.bind("<Key>", self._ignoreKey)
 
 		video_r_button = ttk.Button(self.video_control_frame, width=1, text="<", command=lambda: self.doCommand('backward'))
 		video_r_button.grid(row=0, column=1, sticky="w")
-		video_r_button.bind("<Key>", self._ignore)
+		video_r_button.bind("<Key>", self._ignoreKey)
 
 		self.video_play_button = ttk.Button(self.video_control_frame, width=4, text="Play", command=lambda: self.doCommand('playpause'))
 		self.video_play_button.grid(row=0, column=2, sticky="w")
-		self.video_play_button.bind("<Key>", self._ignore)
+		self.video_play_button.bind("<Key>", self._ignoreKey)
 	
 		video_f_button = ttk.Button(self.video_control_frame, width=1, text=">", command=lambda: self.doCommand('forward'))
 		video_f_button.grid(row=0, column=3, sticky="w")
-		video_f_button.bind("<Key>", self._ignore)
+		video_f_button.bind("<Key>", self._ignoreKey)
 	
 		video_ff_button = ttk.Button(self.video_control_frame, width=1, text=">>", command=lambda: self.doCommand('fast-forward'))
 		video_ff_button.grid(row=0, column=4, sticky="w")
-		video_ff_button.bind("<Key>", self._ignore)
+		video_ff_button.bind("<Key>", self._ignoreKey)
 
 		#
 		self.currentSecondsLabel = ttk.Label(self.video_control_frame, width=9, anchor="w", text='Sec:')
@@ -483,7 +526,7 @@ class VideoApp:
 		self.numSecondsLabel = ttk.Label(self.video_control_frame, width=8, anchor="w", text='of ')
 		self.numSecondsLabel.grid(row=0, column=6, sticky="w")
 
-		self.currentFramePerScondLabel = ttk.Label(self.video_control_frame, width=20, anchor="w", text='fps:')
+		self.currentFramePerScondLabel = ttk.Label(self.video_control_frame, width=20, anchor="w", text='file FPS')
 		self.currentFramePerScondLabel.grid(row=0, column=7, sticky="w")
 
 		self.actualFramesPerSecondLabel = ttk.Label(self.video_control_frame, width=20, anchor="w", text='actual fps:')
@@ -491,7 +534,7 @@ class VideoApp:
 
 		#
 		
-		sliderPadding = 50 # shared by video_frame_slider and myEventCanvas
+		sliderPadding = 0 # shared by video_frame_slider and myEventCanvas
 
 		#
 		# frame slider
@@ -531,9 +574,18 @@ class VideoApp:
 
 		#
 		# do this at very end
-		self.root.update()
-		self.vPane.sashpos(0, self.configDict['videoFileSash'])
-		self.hPane.sashpos(0, self.configDict['eventSash'])
+		
+		# not sure if this is needed
+		#self.root.update()
+		
+		if self.configDict['showVideoFiles']:
+			self.vPane.sashpos(0, self.configDict['videoFileSash'])
+		else:
+			self.vPane.sashpos(0, 0)
+		if self.configDict['showEvents']:
+			self.hPane.sashpos(0, self.configDict['eventSash'])
+		else:
+			self.hPane.sashpos(0, 0)
 
 		#self.videoLabel.bind("<Configure>", self.mySetAspect)
 		#self.mySetAspect()
@@ -542,7 +594,7 @@ class VideoApp:
 		self.root.bind('<Button-1>', self.myButtonDown)
 		self.lower_right_frame.bind('<Configure>', self._configureContentFrame) # causing crash?
 
-	def _ignore(self, event):
+	def _ignoreKey(self, event):
 		"""
 		This function will take all key-presses (except \r) and pass to main app.
 		return "break" is critical to stop propogation of event
@@ -568,7 +620,7 @@ class VideoApp:
 		"""
 		Limit video controls to a chunk (for blinding)
 		"""
-		print('\n=== hijackInterface() onoff:', onoff)
+		print('\n=== VideoApp.hijackInterface() onoff:', onoff)
 		if onoff:
 			self.myCurrentChunk, randomIdx = self.chunkView.getCurrentChunk()
 			if self.myCurrentChunk is None:
@@ -595,7 +647,7 @@ class VideoApp:
 
 			# set feedback frame relative to chunk duration
 			tmpNumFrames = self.myCurrentChunk['stopFrame'] - self.myCurrentChunk['startFrame'] + 1
-			self.numFrameLabel['text'] = 'of ' + str(tmpNumFrames)
+			#self.numFrameLabel['text'] = 'of ' + str(tmpNumFrames)
 			tmpNumSeconds = round(tmpNumFrames / self.vs.getParam('fps'), 2)
 			self.numSecondsLabel['text'] = 'of ' + str(tmpNumSeconds)
 		else:
@@ -609,7 +661,7 @@ class VideoApp:
 			self.eventTree.filter(None)
 
 			# set feedback frame
-			self.numFrameLabel['text'] = 'of ' + str(self.vs.getParam('numFrames'))
+			#self.numFrameLabel['text'] = 'of ' + str(self.vs.getParam('numFrames'))
 			self.numSecondsLabel['text'] = 'of ' + str(self.vs.getParam('numSeconds'))
 			
 	# video file tree
@@ -868,7 +920,7 @@ class VideoApp:
 			self.videoLoop()
 		
 	def switchvideo(self, videoPath, paused=False, gotoFrame=None):
-		#print('=== switchvideo() videoPath:', videoPath, 'paused:', paused, 'gotoFrame:', gotoFrame)
+		print('=== VideoApp.switchvideo() videoPath:', videoPath, 'paused:', paused, 'gotoFrame:', gotoFrame)
 
 		self.switchingVideo = True # temporarily shit down videoLoop
 		
@@ -892,62 +944,82 @@ class VideoApp:
 		self.eventTree.populateEvents(videoPath)
 		
 		# set feedback frame
-		self.numFrameLabel['text'] = 'of ' + str(self.vs.getParam('numFrames'))
+		#self.numFrameLabel['text'] = 'of ' + str(self.vs.getParam('numFrames'))
 		self.numSecondsLabel['text'] = 'of ' + str(self.vs.getParam('numSeconds'))
 		
+		self.currentFramePerScondLabel['text'] ='file ' + str(round(self.vs.streamParams['fps'],2)) + ' FPS'
+
 		# set frame slider
 		self.video_frame_slider.config(from_=0)
 		self.video_frame_slider.config(to=self.vs.getParam('numFrames') - 1)
 
+		# THIS CAUSES INFINITE LOOP
+		# if blinding is on, we need to keep it on
+		"""
+		self.blindInterface(self.configDict['blindInterface'], gotoFirstChunk=True)
+		if self.configDict['blindInterface']:
+			self.chunkView.chunk_goto(0)
+		#self.chunkView.blindInterface(self.configDict['blindInterface'])
+		"""
+		
+		# THIS CAUSES INFINITE LOOP
+		# if we are blinded then ALWAYS hijack interface
+		# isually called from bChunkView
+		"""
+		print('*************** switchvideo calling xxx')
+		if self.configDict['blindInterface']:
+			self.hijackInterface(True)
+		"""
+		
+		# leave this here
 		self.switchingVideo = False
 		
 	####################################################################################
 	def myButtonDown(self, event):
-		print('~~~ myButtonDown()')
+		#print('~~~ myButtonDown()')
 		self.buttonIsDown = True
 		#self.inConfigure = True
 		#return 'break'
-		print('    returning')
+		#print('    returning')
 	def myButtonUp(self, event):
-		print('myButtonUp()')
+		#print('myButtonUp()')
 		self.buttonIsDown = False
-		self.inConfigure = False
+		#self.inConfigure = False
 	
-	def _configureContentFrame(self, event=None, width=None, height=None):
+	def _configureContentFrame(self, event=None, forceUpdate=False):
 		print('\n=== _configureContentFrame() event:', event)
-		print('                                                                 *************')
 		
 		#print('   self.lower_right_frame.coords():', self.lower_right_frame.coords())
 		
-		if 0 and not self.buttonIsDown:
+		if 0 and not self.buttonIsDown and not forceUpdate:
 			print('_configureContentFrame() returning - button is not down')
 			return 0
 		
 		if self.vs is None:
 			return 0
 		
-		#self.needsUpdate = True
+		#self.inConfigure = True
 
-		self.inConfigure = True
-		
-		#print('_configureContentFrame is doing nothing')
-		#return 0
-		
 		aspectRatio = self.vs.getParam('aspectRatio')
-		if self.configDict['showRandomChunks']:
-			chunksHeight = self.random_chunks_frame.winfo_height()
-		else:
-			chunksHeight = 0
+
+		chunksHeight = self.random_chunks_frame.winfo_height()
+			
+		"""
 		if self.configDict['showVideoFeedback']:
 			feedbackHeight = self.video_feedback_frame.winfo_height()
 		else:
 			feedbackHeight = 0
+		"""
+			
 		buttonHeight = 32
 		eventCanvasHeight = 100
 		
-		if width is None:
+		if forceUpdate:
+			width = self.lower_right_frame.winfo_width()	
+			height = self.lower_right_frame.winfo_height()
+			print('    _configureContentFrame forceUpdate width:', width, 'height:', height)
+		else:
 			width = event.width
-		if height is None:
 			height = event.height
 		
 		myBorder = 20
@@ -967,10 +1039,10 @@ class VideoApp:
 		self.currentVideoWidth = newWidth
 		self.currentVideoHeight = newHeight
 		
-		# crashes
-		#self.videoLabel.place(width=newWidth, height=newHeight)
 		self.content_frame.place(width=newWidth, height=newHeight)
 		
+		#
+		# IMPORTANT
 		# scale background filevideostream
 		if self.vs is not None:
 			self.vs.setScale(newWidth, newHeight)
@@ -984,7 +1056,7 @@ class VideoApp:
 		chunkHeight = self.random_chunks_frame.winfo_height()
 		
 		yPos += buttonHeight
-		newCanvasHeight = height - newHeight - buttonHeight - buttonHeight - feedbackHeight - 2*chunkHeight - int(buttonHeight/2)
+		newCanvasHeight = height - newHeight - buttonHeight - buttonHeight - 2*chunkHeight - int(buttonHeight/2)
 		"""
 		print('    height:', height)
 		print('    newHeight:', newHeight)
@@ -998,29 +1070,30 @@ class VideoApp:
 		self.myEventCanvas.on_resize2(yPos, newWidth, newCanvasHeight)		
 		
 		# chunks
+		#self.random_chunks_frame.grid()
 		yPos += newCanvasHeight + int(chunkHeight/2)
 		self.random_chunks_frame.place(y=yPos, width=newWidth)
 
 		# turned off in myButtonUp() when button is released
 		#self.inConfigure = False
 
-		# does not work here
-		#self.root.update_idletasks()
+		self.pausedNeedsUpdate = True
 		
-		#self.root.update_idletasks()
-
-		
-		print('    done')
+		#print('    done')
 		
 	####################################################################################
 	def videoLoop(self):
 		
 		#print('videoLoop()', time.time())
 		myContinue = True
-		if 0 and self.inConfigure:
-			myContinue = False
+		#if 0 and self.inConfigure:
+		#	myContinue = False
 		if self.switchingVideo:
-			pass
+			# was this
+			#pass
+			myContinue = False
+		if self.vs is None:
+			myContinue = False
 		if myContinue:
 			if self.vs is not None and self.vs.gotoFrame is not None:
 				pass
@@ -1033,14 +1106,20 @@ class VideoApp:
 					self.videoLabel.configure(text="Paused")
 					if (self.pausedAtFrame is None or (self.pausedAtFrame != self.myCurrentFrame) or self.switchedVideo or self.setFrameWhenPaused is not None):
 						self.switchedVideo = False
+						#self.pausedNeedsUpdate = False
 						#print('VideoApp2.videoLoop() fetching new frame when paused', 'self.pausedAtFrame:', self.pausedAtFrame, 'self.myCurrentFrame:', self.myCurrentFrame)
 						try:
 							#print('VideoApp2.videoLoop() CALLING self.vs.read()')
 							[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
 							self.frameSliderVar.set(self.myCurrentFrame)
+							#self.thisUpdateSeconds = time.time()
 							#print('   got self.myCurrentFrame:', self.myCurrentFrame)
 						except:
-							print('zzz qqq')
+							print('my exception in VideoApp.videoLoop(), self.vs.read() failed when PAUSED')
+							print('    self.frame:', self.frame)
+							print('    self.myCurrentFrame:', self.myCurrentFrame)
+							print('    self.myCurrentSeconds:', self.myCurrentSeconds)
+							
 						# this is to fix not progressing on click to new eent (we are reading too fast)
 						if self.setFrameWhenPaused is not None:
 							print('   videoLoop() grabbed frame when paused after setFrame')
@@ -1052,14 +1131,24 @@ class VideoApp:
 							#self.frameSliderVar.set(self.myCurrentFrame)
 							self.setFrameWhenPaused = None
 						self.pausedAtFrame = self.myCurrentFrame
+					elif self.pausedNeedsUpdate:
+						self.pausedNeedsUpdate = False
+						print('paused needs updating')
+						if self.frame is not None:
+							self.frame = cv2.resize(self.frame, (self.currentVideoWidth, self.currentVideoHeight))
+						
 				else:
 					self.videoLabel.configure(text="")
 					try:
 						if self.vs is not None and (self.myCurrentFrame != self.vs.getParam('numFrames')-1) and ( self.myCurrentFrame < self.chunkLastFrame):
 							[self.frame, self.myCurrentFrame, self.myCurrentSeconds] = self.vs.read()
 							self.frameSliderVar.set(self.myCurrentFrame)
+							#self.thisUpdateSeconds = time.time()
 					except:
-						print('****** my exception in videoLoop')
+						print('****** my exception in videoLoop(), self.vs.read() failed when NOT paused')
+						print('    self.frame:', self.frame)
+						print('    self.myCurrentFrame:', self.myCurrentFrame)
+						print('    self.myCurrentSeconds:', self.myCurrentSeconds)
 				
 				if self.vs is None or not self.vs.isOpened or self.vs is None or self.frame is None:
 					#print('ERROR: VideoApp2.videoLoop() got None self.frame')
@@ -1084,48 +1173,32 @@ class VideoApp:
 						# this works too, best we can do is 18 fps
 						#tmpImage = tmpImage.resize((self.currentVideoWidth, self.currentVideoHeight), Image.ANTIALIAS)
 						tmpImage = ImageTk.PhotoImage(tmpImage)
-	
-						# call _configureContentFrame() directly, do not use bind('<Configure'>)
-						"""
-						lrWidth = self.lower_right_frame.winfo_width()
-						lrHeight = self.lower_right_frame.winfo_height()
-						if lrWidth != self.lrWidth or lrHeight != self.lrHeight:
-							self.lrWidth = lrWidth
-							self.lrHeight = lrHeight
-							print('    videoloop() calling _configureContentFrame')
-							self._configureContentFrame(width=lrWidth, height=lrHeight)
-						"""
 							
-						# crash may be because image is coming from other thread
-						#tmpImage = np.zeros((480,640,3), np.uint8)
 						"""
+						# make video noise for debugging
 						tmpImage = np.random.randint(0, 255, (480,640,3)).astype('uint8')
 						tmpImage = Image.fromarray(tmpImage)
 						tmpImage = tmpImage.resize((self.currentVideoWidth, self.currentVideoHeight), Image.ANTIALIAS)
 						tmpImage = ImageTk.PhotoImage(tmpImage)
 						"""
 						
-						#self.myCurrentImage = tmpImage
-						#print('=== swapping image')
-						if 1:
-							#print('  setting image width:', self.currentVideoWidth, 'height:', self.currentVideoHeight)
-							self.videoLabel.configure(image=tmpImage)
-							self.videoLabel.image = tmpImage
-							#print('  done setting image', time.time())
-						#self.lastUpdateSeconds = time.time()
+						# swap image
+						self.videoLabel.configure(image=tmpImage)
+						self.videoLabel.image = tmpImage
 						
-					#self.myEventCanvas.on_resize2(tmpWidth, heightRemaining - int(1.5*buttonHeight))
 					self.myEventCanvas.setFrame(self.myCurrentFrame)
 
 					#
 					# update feedback labels
+					"""
 					if self.myCurrentChunk is not None:
 						tmpFrame = self.myCurrentFrame - self.myCurrentChunk['startFrame']
 						self.currentFrameLabel['text'] = 'Frame:' + str(tmpFrame)
 				
 					else:
 						self.currentFrameLabel['text'] = 'Frame:' + str(self.myCurrentFrame)
-
+					"""
+					
 					if self.myCurrentChunk is not None:
 						tmpCurrentSeconds = self.vs.getSecondsFromFrame(self.myCurrentFrame) - self.vs.getSecondsFromFrame(self.myCurrentChunk['startFrame'])
 						tmpCurrentSeconds = round(tmpCurrentSeconds,2)
@@ -1133,15 +1206,19 @@ class VideoApp:
 					else:
 						self.currentSecondsLabel['text'] = 'Sec:' + str(self.myCurrentSeconds) #str(round(self.myCurrentFrame / self.vs.streamParams['fps'],2))
 					#self.currentFrameIntervalLabel['text'] ='Frame Interval (ms):' + str(self.myFrameInterval)
-					self.currentFramePerScondLabel['text'] ='playback fps:' + str(self.myFramesPerSecond)
+					# todo: remove self.myFramesPerSecond
+					#self.currentFramePerScondLabel['text'] ='file ' + str(self.myFramesPerSecond) + ' FPS'
+					#self.currentFramePerScondLabel['text'] ='file ' + str(round(self.vs.streamParams['fps']),2) + ' FPS'
 					
-					nowUpdateSeconds = time.time()
-					if self.lastUpdateSeconds is not None:
-						actualFramesPerSecond = round(1/(nowUpdateSeconds - self.lastUpdateSeconds),2)
-						#actualFramesPerSecond = nowUpdateSeconds - self.lastUpdateSeconds
-						self.actualFramesPerSecondLabel['text'] ='actual fps:' + str(actualFramesPerSecond)
-					self.lastUpdateSeconds = nowUpdateSeconds
-					
+					self.thisUpdateSeconds = time.time()
+					if not self.vs.paused:
+						if self.lastUpdateSeconds is not None:
+							if self.thisUpdateSeconds - self.lastUpdateSeconds > 0:
+								actualFramesPerSecond = round(1/(self.thisUpdateSeconds - self.lastUpdateSeconds),2)
+								#print('actualFramesPerSecond:', actualFramesPerSecond)
+								self.actualFramesPerSecondLabel['text'] ='playing ' + str(actualFramesPerSecond) + ' FPS'
+					#self.lastUpdateSeconds = self.thisUpdateSeconds
+
 					#self.root.update()
 				
 		#print('    videoloop() done')
@@ -1158,15 +1235,17 @@ class VideoApp:
 			self.root.update()
 			self.needsUpdate = False
 		"""
+
+		# CRITICAL - Leave this here
 		self.root.update()
 			
-		#self.lastUpdateSeconds = time.time()
+		self.lastUpdateSeconds = self.thisUpdateSeconds
 		
-		# leave this here -- CRITICAL
+		# CRITICAL - Leave this here
 		actualInterval = int(self.myFrameInterval)
-		#self.videoLoopID = self.root.after(actualInterval, self.videoLoop)
+		self.videoLoopID = self.root.after(actualInterval, self.videoLoop)
 		# was this
-		self.videoLoopID = self.lower_right_frame.after(actualInterval, self.videoLoop)
+		#self.videoLoopID = self.lower_right_frame.after(actualInterval, self.videoLoop)
 		
 		#self.root.after_idle(self.videoLoop)
 		#self.videoLoopID = self.root.after_idle(self.videoLoop)
@@ -1176,10 +1255,9 @@ class VideoApp:
 		print("VideoApp.onClose()")
 		self.isRunning = False
 		self.vs.stop()
-		self.saveOptions()
-
+		self.savePreferences()
 		self.root.quit()
 
 if __name__ == '__main__':
 	print('VideoApp.__main__() sys.argv:', sys.argv)
-	pba = VideoApp()
+	va = VideoApp()

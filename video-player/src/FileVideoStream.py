@@ -73,15 +73,27 @@ class FileVideoStream:
 
 		self.switchingStream = True
 		
+		# does not seem to be need to release()
+		# this was causing crash while holding down next/prev chunk with ]/[
+		"""
 		if self.stream is not None:
-			print('   self.stream.release()')
-			self.stream.release()
-		
+			if self.stream.isOpened():
+				print('    stream.release()')
+				#self.stream.release()
+			else:
+				print('    stream was not open?')
+		"""
+				
+		print('FileVideoStream.switchStream() cv2.VideoCapture(path) path:', path)
 		self.stream = cv2.VideoCapture(path)
 			
+		# not needed in python
+		#self.stream.open()
+		
 		self.streamParams = {}
-		if not self.isOpened:
-			print('   DID NOT OPEN')
+		#if not self.isOpened:
+		if not self.stream.isOpened():
+			#print('    DID NOT OPEN')
 			self.streamParams['path'] = ''
 			self.streamParams['fileName'] = ''
 			self.streamParams['width'] = None
@@ -91,6 +103,7 @@ class FileVideoStream:
 			self.streamParams['numFrames'] = None
 			self.streamParams['numSeconds'] = None
 		else:
+			#print('    opened')
 			self.streamParams['path'] = path
 			self.streamParams['fileName'] = os.path.basename(path)
 			self.streamParams['width'] = self.stream.get(cv2.CAP_PROP_FRAME_WIDTH)
@@ -177,7 +190,7 @@ class FileVideoStream:
 						(grabbed, frame) = self.stream.read()
 						#print('      grabbed:', grabbed)
 					except:
-						print('xxx yyy')
+						print('*** my exception in FileVideoStream() self.stream.read()')
 					"""
 					self.currentFrame = int(self.stream.get(cv2.CAP_PROP_POS_FRAMES))
 					self.milliseconds = round(self.stream.get(cv2.CAP_PROP_POS_MSEC),2)
@@ -236,7 +249,7 @@ class FileVideoStream:
 			ret = self.Q.get(block=True, timeout=2.0)			
 			#ret = self.Q.get()
 		except:
-			print('my exception in FileVideoStream.read()')
+			print('my exception in FileVideoStream.read(), self.Q.get() failed, returning [None, None, None]')
 			ret = [None, None, None]
 		#print('FileVideoStream.read() done')
 		return ret #self.Q.get(block=True, timeout=2.0)
@@ -260,7 +273,8 @@ class FileVideoStream:
 		
 	def setFrame(self, newFrame):
 		#print('FileVideoStream.setFrame() newFrame:', newFrame)
-		if not self.isOpened:
+		#if not self.isOpened:
+		if not self.stream.isOpened():
 			print('error: setFrame() file is not open')
 			return False
 		
@@ -279,7 +293,8 @@ class FileVideoStream:
 		return self.streamParams[param]
 		
 	def getFrameFromSeconds(self, seconds):
-		if not self.isOpened:
+		#if not self.isOpened:
+		if not self.stream.isOpened():
 			print('error: getFrameFromSeconds() file is not open')
 			return None
 		theFrame = int(float(seconds * self.streamParams['fps']))
@@ -288,7 +303,8 @@ class FileVideoStream:
 		return theFrame
 		
 	def getSecondsFromFrame(self, frame):
-		if not self.isOpened:
+		#if not self.isOpened:
+		if not self.stream.isOpened():
 			print('error: getSecondsFromFrame() file is not open')
 			return None
 		theSeconds = round(int(float(frame)) / self.streamParams['fps'],2)
