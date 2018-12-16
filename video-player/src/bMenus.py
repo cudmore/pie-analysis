@@ -105,6 +105,7 @@ class bMenus:
 		self.windowmenu.entryconfig(0,state=state) # Video Files
 		self.windowmenu.entryconfig(1,state=state) # Events
 
+		# don't change state of on/off
 		self.setState('Video Files', not onoff)
 		self.setState('Events', not onoff)
 		

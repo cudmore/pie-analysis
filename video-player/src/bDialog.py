@@ -1,7 +1,7 @@
 # Author: Robert Cudmore
 # Date: 20181203
 
-import sys
+import os, sys
 
 import cv2
 
@@ -11,23 +11,11 @@ from tkinter import ttk
 import VideoApp
 import bChunk
 
-"""
-	path = '/Users/cudmore/Dropbox/PiE/video'
-	path = '/Users/cudmore/Dropbox/PiE/scrambled'
-	chunks = bChunk(path)
-	
-	# pieces is 10 min
-	# chunk duration is 10 seconds
-	# chunksPerVideo is 30
-	
-	pieceDurationSeconds = 10 * 60 # seconds
-	chunkDurationSeconds = 10 # seconds
-	chunksPerFile = 30
-	chunks.generate(pieceDurationSeconds, chunkDurationSeconds, chunksPerFile)
-"""
-
 ##################################################################################
 class bGenerateChunksDialog:
+	"""
+	Dialog for user to specify chunk parameters and generate a random chunks .txt file
+	"""
 	def __init__(self, parentApp):
 		self.myParentApp = parentApp
 		
@@ -35,86 +23,112 @@ class bGenerateChunksDialog:
 		
 		self.top = tkinter.Toplevel(self.myParentApp.root)
 		self.top.title('Generate Chunks')
-		self.top.geometry('500x320')
+		self.top.geometry('600x500')
 
 		self.top.grid_rowconfigure(0, weight=1) # main
-		self.top.grid_rowconfigure(1, weight=1) # keys
-		self.top.grid_rowconfigure(2, weight=0) # ok
+		self.top.grid_rowconfigure(1, weight=0) # keys
 		self.top.grid_columnconfigure(0, weight=1)
 
 		myPadding = 10
 
-		myFrame = ttk.Frame(self.top, borderwidth=5,relief="groove")
+		myFrame = ttk.Frame(self.top, borderwidth=2,relief="groove")
 		myFrame.grid(row=0, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
+		myFrame.grid_rowconfigure(4, weight=1) # IMPORTANT: row 4 is feedback label
 		myFrame.grid_columnconfigure(0, weight=1)
 		myFrame.grid_columnconfigure(1, weight=1)
 
 		from_ = 0
 		to = 2**32-1
 		
-		# pieceDurationSeconds
+		# usePieces
 		row = 0
-		pieceDurationSecondsText = 'pieceDurationSeconds'
+		usePiecesText = 'Use Pieces' #'usePieces'
+		usePiecesLabel = ttk.Label(myFrame, text=usePiecesText)
+		usePiecesLabel.grid(row=row, column=0, sticky="w", padx=myPadding, pady=myPadding)
+
+		self.usePiecesCheckbutton = ttk.Checkbutton(myFrame, text='Use Pieces')
+		self.usePiecesCheckbutton.state(['!alternate'])
+		self.usePiecesCheckbutton.state(['selected'])
+		self.usePiecesCheckbutton.grid(row=row, column=1, sticky="w", padx=myPadding, pady=myPadding)
+
+		# pieceDurationSeconds
+		row = 1
+		pieceDurationSecondsText = 'Piece Duration (Sec)' #'pieceDurationSeconds'
 		pieceDurationSecondsLabel = ttk.Label(myFrame, text=pieceDurationSecondsText)
 		pieceDurationSecondsLabel.grid(row=row, column=0, sticky="w", padx=myPadding, pady=myPadding)
 
 		pieceDurationSecondsVal = 10 * 60
-		pieceDurationSecondsSpinbox = ttk.Spinbox(myFrame, from_=from_, to=to)
-		pieceDurationSecondsSpinbox.set(pieceDurationSecondsVal)
-		pieceDurationSecondsSpinbox.selection_range(0, "end")
-		pieceDurationSecondsSpinbox.icursor("end")
-		pieceDurationSecondsSpinbox.grid(row=row, column=1, sticky="w", padx=myPadding, pady=myPadding)
+		self.pieceDurationSecondsSpinbox = ttk.Spinbox(myFrame, from_=from_, to=to)
+		self.pieceDurationSecondsSpinbox.set(pieceDurationSecondsVal)
+		self.pieceDurationSecondsSpinbox.selection_range(0, "end")
+		self.pieceDurationSecondsSpinbox.icursor("end")
+		self.pieceDurationSecondsSpinbox.grid(row=row, column=1, sticky="w", padx=myPadding, pady=myPadding)
 
 		# chunkDurationSeconds
-		row = 1
-		chunkDurationSecondsText = 'chunkDurationSeconds'
+		row = 2
+		chunkDurationSecondsText = 'Chunk Duration (sec)' #'chunkDurationSeconds'
 		chunkDurationSecondsLabel = ttk.Label(myFrame, text=chunkDurationSecondsText)
 		chunkDurationSecondsLabel.grid(row=row, column=0, sticky="w", padx=myPadding, pady=myPadding)
 
 		chunkDurationSecondsVal = 10
-		chunkDurationSecondsSpinbox = ttk.Spinbox(myFrame, from_=from_, to=to)
-		chunkDurationSecondsSpinbox.set(chunkDurationSecondsVal)
-		chunkDurationSecondsSpinbox.selection_range(0, "end")
-		chunkDurationSecondsSpinbox.icursor("end")
-		chunkDurationSecondsSpinbox.grid(row=row, column=1, sticky="w", padx=myPadding, pady=myPadding)
+		self.chunkDurationSecondsSpinbox = ttk.Spinbox(myFrame, from_=from_, to=to)
+		self.chunkDurationSecondsSpinbox.set(chunkDurationSecondsVal)
+		self.chunkDurationSecondsSpinbox.selection_range(0, "end")
+		self.chunkDurationSecondsSpinbox.icursor("end")
+		self.chunkDurationSecondsSpinbox.grid(row=row, column=1, sticky="w", padx=myPadding, pady=myPadding)
 
 		# chunksPerFile
-		row = 2
-		chunksPerFileText = 'chunksPerFile'
+		row = 3
+		chunksPerFileText = 'Chunks Per File' #'chunksPerFile'
 		chunksPerFileLabel = ttk.Label(myFrame, text=chunksPerFileText)
 		chunksPerFileLabel.grid(row=row, column=0, sticky="w", padx=myPadding, pady=myPadding)
 
 		chunksPerFileVal = 30
-		chunksPerFileSpinbox = ttk.Spinbox(myFrame, from_=from_, to=to)
-		chunksPerFileSpinbox.set(chunksPerFileVal)
-		chunksPerFileSpinbox.selection_range(0, "end")
-		chunksPerFileSpinbox.icursor("end")
-		chunksPerFileSpinbox.grid(row=row, column=1, sticky="w", padx=myPadding, pady=myPadding)
+		self.chunksPerFileSpinbox = ttk.Spinbox(myFrame, from_=from_, to=to)
+		self.chunksPerFileSpinbox.set(chunksPerFileVal)
+		self.chunksPerFileSpinbox.selection_range(0, "end")
+		self.chunksPerFileSpinbox.icursor("end")
+		self.chunksPerFileSpinbox.grid(row=row, column=1, sticky="w", padx=myPadding, pady=myPadding)
 
-		# cancel/ok
-		buttonPadding = 10
+		# feeback with results
+		row = 4
+		self.resultsLabel = ttk.Label(myFrame, text='results', anchor="w", justify="left", borderwidth=2, relief="groove")
+		self.resultsLabel.grid(row=row, column=0, columnspan=2, sticky="nsew", padx=myPadding, pady=myPadding)
+		
+		#
+		# cancel/ok (has its own frame)
+		buttonPadding = 20
 		myFrameOK = ttk.Frame(self.top) #, borderwidth=5,relief="groove")
-		myFrameOK.grid(row=2, column=0, sticky="e", padx=buttonPadding, pady=buttonPadding)
+		myFrameOK.grid(row=1, column=0, sticky="e", padx=buttonPadding, pady=buttonPadding)
+		"""
 		myFrameOK.grid_columnconfigure(0, weight=1)
 		myFrameOK.grid_columnconfigure(1, weight=1)
-
+		myFrameOK.grid_columnconfigure(3, weight=1)
+		"""
+		
 		cancelButton = ttk.Button(myFrameOK, text="Cancel", command=self.cancelButton_Callback)
 		cancelButton.grid(row=0, column=1)
 
-		okButton = ttk.Button(myFrameOK, text="Generate", command=self.okButton_Callback)
+		s = ttk.Style()
+		s.configure('Kim.TButton', foreground='forest green')
+		okButton = ttk.Button(myFrameOK, text="Generate", style='Kim.TButton', command=self.generateButton_Callback)
 		okButton.grid(row=0, column=2)
+
+		okButton = ttk.Button(myFrameOK, text="Done", command=self.doneButton_Callback)
+		okButton.grid(row=0, column=3)
+
+	def doneButton_Callback(self):
+		self.top.destroy() # destroy *this, the modal
 
 	def cancelButton_Callback(self):
 		self.top.destroy() # destroy *this, the modal
 
-	def okButton_Callback(self):
-		print('todo: actually generate')
+	def generateButton_Callback(self):
+		print('=== bGenerateChunksDialog.generateButton_Callback()')
 
-		if self.myParentApp.path:
-			pass
-		else:
+		if not os.path.isdir(self.myParentApp.path):
 			# error
-			print('okButton_Callback() did not find app path, there is no loaded folder')
+			print('    generateButton_Callback() did not find app path, there is no loaded folder')
 			return 0
 		
 		chunks = bChunk.bChunk(self.myParentApp.path)
@@ -133,16 +147,45 @@ class bGenerateChunksDialog:
 		pieceDurationSeconds = 35
 		chunkDurationSeconds = 10 # seconds
 		chunksPerFile = 2
-
-		outFile = chunks.generate(pieceDurationSeconds, chunkDurationSeconds, chunksPerFile)
-
-		print('okButton_Callback() generated:', outFile)
 		
+		usePieces = 'selected' in self.usePiecesCheckbutton.state()
+		if usePieces:
+			pieceDurationSeconds = self.pieceDurationSecondsSpinbox.get()
+			pieceDurationSeconds = int(pieceDurationSeconds)
+		else:
+			pieceDurationSeconds = None
+
+		chunkDurationSeconds = self.chunkDurationSecondsSpinbox.get()
+		chunkDurationSeconds = int(chunkDurationSeconds)
+
+		chunksPerFile = self.chunksPerFileSpinbox.get()
+		chunksPerFile = int(chunksPerFile)
+
+		print('    Use Pieces:', usePieces)
+		print('    pieceDurationSeconds:', pieceDurationSeconds, type(pieceDurationSeconds))
+		print('    chunkDurationSeconds:', chunkDurationSeconds, type(chunkDurationSeconds))
+		print('    chunksPerFile:', chunksPerFile, type(chunksPerFile))
+		
+		# outList is a list of dict {'file', 'result'}
+		# 'result' will either be 'ok' or have error
+		outFilePath, outList = chunks.generate(pieceDurationSeconds, chunkDurationSeconds, chunksPerFile)
+		
+		if not outFilePath:
+			outFilePath = 'none'
+		
+		# show results in dialog
+		self.resultsLabel['text'] = 'out file path: ' + outFilePath + '\n'
+		for idx, out in enumerate(outList):
+			print('out:', out)
+			#self.resultsLabel['text'] += '===' + "\n"
+			self.resultsLabel['text'] += 'file ' + str(idx+1) + ': ' + out['file'] + "\n"
+			self.resultsLabel['text'] += '    ' + out['result'] + "\n"
+			
 		# user needs to rename the file 'randomChunks.txt'
 		# user needs to load folder again
 		
 		# keep here
-		self.top.destroy() # destroy *this, the modal
+		#self.top.destroy() # destroy *this, the modal
 
 ##################################################################################
 class bNoteDialog:
