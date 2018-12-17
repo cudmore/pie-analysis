@@ -32,7 +32,7 @@ import bTree # gives us bEventTree and bVideoFileTree
 import bDialog
 import bEventCanvas
 
-__version__ = '20181202'
+__version__ = '20181217'
 
 ##################################################################################
 class VideoApp:

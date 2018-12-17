@@ -226,6 +226,7 @@ The options are saved in a json file 'options.json' and can be manually edited. 
 
 ## To Do (important)
 
+ - Add keys to set event 1..9 to preferences
  - [done] Implement single menu to turn blinding on/off
  - [bug] turning blinding on, the video stream is not paused???
  - scrolling up/down with arrow keys through video file list is NOT updating to next video. Clicking in list DOES work.

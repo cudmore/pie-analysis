@@ -260,6 +260,8 @@ class bPreferencesDialog:
 		#self.grab_set()
 		# see: http://effbot.org/tkinterbook/tkinter-dialog-windows.htm
 		
+		self.parentApp = parentApp
+		
 		self.top = tkinter.Toplevel(parentApp.root)
 		self.top.grab_set()
 		self.top.bind('<Button-1>', self._ignore)
@@ -296,7 +298,14 @@ class bPreferencesDialog:
 			myLabel = ttk.Label(myFrame, text=option)
 			myLabel.grid(row=idx, column=0, sticky="w", padx=myPadding, pady=myPadding)
 
+			# spinbox only responds to clicking up/down arrow, does not respond to values directly entered
+			# this lambda is complex but handles both up/down arrows AND bind of <Return> key
 			mySpinbox = ttk.Spinbox(myFrame, from_=from_, to=to)
+			cmd = lambda event=None, spinboxWidget=mySpinbox, option=option: self.spinbox_Callback(event, spinboxWidget, option)
+			mySpinbox['command'] = cmd
+			mySpinbox.bind('<Return>', cmd)
+			mySpinbox.bind('<FocusOut>', cmd)
+			
 			mySpinbox.set(myInt)
 			mySpinbox.selection_range(0, "end")
 			mySpinbox.icursor("end")
@@ -305,6 +314,8 @@ class bPreferencesDialog:
 		
 		
 		# keys
+		self.myKeyDict = {}
+		
 		myFrameKeys = ttk.Frame(self.top, borderwidth=5,relief="groove")
 		myFrameKeys.grid(row=1, column=0, sticky="nsew", padx=myPadding, pady=myPadding)
 		myFrameKeys.grid_columnconfigure(0, weight=1)
@@ -327,7 +338,12 @@ class bPreferencesDialog:
 
 			entryWidget.grid(row=idx, column=1, sticky="w", padx=myPadding, pady=myPadding)
 			#entryWidget.bind('<Key>', self.keyPress)
-			entryWidget.bind('<Key>', lambda widget=entryWidget: self.keyPress(widget))
+			entryWidget.bind('<Key>', lambda event=None, entryWidget=entryWidget, key=key: self.keyPress(event, entryWidget, key))
+
+			setButton = ttk.Button(myFrameKeys, text="Set", command=lambda entryWidget=entryWidget, key=key: self.setKey_Callback(entryWidget, key))
+			setButton.grid(row=idx, column=2)
+			
+			self.myKeyDict[entryWidget] = myText
 			
 		# ok
 		buttonPadding = 10
@@ -352,13 +368,73 @@ class bPreferencesDialog:
 
 
 	def _ignore(self, event):
-		print('_ignore event:', event)
+		#print('_ignore event:', event)
 		return 'break'
 		
+	def spinbox_Callback(self, event=None, xxx=None, yyy=None):
+		print('spinbox_Callback() event:', event, 'xxx:', xxx, 'yyy:', yyy)
+		print('new value is:', xxx.get())
+		
+		wasThis = self.parentApp.configDict[yyy]
+		
+		if xxx.get():
+			try:
+				newValue = int(float(xxx.get()))
+				if newValue > 0:
+					# set
+					print('setting', yyy, 'to', newValue, type(newValue))
+					self.parentApp.configDict[yyy] = newValue
+				else:
+					# error
+					print('error')
+					xxx.set(wasThis)		
+			except:
+				print('error: spinbox_Callback() is restting value')
+				xxx.set(wasThis)
+		else:
+			xxx.set(wasThis)
+	def setKey_Callback(self, entryWidget, key):
+		"""
+		Change keymapping.
+			entryWidget: widget id that hold the proposed new key
+			key: the name of the key in configDict, e.g. self.parentApp.configDict['keyMap'][key]
+		"""
+		
+		def reset(wasThis):
+			entryWidget.delete(0, "end")
+			entryWidget.insert(0, wasThis)
+			entryWidget.select_range(0, "end")
+
+		#print('setKey_Callback() entryWidget:', entryWidget, 'key:', key)
+		#print('    entryWidget.get():', entryWidget.get())
+		
+		# all the used keys
+		usedKeys = [v for (k,v) in self.myKeyDict.items()]
+		# subtract out current value of key we are changing
+		usedKeys.remove(self.myKeyDict[entryWidget])
+		
+		# the key we will change this to
+		proposedKey = entryWidget.get()
+		
+		wasThis = self.parentApp.configDict['keyMap'][key]
+		
+		if len(proposedKey) > 1:
+			# keys can only be one character
+			print('error: must be one character/key')
+			reset(wasThis)
+		elif proposedKey in usedKeys:
+			# keys can not be used by other keys
+			print('error: key in use')
+			reset(wasThis)
+		else:
+			print(key, 'is now mapped to', proposedKey)
+			self.parentApp.configDict['keyMap'][key] = proposedKey
+			
 	def editKey(self, widget):
-		print('editKey() widget:', widget)
-	
-	def keyPress(self, event):
+		#print('editKey() widget:', widget)
+		pass
+		
+	def keyPress(self, event=None, widget=None, key=None):
 		print('keyPress() event:', event)
 		print('event.widget._name:', event.widget._name)
 		value = event.widget.get()
