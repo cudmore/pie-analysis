@@ -264,7 +264,16 @@ class VideoApp:
 			'prevChunk': '[',
 			'nextChunk': ']',
 			'setEventFrameStart': 'f',
-			'setEventFrameStop': 'l'
+			'setEventFrameStop': 'l',
+			'event1': '1',
+			'event2': '2',
+			'event3': '3',
+			'event4': '4',
+			'event5': '5',
+			'event6': '6',
+			'event7': '7',
+			'event8': '8',
+			'event9': '9',
 		}
 		
 	def savePreferences(self):
@@ -773,11 +782,72 @@ class VideoApp:
 
 
 		# add event
+		"""
 		validEventKeys = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+		validEventKeys = [
+			self.configDict['keyMap']['event1'],
+			self.configDict['keyMap']['event2'],
+			self.configDict['keyMap']['event3'],
+			self.configDict['keyMap']['event4'],
+			self.configDict['keyMap']['event5'],
+			self.configDict['keyMap']['event6'],
+			self.configDict['keyMap']['event7'],
+			self.configDict['keyMap']['event8'],
+			self.configDict['keyMap']['event9'],
+			
+		]
 		if theKey in validEventKeys:
 			if self.myCurrentFrame is not None:
 				print('keyPress() adding event, theKey:', theKey)
+				eventNum = 
 				self.addEvent(theKey, self.myCurrentFrame)
+		"""
+		
+		if theKey == self.configDict['keyMap']['event1']:
+			if self.myCurrentFrame is not None:
+				print('keyPress() adding event, theKey:', theKey)
+				eventNum = "1"
+				self.addEvent(eventNum, self.myCurrentFrame)
+		if theKey == self.configDict['keyMap']['event2']:
+			if self.myCurrentFrame is not None:
+				print('keyPress() adding event, theKey:', theKey)
+				eventNum = "2"
+				self.addEvent(eventNum, self.myCurrentFrame)
+		if theKey == self.configDict['keyMap']['event3']:
+			if self.myCurrentFrame is not None:
+				print('keyPress() adding event, theKey:', theKey)
+				eventNum = "3"
+				self.addEvent(eventNum, self.myCurrentFrame)
+		if theKey == self.configDict['keyMap']['event4']:
+			if self.myCurrentFrame is not None:
+				print('keyPress() adding event, theKey:', theKey)
+				eventNum = "4"
+				self.addEvent(eventNum, self.myCurrentFrame)
+		if theKey == self.configDict['keyMap']['event5']:
+			if self.myCurrentFrame is not None:
+				print('keyPress() adding event, theKey:', theKey)
+				eventNum = "5"
+				self.addEvent(eventNum, self.myCurrentFrame)
+		if theKey == self.configDict['keyMap']['event6']:
+			if self.myCurrentFrame is not None:
+				print('keyPress() adding event, theKey:', theKey)
+				eventNum = "6"
+				self.addEvent(eventNum, self.myCurrentFrame)
+		if theKey == self.configDict['keyMap']['event7']:
+			if self.myCurrentFrame is not None:
+				print('keyPress() adding event, theKey:', theKey)
+				eventNum = "7"
+				self.addEvent(eventNum, self.myCurrentFrame)
+		if theKey == self.configDict['keyMap']['event8']:
+			if self.myCurrentFrame is not None:
+				print('keyPress() adding event, theKey:', theKey)
+				eventNum = "8"
+				self.addEvent(eventNum, self.myCurrentFrame)
+		if theKey == self.configDict['keyMap']['event9']:
+			if self.myCurrentFrame is not None:
+				print('keyPress() adding event, theKey:', theKey)
+				eventNum = "9"
+				self.addEvent(eventNum, self.myCurrentFrame)
 		
 		# delete event
 		if theKey in ['d', '\x7f']:

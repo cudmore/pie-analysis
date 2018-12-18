@@ -269,7 +269,7 @@ class bPreferencesDialog:
 		print(parentApp.configDict)
 		
 		self.top.title('Preferences')
-		self.top.geometry('500x320')
+		self.top.geometry('500x700')
 		
 		includeOptions = ('smallSecondsStep', 'largeSecondsStep', 'smallSecondsStep_chunk', 'largeSecondsStep_chunk')
 		
@@ -313,6 +313,7 @@ class bPreferencesDialog:
 			mySpinbox.grid(row=idx, column=1, sticky="w", padx=myPadding, pady=myPadding)
 		
 		
+		#
 		# keys
 		self.myKeyDict = {}
 		
