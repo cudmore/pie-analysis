@@ -6,6 +6,10 @@
 # Purpose: Bash script to run video-player
 #          Be sure to install first with ./install-player
 
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+NC='\033[0m' # No Color
+
 # abb 20201026, to run from double click
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 echo -e "Running run from $DIR"
@@ -29,3 +33,9 @@ else
 fi
 
 python src/player.py
+
+deactivate
+
+echo -e "${GREEN}The video-player just quit.${NC}"
+
+exec /bin/bash
