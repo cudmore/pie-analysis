@@ -6,6 +6,11 @@
 # Purpose: Bash script to run video-player
 #          Be sure to install first with ./install-player
 
+# abb 20201026, to run from double click
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+echo -e "Running run from $DIR"
+cd "${DIR}"
+
 if [ ! -d "player_env/" ]; then
 	echo '==='
 	echo "=== error: Did not find virtual environment in player_env"
