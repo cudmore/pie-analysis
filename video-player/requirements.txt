@@ -2,5 +2,8 @@
 #opencv-python==3.4.3.18
 #Pillow==5.3.0
 numpy
-opencv-python
+
+# need specific version to stop recursion in pyinstaller
+opencv-python==4.5.3.56
+
 Pillow

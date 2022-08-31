@@ -1,6 +1,12 @@
+# macOS
 .AppleDouble
 .DS_Store
-*.pyc
-#.ipynb_checkpoints
 
-__pycache__
+# python
+__pycache__/
+*.egg-info/
+*.pyc
+
+# pyinstaller
+build/
+dist/
