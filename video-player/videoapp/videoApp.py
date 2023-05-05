@@ -997,7 +997,7 @@ class VideoApp:
         
         if self.vs is None:
             print('   switchvideo() is instantiating stream')
-            self.vs = videoapp.FileVideoStream(videoPath, paused, gotoFrame) #.start()
+            self.vs = videoapp.FileVideoStream.FileVideoStream(videoPath, paused, gotoFrame) #.start()
             #print('   self.vs.start()')
             self.vs.start()
             time.sleep(0.02)
@@ -1330,7 +1330,9 @@ class VideoApp:
         self.root.quit()
 
 def main():
-    va = VideoApp()
+    path = '/Users/cudmore/Dropbox/PiE/video0'
+
+    va = VideoApp(path)
 
 if __name__ == '__main__':
     print('VideoApp.__main__() sys.argv:', sys.argv)

@@ -25,6 +25,8 @@ Run from the command-line, this will
  - create a 'build/' folder
  - create a 'dist/' folder
  
+Run this inside 'pyinstaller' folder.
+
 ```
 pyinstaller \
     --noconfirm \

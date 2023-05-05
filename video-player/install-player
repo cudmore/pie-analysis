@@ -67,7 +67,8 @@ fi
 echo '==='
 echo "=== install-player: Installing required python libraries with 'pip install -r requirements.txt'"
 echo '==='
-pip install -r requirements.txt
+#pip install -r requirements.txt
+pip install .
 
 echo '==='
 echo "=== install-player: Deactivating Python 3 virtual environment with 'deactivate'"

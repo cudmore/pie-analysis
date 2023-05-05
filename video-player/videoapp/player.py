@@ -5,16 +5,16 @@
 # Main
 ##################################################################################
 
-from VideoApp import VideoApp
+import videoapp.videoApp
 
 #from FileVideoStream import FileVideoStream
 #videoPath = '/Users/cudmore/Dropbox/PiE/video/homecage-movie.mp4'
 #fvs = FileVideoStream(videoPath) #.start()
 #fvs.start()
 
-path = '!/Users/cudmore/Dropbox/PiE/video'
+path = '/Users/cudmore/Dropbox/PiE/video0'
 
-pba = VideoApp(path)
+pba = videoapp.videoApp.VideoApp(path)
 
 #pba.root.mainloop()
 

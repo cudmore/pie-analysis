@@ -32,7 +32,7 @@ else
 	exit 1
 fi
 
-python src/player.py
+python videoapp/player.py
 
 deactivate
 
