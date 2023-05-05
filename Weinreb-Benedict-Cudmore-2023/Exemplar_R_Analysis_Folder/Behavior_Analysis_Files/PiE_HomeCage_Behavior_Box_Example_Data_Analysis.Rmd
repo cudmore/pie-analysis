@@ -1,0 +1,538 @@
+---
+title: "PiE HomeCage Behavior Box Analysis R Code for Exemplar Behaviors"
+author: "Jessie Benedict"
+date: "`r Sys.Date()`"
+output: pdf_document
+---
+#First time you run code, you must install these packages
+
+install.packages("pkgconfig")
+install.packages("ggplot2")
+install.packages("plyr")
+install.packages("tidyverse")
+install.packages("reshape2")
+install.packages("ggpubr")
+install.packages("ggsignif")
+install.packages("ggprism")
+install.packages("ggprism")
+install.packages("readr")
+install.packages("tibble")
+
+```{r setup, include=FALSE}
+
+
+```
+#Everytime you launch RStudio, you must load these packages:
+```{R}
+
+library("plyr")
+library("tidyverse")
+library("reshape2")
+library("ggplot2")
+library("ggpubr")
+library("ggprism")
+library("ggsignif")
+library("readr")
+library("pkgconfig")
+library("tibble")
+library("stringr")
+
+R.version.string #just to make sure your R is up to date
+```
+
+#First read in the single csv file storing variables that are not scored in VideoAnnotate's 1-9 scoring system, in this case nest score (0-4 score for the quality of the nest at 30:00, Seconds to Initiate Pup Retrieval, and Seconds to Complete Pup Retrieval, which are scored while viewing the entire assay, rather than the 10-second chunks for random scoring. 
+```{R} 
+
+#check your working directory
+getwd()
+
+#you need to make sure this Rmd file is saved in same folder as the csv or txt files you try to read in/write. 
+
+WTMBT_FULL_ASSAY_VARIABLES <- read_csv("FINAL_VARIABLES_TABLE.csv", 
+    col_types = cols(STRAIN = col_factor(levels = c("DBA/2J","C57BL/6")), `LACTATION DAY` = col_factor(levels = c("LD1", 
+        "LD3", "LD5")), `NEST SCORE` = col_double(), 
+        NOTES = col_skip()))
+
+#To replace the "_" in the Animal IDs with an "F" for "female"
+WTMBT_FULL_ASSAY_VARIABLES$`ANIMAL ID`<- gsub("_", "F", WTMBT_FULL_ASSAY_VARIABLES$`ANIMAL ID`)
+
+#To rename the ID/Strain/Day variables
+colnames(WTMBT_FULL_ASSAY_VARIABLES)<-c("Full ID","Strain","Day","Time at All Pups Retrieved","Pup Retrieval Initiation (0-300)","Pup Retrieval Initiation (0-1800)","Nest Score")
+
+```
+
+## Next, read in the VideoAnnotate txt files.
+```{r}
+#Since each assay is stored as an individual txt file, this code compiles all the file names in a given folder to then use a loop for reading in each file:
+
+# make a vector of all the txt files' paths/names in the folder scored with VideoAnnotate
+file_names <- list.files(pattern="*.txt", full.names=TRUE)
+
+#confirm files
+print(file_names)
+
+#create empty dataframes to store the loop outputs in
+loop_output_df<-data.frame()
+step_result_df<-data.frame()
+
+#a loop to bind all data together into one dataframe and skip the two header rows in each file
+for(x in file_names) {
+  
+step_result_df<-data.frame(read.csv(x, header = FALSE, skip=2))
+
+print(step_result_df)
+
+{loop_output_df<-rbind(loop_output_df,step_result_df)
+}}
+colnames(loop_output_df)<- c("Index", "FilePath", "Seconds","Date","Time","EventCodeNumber","EventCodeLetter","FrameStart", "FrameStop","FrameDuration", "SecondsStart", "SecondsStop","SecondsDuration", "ChunkIndex", "randomizedChunkIndex", "Note")
+                             
+#rename loop_output_df to a name describing all of your scored files bound together, in this case WT (wildtype) MBT (maternal behavior test), TOTAL (for all animals, all lactation days)
+WTMBT_TOTAL<-loop_output_df
+
+#view your dataframe. every row is a single scored event within VideoAnnotate. V2 (column 2) is the file path that event came from, 
+print(WTMBT_TOTAL)
+
+#OPTIONAL: extract file name information using regular expression, if the file name stores useful information like animal ID, or condition. For more info https://regex101.com/r/CjiKyz/2
+
+#look at file paths of first row, second column in the dataframe
+print(WTMBT_TOTAL[1,2])
+
+#first make a list of all of the file names, stripped of their file path
+split_name <- tools::file_path_sans_ext(basename (WTMBT_TOTAL$FilePath))
+#look at the file name in the first row:
+print(split_name[1])
+#this example filename format is Path/Path/Path/YYYYMMDD-CCCCC-SS-A-LLL where Y = year, M = month, D = day, C = Cohort ID, S = Strain ID (in most cases this would be experimental condition), A = Animal ID, L = Lactation Day (in most cases this would be experimental day #)
+
+#now use a regular expression to extract that information into new columns
+# (?<Date>.*) denotes to capture the preceding information (?), label the column it's captured in "Date" (< >), .* print whatever it is)
+# (?>-|_) ?> means don't capture the following hyphen or underscore
+# etc for the Cohort, Strain, Animal ID, Day
+
+extracted_file_information<-data.frame(stringr::str_match(split_name,"(?<Date>.*)(?>-|_)(?<Cohort>.*)(?>-|_)(?<Strain>B6|D2*)(?>-|_)(?<Animal>.*)(?>-|_)(?<Day>LD1|LD3|LD5*)$"))
+colnames(extracted_file_information)<- c("FileName", "Date", "Cohort","Strain","Animal ID", "Day")
+
+#just to see it
+print(extracted_file_information[1,])
+
+#recommended to look at a random section of names in the middle of the datasets to make sure 
+#the two datasets match, specifically look for a transition between two files 
+
+#print row 1271 through 1273, column 1 from each dataset
+print(extracted_file_information$'FileName'[1271:1273])
+print(WTMBT_TOTAL$'FilePath'[1271:1273])
+
+#Both results refer to a file from 2020/12/22 (date in YYYYMMDD),
+#WTMBT (Cohort), B6 (Strain), 3 (Animal ID), and LD5 (Lactation Day), transitioning to 2020/12/23, WTMBT, B6, 4, LD3. 
+
+
+# Bind the extracted file data to the larger data set and rename to prevent overwriting issues          
+WTMBT_TOTAL_WITH_NAMES<-data.frame(cbind(extracted_file_information,WTMBT_TOTAL))
+
+```
+#Creating a composite variable for Strain and Animal ID
+```{r}
+
+#binding 
+Full_IDs<-paste(WTMBT_TOTAL_WITH_NAMES$Strain, WTMBT_TOTAL_WITH_NAMES$Animal.ID)
+
+#Replacing spaces with "F" for "Female":
+Full_IDs <- gsub(" ", "F", Full_IDs)
+
+#Naming and binding Full IDs to main dataset:
+WTMBT_PLUS_FULLIDS<-cbind("Full.IDs" = Full_IDs, WTMBT_TOTAL_WITH_NAMES)
+
+```
+#Transforming the dataset from individual rows for every event to event counts in columns 
+```{r}
+
+#Transforming the dataset to be counts of event occurrences, rather than a row for every individual event
+#pulling out a list of every distinct Full.ID
+individual_names<-WTMBT_PLUS_FULLIDS %>% distinct(Full.IDs)
+#unlisting the result into a character vector
+name_vector<-unlist(individual_names)
+
+#repeat for lactation days
+lactation_days<-WTMBT_PLUS_FULLIDS %>% distinct(Day)
+days_vector<-unlist(lactation_days)
+
+#make an event code vector for the events scored in VideoAnnotate:
+event_codes<-c(1:9)
+
+                                                         
+#For loop to transpose the row counts into event counts:
+#create empty data.frames:
+WTMBT_COMPLETE<-data.frame()
+WTMBT_transposed_step<- data.frame()
+    
+#Nested for loop to count for every distinct Full.ID, on every distinct Day, how many of each event (1-9) was scored for each animal:
+for(q in name_vector){
+  for(r in days_vector){
+    
+WTMBT_transposed_step <- cbind(
+"Full ID" = paste(q), 
+"Day" = paste(r),
+"Strain" = paste(q),
+"Pups Retrieved and Grouped" = length(which(WTMBT_PLUS_FULLIDS$Full.IDs== q & WTMBT_PLUS_FULLIDS$Day== r & WTMBT_PLUS_FULLIDS$EventCodeNumber==1)),
+"All Pups in Nest" = length(which(WTMBT_PLUS_FULLIDS$Full.IDs== q & WTMBT_PLUS_FULLIDS$Day== r & WTMBT_PLUS_FULLIDS$EventCodeNumber==2)),
+"Pup Retrieval Event" = length(which(WTMBT_PLUS_FULLIDS$Full.IDs== q & WTMBT_PLUS_FULLIDS$Day== r & WTMBT_PLUS_FULLIDS$EventCodeNumber==3)),
+"Pup Interaction" = length(which(WTMBT_PLUS_FULLIDS$Full.IDs== q & WTMBT_PLUS_FULLIDS$Day== r & WTMBT_PLUS_FULLIDS$EventCodeNumber==4)),
+"Crouching Over Pups" = length(which(WTMBT_PLUS_FULLIDS$Full.IDs== q & WTMBT_PLUS_FULLIDS$Day== r & WTMBT_PLUS_FULLIDS$EventCodeNumber==5)),
+"Resting with Pups" = length(which(WTMBT_PLUS_FULLIDS$Full.IDs== q & WTMBT_PLUS_FULLIDS$Day== r & WTMBT_PLUS_FULLIDS$EventCodeNumber==6)),
+"Nest Building" = length(which(WTMBT_PLUS_FULLIDS$Full.IDs== q & WTMBT_PLUS_FULLIDS$Day== r & WTMBT_PLUS_FULLIDS$EventCodeNumber==7)),
+"Solo Activity" = length(which(WTMBT_PLUS_FULLIDS$Full.IDs== q & WTMBT_PLUS_FULLIDS$Day== r & WTMBT_PLUS_FULLIDS$EventCodeNumber==8)),
+"Solo Rest" = length(which(WTMBT_PLUS_FULLIDS$Full.IDs== q & WTMBT_PLUS_FULLIDS$Day== r & WTMBT_PLUS_FULLIDS$EventCodeNumber==9)))
+   
+WTMBT_COMPLETE<- rbind(WTMBT_COMPLETE,WTMBT_transposed_step)
+
+  }}
+
+#Note that for WTMBT$Strain, WTMBT$Full.ID is copied again. Now to extract just the first two digits denoting the strain:
+WTMBT_COMPLETE$Strain<-str_extract(WTMBT_COMPLETE$Strain,"..")
+
+#And to replace those digits with the full strain names:
+WTMBT_COMPLETE$Strain<-gsub("B6","C57BL/6",
+                       gsub("D2","DBA/2J",WTMBT_COMPLETE$Strain))
+
+#Pick a few cells to verify they are correct from the pre-transposition dataset
+
+```
+#DEFINING TYPES OF VARIABLES
+```{R}
+
+       
+WTMBT_COMPLETE<-as.data.frame(WTMBT_COMPLETE)
+WTMBT_COMPLETE$`Full ID`<-as.factor(WTMBT_COMPLETE$`Full ID`)
+WTMBT_COMPLETE$Strain<-as.factor(WTMBT_COMPLETE$Strain)
+WTMBT_COMPLETE$Day<-as.factor(WTMBT_COMPLETE$Day)
+WTMBT_COMPLETE$`Pups Retrieved and Grouped`<-as.double(WTMBT_COMPLETE$`Pups Retrieved and Grouped`)
+WTMBT_COMPLETE$`All Pups in Nest`<-as.double(WTMBT_COMPLETE$`All Pups in Nest`)
+WTMBT_COMPLETE$`Pup Retrieval Event`<-as.double(WTMBT_COMPLETE$`Pup Retrieval Event`)
+WTMBT_COMPLETE$`Pup Interaction`<-as.double(WTMBT_COMPLETE$`Pup Interaction`)
+WTMBT_COMPLETE$`Crouching Over Pups`<-as.double(WTMBT_COMPLETE$`Crouching Over Pups`)
+WTMBT_COMPLETE$`Resting with Pups`<-as.double(WTMBT_COMPLETE$`Resting with Pups`)
+WTMBT_COMPLETE$`Nest Building`<-as.double(WTMBT_COMPLETE$`Nest Building`)
+WTMBT_COMPLETE$`Solo Activity`<-as.double(WTMBT_COMPLETE$`Solo Activity`)
+WTMBT_COMPLETE$`Solo Rest`<-as.double(WTMBT_COMPLETE$`Solo Rest`)
+
+#assigning the same order to the factors for color grouping/plotting comparisons
+typeof(WTMBT_COMPLETE$Strain)
+
+
+WTMBT_COMPLETE$Strain <- factor(WTMBT_COMPLETE$Strain, levels=c("C57BL/6","DBA/2J"))
+#WTMBT_FULL_ASSAY_VARIABLES$Strain <- factor(WTMBT_FULL_ASSAY_VARIABLES$Strain, levels=c("C57BL/6","DBA/2J"))
+
+
+write.csv(WTMBT_COMPLETE,"WTMBT_COMPLETE.csv")
+
+```
+#Plotting Scored Behaviors:
+```{R}
+symnum.args <- list(cutpoints = c(0, 0.0001, 0.001, 0.01, 0.05, Inf), symbols = c("****", "***", "**", "*", "N.S."))
+```
+
+```{R}
+#function for innerquartile range for error bars, since the data are non-parametric
+iqr = function(z, lower = 0.25, upper = 0.75) {
+  data.frame(
+    y = median(z),
+    ymin = quantile(z, lower),
+    ymax = quantile(z, upper)
+  )
+}
+
+```
+
+```{R}
+#Plotting All Pups Nested:
+#pvalue brackets and label dataframe, allows for facetted plots:
+WTMBT_pvalue_w_facets<- tibble::tribble(
+  ~group1, ~group2, ~p.signif, ~y.position, ~Day,
+  "C57BL/6","DBA/2J","N.S.",31.9,"LD1",
+  "C57BL/6","DBA/2J","*",31.9,"LD3",
+  "C57BL/6","DBA/2J","*",31.9,"LD5")
+
+#defining the plot as an object, executed by code ggplot(dataset,...) "aes" defines aesthetics of the plot, to tell ggplot what the x and y variables are and which variable to use for sorting the data into appropriate groups. See https://ggplot2-book.org/introduction.html for an introduction
+WTMBT_ALL_PUPS_NESTED_PLOT_FINAL<- ggplot(WTMBT_COMPLETE, aes(x=`Strain`, y=`All Pups in Nest`)) +
+# the type of plot (line, bar, point, etc, size of points, thickness of border, transparency of dots for overplotting visibility, and width of dodge added to prevent complete overplotting of overlapping data points:
+geom_point((aes(color=`Strain`)), size=18,stroke=2, alpha=0.7, position = position_dodge2(width=0.4))+
+# the color scale, set manually
+scale_colour_manual(labels=c("DBA/2J","C57BL/6"),values=c("#E74C3C","#3498DB"))+
+#title
+ggtitle("All Pups Gathered in Nest", subtitle="Scored Behavior Windows (of 30) with All Pups Gathered in the Nest")+
+# x-scale, with each group defined, and an expansion parameter set for symmetry of the resultant plot
+scale_x_discrete(c("C57BL/6","DBA/2J"), expand=c(0, 0.4))+
+# y-scale, limits given to allow y.position of p-value to be plotted within the limits of the plot, and define the breaks for axis ticks on the Y-axis
+scale_y_continuous(guide="prism_minor",limits= c(-4,33),breaks = seq(0,30, by = 5), minor_breaks = seq(0,30, by = 1), name="All Pups Gathered in the Nest")+
+# facet_wrap, this is for allowing co-plotting of LD1, LD3, and LD5 to allow easy comparison across days
+facet_wrap(vars(cols=`Day`), scales="free", strip.position = "top")+
+# the stats for wilcox test, this is best not included on a final plot but is helpful to see printed on initial plot to assess significance while looking at the data simultaneously. Non-parametric test for comparing two groups on a continuous or ordinal variable. Label.x and label.y locate the print out on the resultant plot.
+#stat_compare_means(method = "wilcox.test", paired=FALSE,label=p.format,label.x=1.5,label.y=33)+
+# Base theme "theme_prism" sets baseline parameters like linewidths etc to be uniform in appearance
+theme_prism(base_family="Helvetica")+
+theme(
+  # Plot title, text size, horizontal justification, margin along top, right, bottom, and left, font face is bold
+      plot.title=element_blank(),
+  # Plot subtitle size, horizontal justification, margin, and typeface
+      plot.subtitle=element_blank(),
+  # Y-axis title, text size, vertical justification, horizontal justification to place text appropriate distant from axis
+      axis.title.y=element_text(size=50, vjust=1, hjust=0.55),
+  # X-axis title left blank
+      axis.title.x=element_blank(),
+  # X-axis text size, margin defined
+      axis.text.x=element_text(size=35,margin=margin(t = -85, r = 0, b = 10, l = 0)),
+   # Y-axis text size, margin defined
+      axis.text.y=element_text(size=30,margin=margin(t = 0, r = 10, b = 0, l = 0)),
+  # Plot margin defined in cm
+      plot.margin = margin(1,1,1,1, "cm"),
+  # Omitting the major and minor panel gridlines
+      panel.grid.major = element_blank(), 
+      panel.grid.minor= element_blank(), 
+  # Omitting the axis lines to draw in separate ones later (this allows the limits of the Y-axis to be defined in excess of the data and allow space for the p-value to be printed, while not making the Y-axis line print to the top of the limits of the plot, and allows the X-axis lines to be customized to highlight the two groups more effectively making the plot easier to read):
+      axis.line.y= element_blank(),
+      axis.line.x= element_blank(), 
+  # Minor axis tick mark lengths
+      prism.ticks.length= unit(.4,"cm"),
+  # Major axis tick mark lengths
+      axis.ticks.length = unit(.6, "cm"),
+  # Type of line-end and linewidth parameters for Y-axis
+      axis.ticks.y = element_line(lineend="round",linewidth = 2.5),
+  # Omitting X-axis tick marks
+      axis.ticks.x= element_blank(),
+  # Omitting automatic panel background
+      panel.background=element_rect(fill=FALSE),
+  # The titles for each element of the facet plot, in this case each "Lactation Day" label
+      strip.text.x = element_text(size = 55, margin = margin(t = 5, r = 0, b = -5, l = 0),face="bold"),
+  # Omitting legend title
+      legend.title=element_blank(), 
+  # Defining size, face, and margins of the legend text for each group
+      legend.text=element_text(size=30,face="bold",margin = margin(t = 15, b = 15)),
+  # Defining the legend spacing along Y-axis
+      legend.spacing.y=unit(0.4,"cm"),
+  # Defining the background color of the legend's rectangle
+      legend.background=element_rect(color=NA),
+  # Omitting the legend with none, or placing it with "right", "top", etc:
+      legend.position="none")+
+  
+# Printing error bars for the data to show median, and IQR, with width of the error bars, linewidth, and lineend defined:      
+stat_summary(aes(color=`Strain`),fun.y = median, fun.ymin = NULL, fun.ymax = NULL,
+                 geom = "crossbar",width=.1, linewidth=0.7, show.legend=F,lineend="round")+
+stat_summary(aes(color=`Strain`),geom="errorbar",fun.data = iqr, width=0, linewidth=1.5, show.legend=F,lineend="round")+
+  
+#stat_summary(fun.data="mean", geom="segment",y="mean") +
+ # Y-axis line segment drawn in to have it start at y=0 and stop (yend) at y=4. The x value is 0.61 because default padding expansion for discrete variables is 0.6 units and 5% for continuous variables: 
+annotate("segment", x = 0.61, xend = 0.61, y = 0.0, yend = 30, colour = "black", linewidth=2.5, lineend="round")+
+  
+# X-axis line segments drawn in to leave space for the data located at zero:
+annotate("segment", x = 1.75, xend = 2.25, y = -3, yend = -3, colour = "black", linewidth=2.5, lineend="round")+
+annotate("segment", x = 0.75, xend = 1.25, y = -3, yend = -3, colour = "black", linewidth=2.5, lineend="round")+
+# X-axis vertical tick marks to cap the two x-axis line segments:
+annotate("segment", x = c(0.75,1.25,1.75,2.25), xend = c(0.75,1.25,1.75,2.25), y = -3, yend = -2.5, colour = "black", linewidth=2.5, lineend="round")+
+# Printing the p-value (as defined above the plot code) with label size, bracket size, tip length and line-end defined:
+  add_pvalue(WTMBT_pvalue_w_facets,
+                     bracket.size=3, tip.length = .03, lineend="round",label="p.signif",label.size=c(10,10,10,18,18,18,18,18,18)) #not sure why it needs label.size three times for each label but this was the best solution to make N.S. a reasonable size while the * were large enough to see
+
+
+# Saving the resultant plot as named on the first line of the plot to a folder with a designated filepath, and with specific dimensions:
+ggsave("WTMBT_ALL_PUPS_NESTED_PLOT_FINAL.png", width=26, height=18)
+
+
+
+
+```
+#Plotting Nest Score
+```{R, echo=FALSE}
+#creating a data.frame to map onto the plot later defining the groups (group1, group2) to run statistical comparison brackets between (at a defined y.position=), and the label (label="") for significance level, code differs here from the plot above because these data have the same p-value significance level across all days:
+WTMBT_PLOTS_pval_2 <- data.frame(
+  group1 = "C57BL/6",
+  group2 = "DBA/2J",
+  label="*",
+  y.position = 4.38
+)
+
+#defining the plot as an object, executed by code ggplot(dataset,...) "aes" defines aesthetics of the plot, to tell ggplot what the x and y variables are and which variable to use for sorting the data into appropriate groups. See https://ggplot2-book.org/introduction.html for an introduction
+WTMBT_NEST_SCORE_PLOT_FINAL<- ggplot(WTMBT_FULL_ASSAY_VARIABLES, aes(x=`Strain`, y=`Nest Score`, group=`Strain`)) +
+# the type of plot (line, bar, point, etc, size of points, thickness of border, transparency of dots for overplotting visibility, and width of dodge added to prevent complete overplotting of overlapping data points:
+geom_point((aes(color=`Strain`)), size=18,stroke=2, alpha=0.7, position = position_dodge2(width=0.4))+
+# the color scale, set manually
+scale_colour_manual(labels=c("C57BL/6","DBA/2J"),values=c("#3498DB","#E74C3C"))+
+# title
+ggtitle("Nest Score")+
+# x-scale, with each group defined, and an expansion parameter set for symmetry of the resultant plot, and with the groups reversed to be the same as the VideoAnnotate plots
+scale_x_discrete(limits = rev(levels(WTMBT_FULL_ASSAY_VARIABLES$Strain)), expand=c(0, 0.4))+
+# y-scale, limits given to allow y.position of p-value to be plotted within the limits of the plot, and define the breaks for axis ticks on the Y-axis
+scale_y_continuous(limits= c(-2,4.4), breaks = seq(0,4, by = 1), name="Nest Score (0-4)")+
+# facet_wrap, this is for allowing co-plotting of LD1, LD3, and LD5 to allow easy comparison across days
+facet_wrap(vars(cols=`Day`), scales="free")+
+# the stats for wilcox test, this is best not included on a final plot but is helpful to see printed on initial plot to assess significance while looking at the data simultaneously. Non-parametric test for comparing two groups on a continuous or ordinal variable. Label.x and label.y locate the print out on the resultant plot.
+#stat_compare_means(method = "wilcox.test", label.x=1.25, label.y=4.24, size=10,family="Helvetica", na.rm=TRUE)+
+  
+# Base theme "theme_prism" sets baseline parameters like linewidths etc to be uniform in appearance
+theme_prism(base_family="Helvetica")+
+theme(
+  # Plot title, text size, horizontal justification, margin along top, right, bottom, and left, font face is bold
+  plot.title=element_blank(),
+  # Y-axis title, text size, vertical justification, horizontal justification to place text appropriate distant from axis
+      axis.title.y=element_text(size=50, vjust=1, hjust=0.65),
+  # X-axis title left blank
+      axis.title.x=element_blank(),
+  # X-axis text size, margin defined
+      axis.text.x=element_text(size=35,margin=margin(t = -440, r = 0, b = 10, l = 0)),
+  # Y-axis text size, margin defined
+      axis.text.y=element_text(size=30,margin=margin(t = 0, r = 10, b = 0, l = 0)),
+  # Plot margin defined in cm
+      plot.margin = margin(1,1,1,1, "cm"),
+  # Omitting the major and minor panel gridlines
+      panel.grid.major = element_blank(), 
+      panel.grid.minor= element_blank(), 
+  # Omitting the axis lines to draw in separate ones later (this allows the limits of the Y-axis to be defined in excess of the data and allow space for the p-value to be printed, while not making the Y-axis line print to the top of the limits of the plot, and allows the X-axis lines to be customized to highlight the two groups more effectively making the plot easier to read):
+      axis.line.y= element_blank(),
+      axis.line.x= element_blank(), 
+  # Minor axis tick mark lengths
+      prism.ticks.length= unit(.4,"cm"),
+  # Major axis tick mark lengths
+      axis.ticks.length = unit(.6, "cm"),
+  # Type of line-end and linewidth parameters for Y-axis
+      axis.ticks.y = element_line(lineend="round",linewidth = 2.5),
+  # Omitting X-axis tick marks
+      axis.ticks.x= element_blank(),
+  # Omitting automatic panel background
+      panel.background=element_rect(fill=FALSE),
+  # The titles for each element of the facet plot, in this case each "Lactation Day" label
+      strip.text.x = element_text(size = 55, margin = margin(t = 5, r = 0, b = -5, l = 0),face="bold"),
+  # Omitting legend title
+      legend.title=element_blank(), 
+  # Defining size, face, and margins of the legend text for each group
+      legend.text=element_text(size=30,face="bold",margin = margin(t = 15, b = 15)),
+  # Defining the legend spacing along Y-axis
+      legend.spacing.y=unit(0.4,"cm"),
+  # Defining the background color of the legend's rectangle
+      legend.background=element_rect(color=NA),
+  # Omitting the legend with none, or placing it with "right", "top", etc:
+      legend.position="none")+
+  
+# Printing error bars for the data to show median, and IQR, with width of the error bars, linewidth, and lineend defined:        
+stat_summary(aes(color=`Strain`),fun.y = median, fun.ymin = NULL, fun.ymax = NULL,
+                 geom = "crossbar",width=.1, linewidth=0.7, show.legend=F,lineend="round")+
+stat_summary(aes(color=`Strain`),geom="errorbar",fun.data = iqr, width=0, linewidth=1.5, show.legend=F,lineend="round")+
+# Y-axis line segment drawn in to have it start at y=0 and stop (yend) at y=4. The x value is 0.61 because default padding expansion for discrete variables is 0.6 units and 5% for continuous variables: 
+annotate("segment", x = 0.61, xend = 0.61, y = 0.0, yend = 4, colour = "black", linewidth=2.5, lineend="round")+
+  
+# X-axis line segments drawn in to leave space for the data located at zero:
+  
+annotate("segment", x = 1.75, xend = 2.25, y = -0.35, yend = -0.35, colour = "black", linewidth=2.5, lineend="round")+
+annotate("segment", x = 0.75, xend = 1.25, y = -0.35, yend = -0.35, colour = "black", linewidth=2.5, lineend="round")+
+  
+# X-axis vertical tick marks to cap the two x-axis line segments:
+annotate("segment", x = c(0.75,1.25,1.75,2.25), xend = c(0.75,1.25,1.75,2.25), y = -0.35, yend = -0.25, colour = "black", linewidth=2.5, lineend="round")+
+# Printing the p-value (as defined above the plot code on lines 161-166) with label size, bracket size, tip length and line-end defined:
+add_pvalue(WTMBT_PLOTS_pval_2,
+                     xmin = "group1",
+                     xmax = "group2",
+                    label="label",
+                     y.position = "y.position",
+           label.size = 18, #label
+           bracket.size=3, tip.length = .03, lineend="round")
+# Saving the resultant plot as named on the first line of the plot to a folder with a designated filepath, and with specific dimensions:
+
+ggsave("WTMBT_NEST_SCORE_PLOT_FINAL.png", width=26, height=18)
+
+```
+
+
+#Plotting Retrieval Initiation
+```{R, echo=FALSE}
+#creating a data.frame to map onto the plot later defining the groups (group1, group2) to run statistical comparison brackets between (at a defined y.position=), and the label (label="") for significance level:
+WTMBT_PLOTS_pval_3<- tibble::tribble(
+  ~group1, ~group2, ~p.signif, ~y.position, ~Day,
+  "C57BL/6","DBA/2J","*",320,"LD1",
+  "C57BL/6","DBA/2J","*",320,"LD3",
+  "C57BL/6","DBA/2J","**",320,"LD5")
+
+#defining the plot as an object, executed by code ggplot(dataset,...) "aes" defines aesthetics of the plot, to tell ggplot what the x and y variables are and which variable to use for sorting the data into appropriate groups. See https://ggplot2-book.org/introduction.html for an introduction
+WTMBT_PUP_RETRIEVAL_INITIATION_PLOT_FINAL<- ggplot(WTMBT_FULL_ASSAY_VARIABLES, aes(x=`Strain`, y=`Pup Retrieval Initiation (0-300)`, group=`Strain`)) +
+# the type of plot (line, bar, point, etc, size of points, thickness of border, transparency of dots for overplotting visibility, and width of dodge added to prevent complete overplotting of overlapping data points:
+geom_point((aes(color=`Strain`)), size=18,stroke=2, alpha=0.7, position = position_dodge2(width=0.4))+
+# the color scale, set manually
+scale_colour_manual(labels=c("C57BL/6","DBA/2J"),values=c("#3498DB","#E74C3C"))+
+# title
+ggtitle("Pup Retrieval Initiation")+
+# x-scale, with each group defined, and an expansion parameter set for symmetry of the resultant plot, and with the groups reversed to be the same as the VideoAnnotate plots
+scale_x_discrete(limits = rev(levels(WTMBT_FULL_ASSAY_VARIABLES$Strain)), expand=c(0, 0.4))+
+# y-scale, limits given to allow y.position of p-value to be plotted within the limits of the plot, and define the breaks for axis ticks on the Y-axis
+scale_y_continuous(guide="prism_minor",limits= c(-10,330), breaks = seq(0,300, by = 50), minor_breaks = seq(0,300, by = 25), name="Time to Initiate Pup Retrieval (s)")+
+# facet_wrap, this is for allowing co-plotting of LD1, LD3, and LD5 to allow easy comparison across days
+facet_wrap(vars(cols=`Day`), scales="free")+
+# the stats for wilcox test, this is best not included on a final plot but is helpful to see printed on initial plot to assess significance while looking at the data simultaneously. Non-parametric test for comparing two groups on a continuous or ordinal variable. Label.x and label.y locate the print out on the resultant plot.
+#stat_compare_means(method = "wilcox.test", label.x=1.235, label.y=320, size=10,family="Helvetica", na.rm=TRUE)+
+# Base theme "theme_prism" sets baseline parameters like linewidths etc to be uniform in appearance
+theme_prism(base_family="Helvetica")+
+theme(
+  # Plot title, text size, horizontal justification, margin along top, right, bottom, and left, font face is bold
+  plot.title=element_blank(),
+  # Y-axis title, text size, vertical justification, horizontal justification to place text appropriate distant from axis
+      axis.title.y=element_text(size=50, vjust=1, hjust=0.40),
+  # X-axis title left blank
+      axis.title.x=element_blank(),
+  # X-axis text size, margin defined
+      axis.text.x=element_text(size=35,margin=margin(t = -55, r = 0, b = 10, l = 0)),
+  # Y-axis text size, margin defined
+      axis.text.y=element_text(size=30,margin=margin(t = 0, r = 10, b = 0, l = 0)),
+  # Plot margin defined in cm
+      plot.margin = margin(1,1,1,1, "cm"),
+  # Omitting the major and minor panel gridlines
+      panel.grid.major = element_blank(), 
+      panel.grid.minor= element_blank(), 
+  # Omitting the axis lines to draw in separate ones later (this allows the limits of the Y-axis to be defined in excess of the data and allow space for the p-value to be printed, while not making the Y-axis line print to the top of the limits of the plot, and allows the X-axis lines to be customized to highlight the two groups more effectively making the plot easier to read):
+      axis.line.y= element_blank(),
+      axis.line.x= element_blank(), 
+  # Minor axis tick mark lengths
+      prism.ticks.length= unit(.4,"cm"),
+  # Major axis tick mark lengths
+      axis.ticks.length = unit(.6, "cm"),
+  # Type of line-end and linewidth parameters for Y-axis
+      axis.ticks.y = element_line(lineend="round",linewidth = 2.5),
+  # Omitting X-axis tick marks
+      axis.ticks.x= element_blank(),
+  # Omitting automatic panel background
+      panel.background=element_rect(fill=FALSE),
+  # The titles for each element of the facet plot, in this case each "Lactation Day" label
+      strip.text.x = element_text(size = 55, margin = margin(t = 5, r = 0, b = -5, l = 0),face="bold"),
+  # Omitting legend title
+      legend.title=element_blank(), 
+  # Defining size, face, and margins of the legend text for each group
+      legend.text=element_text(size=30,face="bold",margin = margin(t = 15, b = 15)),
+  # Defining the legend spacing along Y-axis
+      legend.spacing.y=unit(0.4,"cm"),
+  # Defining the background color of the legend's rectangle
+      legend.background=element_rect(color=NA),
+  # Omitting the legend with none, or placing it with "right", "top", etc:
+      legend.position="none")+
+  
+# Printing error bars for the data to show median, and IQR, with width of the error bars, linewidth, and lineend defined:        
+stat_summary(aes(color=`Strain`),fun.y = median, fun.ymin = NULL, fun.ymax = NULL,
+                 geom = "crossbar",width=.1, linewidth=0.7, show.legend=F,lineend="round")+
+stat_summary(aes(color=`Strain`),geom="errorbar",fun.data = iqr, width=0, linewidth=1.5, show.legend=F,lineend="round")+
+
+# Y-axis line segment drawn in to have it start at y=0 and stop (yend) at y=4. The x value is 0.61 because default padding expansion for discrete variables is 0.6 units and 5% for continuous variables: 
+annotate("segment", x = 0.61, xend = 0.61, y = 0.0, yend = 300, colour = "black", linewidth=2.5, lineend="round")+
+  
+# X-axis line segments drawn in to leave space for the data located at zero:
+  
+annotate("segment", x = 1.75, xend = 2.25, y = -10, yend = -10, colour = "black", linewidth=2.5, lineend="round")+
+annotate("segment", x = 0.75, xend = 1.25, y = -10, yend = -10, colour = "black", linewidth=2.5, lineend="round")+
+  
+# X-axis vertical tick marks to cap the two x-axis line segments:
+annotate("segment", x = c(0.75,1.25,1.75,2.25), xend = c(0.75,1.25,1.75,2.25), y = -10, yend = -5, colour = "black", linewidth=2.5, lineend="round")+
+# Printing the p-value (as defined above the plot code on lines 161-166) with label size, bracket size, tip length and line-end defined:
+add_pvalue(WTMBT_PLOTS_pval_3,
+                     xmin = "group1",
+                     xmax = "group2",
+                    label="p.signif",
+                     y.position = "y.position",
+           label.size = 18, #label
+           bracket.size=3, tip.length = .03, lineend="round")
+# Saving the resultant plot as named on the first line of the plot to a folder with a designated filepath, and with specific dimensions:
+
+ggsave("WTMBT_PUP_RETRIEVAL_INITIATION_PLOT_FINAL.png", width=26, height=18)
+
+```
